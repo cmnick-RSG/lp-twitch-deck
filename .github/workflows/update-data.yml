@@ -33,6 +33,15 @@ jobs:
       - name: Collect recent Last Pirates streams
         run: python collect_streams.py
 
+      - name: Collect short-window (hourly) + momentum
+        run: python collect_recent.py
+
+      - name: Enrich streams with Twitch VOD data (links/views/thumbnails)
+        env:
+          TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
+          TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
+        run: python enrich_helix.py
+
       - name: Build site data.json
         run: python build_site_data.py
 

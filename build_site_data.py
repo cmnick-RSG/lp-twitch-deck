@@ -45,17 +45,30 @@ def read_json(name, default):
     return default
 
 
+def read_hourly(name):
+    p = SRC / f"hourly_{name}.csv"
+    if not p.exists():
+        return []
+    with p.open(encoding="utf-8") as f:
+        return [{"t": x["t"], "v": float(x["v"] or 0)} for x in csv.DictReader(f)]
+
+
 def main():
     meta = read_json("run_meta.json", {})
     data = {
         "generated_at": meta.get("run_at"),
         "summary": meta.get("summary", {}),
+        "windows": read_json("windows.json", {}),
         "languages": read_json("languages_latest.json", {}),
         "channels": read_channels(),
         "timeseries": {
             "channels": read_ts("channels"),
             "viewers": read_ts("viewers"),
             "viewerratio": read_ts("viewerratio"),
+        },
+        "hourly": {
+            "viewers": read_hourly("viewers"),
+            "channels": read_hourly("channels"),
         },
         "streams": read_json("streams_latest.json", []),
     }
