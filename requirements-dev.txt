@@ -1,0 +1,4 @@
+# Dev-only: endpoint discovery via headless browser (discover_*.py, verify_site.py).
+# NOT needed at runtime (collectors + Vercel functions use plain requests).
+-r requirements.txt
+playwright>=1.60

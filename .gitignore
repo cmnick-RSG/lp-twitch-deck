@@ -27,3 +27,6 @@ site_*.png
 team sync transcript.txt
 *transcript*.txt
 *.json.bak
+
+# Real-time live feed (served by /api/live in prod; regen locally via collect_live.py)
+site/public/live.json

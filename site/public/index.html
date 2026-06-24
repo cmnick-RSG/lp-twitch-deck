@@ -71,6 +71,11 @@
     <div id="top5"></div>
   </section>
 
+  <section class="tab" data-tab="live">
+    <h2>Live on Twitch right now <span id="liveCount" class="pill"></span></h2>
+    <div id="live"></div>
+  </section>
+
   <section class="tab" data-tab="top">
     <h2>Top channels</h2>
     <div id="topchannels"></div>
@@ -102,8 +107,8 @@
 </main>
 
 <script>
-const TABS=[["overview","Overview"],["top","Top channels"],["all","All channels"],
-  ["streams","Newest streams"],["trends","Trends"],["langs","Languages"]];
+const TABS=[["overview","Overview"],["live","🔴 Live now"],["top","Top channels"],
+  ["all","All channels"],["streams","Newest streams"],["trends","Trends"],["langs","Languages"]];
 const fmt=n=>n==null?"—":Number(n).toLocaleString("en-US");
 const hrs=m=>fmt(Math.round((m||0)/60));
 
@@ -121,6 +126,7 @@ function buildNav(){
       document.querySelector(`.tab[data-tab=${id}]`).classList.add("active");
       if(id==="trends") drawTrends();
       if(id==="langs") drawLangs();
+      if(id==="live") drawLive();
     };
     nav.appendChild(b);
   });
@@ -192,6 +198,36 @@ function streams(){
       avg ${fmt(s.avgviewers)} · ~${fmt(watchHrs)} watch-hrs · +${fmt(s.followergain)} followers</div></div>
       <div class="big">${fmt(s.maxviewers)}<div class="meta">peak viewers</div></div></div>`;
   }).join("");
+}
+
+let liveTimer=null;
+function uptime(iso){
+  if(!iso) return "";
+  const mins=Math.max(0,Math.round((Date.now()-new Date(iso))/60000));
+  const h=Math.floor(mins/60), m=mins%60;
+  return h?`${h}h ${m}m`:`${m}m`;
+}
+async function drawLive(){
+  const el=document.getElementById("live");
+  let data=null;
+  try{ data=await (await fetch("/api/live",{cache:"no-store"})).json(); }
+  catch(e){ try{ data=await (await fetch("live.json",{cache:"no-store"})).json(); }catch(_){} }
+  if(!data){ el.innerHTML=`<div class="row"><div></div><div class="meta">Live data unavailable (deploy /api/live or run collect_live.py)</div><div></div></div>`; return; }
+  const live=data.live||[];
+  document.getElementById("liveCount").textContent=`${live.length} live`;
+  if(!live.length){ el.innerHTML=`<div class="row"><div></div><div class="meta">No one is streaming Last Pirates right now.</div><div></div></div>`; }
+  else{
+    el.innerHTML=live.map(s=>`<div class="row"><div style="color:#f85149">●</div>
+      <div><div class="name"><a href="https://www.twitch.tv/${s.user_login}" target="_blank">${s.user_name}</a>
+      <span class="pill" style="color:#f85149;border-color:#f85149">LIVE ${uptime(s.started_at)}</span>
+      <span class="pill">${s.language||""}</span></div>
+      <div class="meta">${(s.title||"").replace(/</g,"&lt;").slice(0,90)}</div></div>
+      <div class="big">${fmt(s.viewer_count)}<div class="meta">viewers</div></div></div>`).join("");
+  }
+  // auto-refresh every 60s while the Live tab is open
+  clearTimeout(liveTimer);
+  if(document.querySelector(".tab[data-tab=live]").classList.contains("active"))
+    liveTimer=setTimeout(drawLive,60000);
 }
 
 function drawTrends(){
