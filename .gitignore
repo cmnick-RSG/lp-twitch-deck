@@ -30,3 +30,6 @@ team sync transcript.txt
 
 # Real-time live feed (served by /api/live in prod; regen locally via collect_live.py)
 site/public/live.json
+
+# Downloaded UI/UX skill (local design reference only, not part of the app)
+ui-ux-pro-max-skill-main/
