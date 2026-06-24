@@ -1,0 +1,4 @@
+requests>=2.34
+# playwright is only needed for endpoint DISCOVERY (discover_*.py), not at
+# runtime. Install + `python -m playwright install chromium` if re-discovering.
+playwright>=1.60
