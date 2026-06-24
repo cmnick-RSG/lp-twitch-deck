@@ -159,7 +159,7 @@ def build_summary(channels: list[dict], languages: dict,
 # Output writers
 # --------------------------------------------------------------------------- #
 CHANNEL_COLS = [
-    "rownum", "id", "displayname", "twitchurl", "language",
+    "rownum", "id", "displayname", "twitchurl", "logo", "language",
     "viewminutes", "streamedminutes", "maxviewers", "avgviewers",
     "followers", "followersgained", "partner", "affiliate",
 ]

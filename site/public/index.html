@@ -4,71 +4,110 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Last Pirates — Twitch Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root{
-    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --line:#2a3240;
-    --text:#e6edf3; --muted:#8b949e; --accent:#3fb950; --accent2:#58a6ff;
-    --gold:#e3b341;
+    --bg:#0b0e14; --bg2:#0f1320; --panel:#151a26; --panel2:#1b2233; --line:#283047;
+    --text:#e8edf6; --muted:#93a0b8; --accent:#9146ff; --accent2:#58a6ff;
+    --green:#3fb950; --gold:#e3b341; --red:#f85149; --radius:14px;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--text);
-    font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-  header{padding:22px 28px;border-bottom:1px solid var(--line);
-    display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
-  header h1{font-size:20px;margin:0;letter-spacing:.3px}
-  header .sub{color:var(--muted);font-size:13px}
-  nav{display:flex;gap:4px;padding:10px 20px;border-bottom:1px solid var(--line);
-    flex-wrap:wrap;position:sticky;top:0;background:var(--bg);z-index:5}
-  nav button{background:transparent;border:0;color:var(--muted);
-    padding:9px 16px;border-radius:8px;cursor:pointer;font-size:14px}
-  nav button:hover{color:var(--text);background:var(--panel)}
-  nav button.active{color:var(--text);background:var(--panel2);
-    box-shadow:inset 0 -2px 0 var(--accent)}
-  main{padding:24px 28px;max-width:1200px;margin:0 auto}
-  .tab{display:none} .tab.active{display:block}
-  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
-  .tile{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
-  .tile .v{font-size:28px;font-weight:700}
-  .tile .l{color:var(--muted);font-size:13px;margin-top:4px}
-  .tile .v.accent{color:var(--accent)} .tile .v.blue{color:var(--accent2)}
-  .tile .v.gold{color:var(--gold)}
-  h2{font-size:16px;margin:26px 0 12px;font-weight:600}
-  table{width:100%;border-collapse:collapse;font-size:13.5px}
-  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line)}
-  th{color:var(--muted);font-weight:600;cursor:pointer;user-select:none;white-space:nowrap}
-  th:hover{color:var(--text)}
-  tbody tr:hover{background:var(--panel)}
-  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  body{margin:0;background:radial-gradient(1200px 500px at 80% -10%,#1a1430 0%,transparent 60%),var(--bg);
+    color:var(--text);font-family:Inter,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
   a{color:var(--accent2);text-decoration:none} a:hover{text-decoration:underline}
-  .rank{color:var(--muted);width:34px}
-  .search{background:var(--panel);border:1px solid var(--line);color:var(--text);
-    padding:9px 12px;border-radius:8px;width:260px;margin-bottom:12px;font-size:14px}
-  .row{display:grid;grid-template-columns:36px 1fr auto;gap:12px;align-items:center;
-    background:var(--panel);border:1px solid var(--line);border-radius:10px;
-    padding:12px 14px;margin-bottom:8px}
-  .row .name{font-weight:600} .row .meta{color:var(--muted);font-size:12.5px}
-  .row .big{font-size:18px;font-weight:700;text-align:right}
-  .pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);
-    border-radius:999px;padding:2px 9px;font-size:11.5px;color:var(--muted);margin-left:6px}
-  .chartwrap{background:var(--panel);border:1px solid var(--line);border-radius:12px;
-    padding:16px;margin-bottom:18px;height:300px}
-  .lang{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line)}
-  .bar{height:7px;background:var(--accent2);border-radius:4px;margin-top:4px}
-  .foot{color:var(--muted);font-size:12px;margin-top:30px;border-top:1px solid var(--line);padding-top:14px}
+  header{padding:20px 30px;border-bottom:1px solid var(--line);display:flex;
+    align-items:center;gap:16px;flex-wrap:wrap}
+  .logo-badge{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#5b2bd6);
+    display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 4px 16px rgba(145,70,255,.4)}
+  header h1{font-size:19px;margin:0;font-weight:800;letter-spacing:.2px}
+  header .sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+  .reflinks{margin-left:auto;display:flex;gap:14px;font-size:12.5px;align-items:center;flex-wrap:wrap}
+  .reflinks .lbl{color:var(--muted)}
+  nav{display:flex;gap:4px;padding:10px 24px;border-bottom:1px solid var(--line);
+    flex-wrap:wrap;position:sticky;top:0;background:rgba(11,14,20,.92);backdrop-filter:blur(8px);z-index:10}
+  nav button{background:transparent;border:0;color:var(--muted);padding:9px 15px;
+    border-radius:9px;cursor:pointer;font-size:14px;font-weight:500;font-family:inherit}
+  nav button:hover{color:var(--text);background:var(--panel)}
+  nav button.active{color:#fff;background:var(--panel2);box-shadow:inset 0 -2px 0 var(--accent)}
+  main{padding:26px 30px;max-width:1280px;margin:0 auto}
+  .tab{display:none;animation:fade .25s ease} .tab.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  h2{font-size:15px;margin:28px 0 14px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.6px}
+  h2 .pill{text-transform:none;letter-spacing:0}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:14px}
+  .tile{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);
+    border-radius:var(--radius);padding:18px 18px}
+  .tile .v{font-size:30px;font-weight:800;line-height:1} .tile .l{color:var(--muted);font-size:12.5px;margin-top:8px}
+  .tile .v.accent{color:#b794ff} .tile .v.blue{color:var(--accent2)} .tile .v.green{color:var(--green)}
+  .tile .v.gold{color:var(--gold)} .tile .v.red{color:var(--red)}
+  .chartwrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px;margin-bottom:18px;height:320px;position:relative}
+  .toggle{display:inline-flex;gap:2px;background:var(--bg2);border:1px solid var(--line);
+    border-radius:9px;padding:3px;margin-left:10px;vertical-align:middle}
+  .toggle button{background:transparent;border:0;color:var(--muted);padding:5px 12px;border-radius:6px;
+    cursor:pointer;font-size:12.5px;font-family:inherit}
+  .toggle button.on{background:var(--accent);color:#fff}
+  /* channel card grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}
+  .card{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);
+    border-radius:var(--radius);padding:16px;text-align:center;transition:.15s;position:relative;overflow:hidden}
+  .card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+  .card .rk{position:absolute;top:8px;left:10px;font-size:11px;color:var(--muted);font-weight:600}
+  .av{width:64px;height:64px;border-radius:50%;object-fit:cover;margin:4px auto 10px;display:block;
+    border:2px solid var(--line);background:var(--panel2)}
+  .card .nm{font-weight:700;font-size:14.5px;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tags{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-bottom:10px;min-height:22px}
+  .tag{font-size:10.5px;padding:2px 8px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);color:var(--muted)}
+  .tag.p{background:rgba(145,70,255,.18);border-color:var(--accent);color:#c4a8ff}
+  .tag.tier{background:rgba(227,179,65,.14);border-color:var(--gold);color:var(--gold)}
+  .card .stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;margin-top:6px}
+  .card .stats .s b{display:block;font-size:15px;font-weight:700} .card .stats .s span{color:var(--muted);font-size:10.5px}
+  /* list rows (streams / live / top) */
+  .row{display:grid;grid-template-columns:48px 1fr auto;gap:13px;align-items:center;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 15px;margin-bottom:9px;transition:.15s}
+  .row:hover{border-color:var(--accent)}
+  .row .av{width:44px;height:44px;margin:0}
+  .row .name{font-weight:700} .row .meta{color:var(--muted);font-size:12.5px;margin-top:3px}
+  .row .big{font-size:19px;font-weight:800;text-align:right} .row .big span{display:block;color:var(--muted);font-size:11px;font-weight:500}
+  .pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:999px;
+    padding:2px 9px;font-size:11px;color:var(--muted);margin-left:6px}
+  .pill.live{color:var(--red);border-color:var(--red);font-weight:600}
+  /* filter bar */
+  .filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+  .filters input,.filters select{background:var(--panel);border:1px solid var(--line);color:var(--text);
+    padding:9px 12px;border-radius:9px;font-size:13.5px;font-family:inherit}
+  .filters input{min-width:200px} .filters label{color:var(--muted);font-size:13px;display:flex;gap:6px;align-items:center}
+  .count{color:var(--muted);font-size:13px}
+  .lang{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .bar{height:7px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px;margin-top:4px}
+  .foot{color:var(--muted);font-size:12px;margin-top:34px;border-top:1px solid var(--line);padding-top:16px}
+  .empty{color:var(--muted);padding:30px;text-align:center;border:1px dashed var(--line);border-radius:12px}
 </style>
 </head>
 <body>
 <header>
-  <h1>🏴‍☠️ Last Pirates — Twitch Deck</h1>
-  <span class="sub" id="meta">loading…</span>
+  <div class="logo-badge">🏴‍☠️</div>
+  <div>
+    <h1>Last Pirates — Twitch Deck</h1>
+    <div class="sub" id="meta">loading…</div>
+  </div>
+  <div class="reflinks">
+    <span class="lbl">Related:</span>
+    <a href="https://rsg-hub-two.vercel.app/" target="_blank">RSG Hub ↗</a>
+    <a href="https://lpdt-dashboard.vercel.app/" target="_blank">Steam Deck ↗</a>
+    <a href="https://dashboard-vert-three-28.vercel.app/" target="_blank">Dashboard ↗</a>
+  </div>
 </header>
 <nav id="nav"></nav>
 <main>
   <section class="tab active" data-tab="overview">
     <div class="tiles" id="tiles"></div>
-    <h2>Top 5 channels by hours watched</h2>
-    <div id="top5"></div>
+    <h2>Streaming activity <span class="toggle" id="actToggle"></span></h2>
+    <div class="chartwrap"><canvas id="cActivity"></canvas></div>
+    <h2>Top channels by hours watched</h2>
+    <div id="top8"></div>
   </section>
 
   <section class="tab" data-tab="live">
@@ -78,13 +117,31 @@
 
   <section class="tab" data-tab="top">
     <h2>Top channels</h2>
-    <div id="topchannels"></div>
+    <div class="grid" id="topgrid"></div>
   </section>
 
   <section class="tab" data-tab="all">
-    <h2>All channels</h2>
-    <input class="search" id="search" placeholder="search by name…">
-    <div style="overflow:auto"><table id="alltable"></table></div>
+    <h2>All channels <span class="count" id="allCount"></span></h2>
+    <div class="filters">
+      <input id="fSearch" placeholder="🔍 search channel…">
+      <select id="fLang"></select>
+      <select id="fTier">
+        <option value="">All sizes</option>
+        <option value="mega">Mega (1M+ followers)</option>
+        <option value="large">Large (100k+)</option>
+        <option value="mid">Mid (10k+)</option>
+        <option value="small">Small (&lt;10k)</option>
+      </select>
+      <select id="fSort">
+        <option value="viewminutes">Sort: Hours watched</option>
+        <option value="maxviewers">Sort: Peak viewers</option>
+        <option value="avgviewers">Sort: Avg viewers</option>
+        <option value="streamedminutes">Sort: Hours streamed</option>
+        <option value="followers">Sort: Followers</option>
+      </select>
+      <label><input type="checkbox" id="fPartner"> Partners only</label>
+    </div>
+    <div class="grid" id="allgrid"></div>
   </section>
 
   <section class="tab" data-tab="streams">
@@ -99,8 +156,8 @@
 
   <section class="tab" data-tab="langs">
     <h2>Languages</h2>
-    <div style="max-width:520px"><div class="chartwrap"><canvas id="cLang"></canvas></div></div>
-    <div id="langlist" style="max-width:520px"></div>
+    <div style="max-width:540px"><div class="chartwrap"><canvas id="cLang"></canvas></div></div>
+    <div id="langlist" style="max-width:540px"></div>
   </section>
 
   <div class="foot" id="foot"></div>
@@ -111,8 +168,18 @@ const TABS=[["overview","Overview"],["live","🔴 Live now"],["top","Top channel
   ["all","All channels"],["streams","Newest streams"],["trends","Trends"],["langs","Languages"]];
 const fmt=n=>n==null?"—":Number(n).toLocaleString("en-US");
 const hrs=m=>fmt(Math.round((m||0)/60));
+const AV="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%231b2233'/%3E%3C/svg%3E";
+const img=u=>`<img class="av" loading="lazy" src="${u||AV}" onerror="this.src='${AV}'">`;
+let D=null, charted={}, liveTimer=null;
 
-let D=null, charted={};
+function tier(f){ f=f||0; return f>=1e6?["mega","1M+"]:f>=1e5?["large","100k+"]:f>=1e4?["mid","10k+"]:["small","<10k"]; }
+function tagsHtml(c){
+  const [tk,tl]=tier(c.followers);
+  let h=`<span class="tag tier">${tl}</span>`;
+  if(c.partner) h+=`<span class="tag p">partner</span>`;
+  if(c.language) h+=`<span class="tag">${c.language}</span>`;
+  return h;
+}
 
 function buildNav(){
   const nav=document.getElementById("nav");
@@ -135,137 +202,171 @@ function buildNav(){
 function overview(){
   const s=D.summary;
   const tiles=[
-    ["total_streamers","Total streamers","accent"],
-    ["total_hours_streamed","Hours streamed",""],
-    ["total_hours_watched","Hours watched","blue"],
-    ["peak_concurrent_viewers","Peak viewers","gold"],
-    ["partner_channels","Twitch partners",""],
-    ["distinct_languages","Languages",""],
+    [fmt(s.total_streamers),"Unique streamers","accent"],
+    [fmt(D.streams.length),"Streams (last 7d)","blue"],
+    [fmt(s.total_hours_watched),"Hours watched","green"],
+    [fmt(s.total_hours_streamed),"Hours streamed",""],
+    [fmt(s.peak_concurrent_viewers),"Peak viewers","gold"],
+    [fmt(s.partner_channels),"Twitch partners",""],
+    [fmt(s.distinct_languages),"Languages",""],
   ];
-  document.getElementById("tiles").innerHTML=tiles.map(([k,l,c])=>
-    `<div class="tile"><div class="v ${c}">${fmt(s[k])}</div><div class="l">${l}</div></div>`).join("");
-  document.getElementById("top5").innerHTML=D.channels.slice(0,5).map((c,i)=>rowCard(c,i)).join("");
+  document.getElementById("tiles").innerHTML=tiles.map(([v,l,c])=>
+    `<div class="tile"><div class="v ${c}">${v}</div><div class="l">${l}</div></div>`).join("");
+  document.getElementById("top8").innerHTML=D.channels.slice(0,8).map(rowCard).join("");
+  buildActivityToggle();
 }
 
 function rowCard(c,i){
-  return `<div class="row"><div class="rank">${i+1}</div>
-    <div><div class="name"><a href="${c.twitchurl}" target="_blank">${c.displayname}</a>
-    <span class="pill">${c.language||"—"}</span>${c.partner?'<span class="pill">partner</span>':''}</div>
+  return `<div class="row">${img(c.logo)}
+    <div><div class="name"><a href="${c.twitchurl}" target="_blank">${c.displayname}</a>${tagsHtml(c)}</div>
     <div class="meta">${fmt(c.followers)} followers · peak ${fmt(c.maxviewers)} · ${hrs(c.streamedminutes)} h streamed</div></div>
-    <div class="big">${hrs(c.viewminutes)}<div class="meta">hours watched</div></div></div>`;
+    <div class="big">${hrs(c.viewminutes)}<span>hours watched</span></div></div>`;
 }
 
-function topChannels(){
-  document.getElementById("topchannels").innerHTML=
-    D.channels.slice(0,30).map((c,i)=>rowCard(c,i)).join("");
+function channelCard(c){
+  return `<div class="card"><div class="rk">#${c.rownum}</div>${img(c.logo)}
+    <div class="nm"><a href="${c.twitchurl}" target="_blank">${c.displayname}</a></div>
+    <div class="tags">${tagsHtml(c)}</div>
+    <div class="stats">
+      <div class="s"><b>${hrs(c.viewminutes)}</b><span>watch hrs</span></div>
+      <div class="s"><b>${fmt(c.maxviewers)}</b><span>peak</span></div>
+      <div class="s"><b>${fmt(c.avgviewers)}</b><span>avg</span></div>
+      <div class="s"><b>${fmt(c.followers)}</b><span>followers</span></div>
+    </div></div>`;
 }
 
-let sortKey="viewminutes", sortDir=-1;
-function allTable(){
-  const cols=[["rownum","#",0],["displayname","Channel",0],["language","Language",0],
-    ["viewminutes","Watch hrs",1],["streamedminutes","Stream hrs",1],
-    ["maxviewers","Peak",1],["avgviewers","Avg",1],["followers","Followers",1]];
-  const q=(document.getElementById("search").value||"").toLowerCase();
-  let rows=D.channels.filter(c=>c.displayname.toLowerCase().includes(q));
-  rows.sort((a,b)=>(a[sortKey]>b[sortKey]?1:-1)*sortDir);
-  const head=`<thead><tr>${cols.map(([key,l,n])=>
-    `<th class="${n?'num':''}" onclick="setSort('${key}')">${l}${sortKey===key?(sortDir<0?' ▾':' ▴'):''}</th>`).join("")}</tr></thead>`;
-  const body=`<tbody>${rows.map(c=>`<tr>
-    <td class="num rank">${c.rownum}</td>
-    <td><a href="${c.twitchurl}" target="_blank">${c.displayname}</a></td>
-    <td>${c.language||"—"}</td>
-    <td class="num">${toHrs(c.viewminutes)}</td><td class="num">${toHrs(c.streamedminutes)}</td>
-    <td class="num">${fmt(c.maxviewers)}</td><td class="num">${fmt(c.avgviewers)}</td>
-    <td class="num">${fmt(c.followers)}</td></tr>`).join("")}</tbody>`;
-  document.getElementById("alltable").innerHTML=head+body;
+function topGrid(){
+  document.getElementById("topgrid").innerHTML=D.channels.slice(0,24).map(channelCard).join("");
 }
-const toHrs=m=>fmt(Math.round((m||0)/60));
-function setSort(key){ if(sortKey===key)sortDir*=-1; else{sortKey=key;sortDir=-1;} allTable(); }
 
+/* ---- All channels: filters + grid ---- */
+function buildFilters(){
+  const langs=[...new Set(D.channels.map(c=>c.language).filter(Boolean))].sort();
+  document.getElementById("fLang").innerHTML=
+    `<option value="">All languages</option>`+langs.map(l=>`<option>${l}</option>`).join("");
+  ["fSearch","fLang","fTier","fSort","fPartner"].forEach(id=>
+    document.getElementById(id).addEventListener("input",allGrid));
+}
+function allGrid(){
+  const q=document.getElementById("fSearch").value.toLowerCase();
+  const lang=document.getElementById("fLang").value;
+  const tk=document.getElementById("fTier").value;
+  const sort=document.getElementById("fSort").value;
+  const partner=document.getElementById("fPartner").checked;
+  let rows=D.channels.filter(c=>
+    c.displayname.toLowerCase().includes(q) &&
+    (!lang||c.language===lang) &&
+    (!partner||c.partner) &&
+    (!tk||tier(c.followers)[0]===tk));
+  rows.sort((a,b)=>(b[sort]||0)-(a[sort]||0));
+  document.getElementById("allCount").textContent=`${rows.length} of ${D.channels.length}`;
+  const g=document.getElementById("allgrid");
+  g.innerHTML=rows.length?rows.slice(0,300).map(channelCard).join(""):`<div class="empty">No channels match.</div>`;
+}
+
+/* ---- streams ---- */
 function streams(){
   const el=document.getElementById("streams");
-  if(!D.streams||!D.streams.length){
-    el.innerHTML=`<div class="row"><div></div><div class="meta">Feed empty — run collect_streams.py</div><div></div></div>`;
-    return;
-  }
+  if(!D.streams||!D.streams.length){el.innerHTML=`<div class="empty">Feed empty — run collect_streams.py</div>`;return;}
   el.innerHTML=D.streams.map(s=>{
-    const watchHrs=Math.round((s.avgviewers||0)*(s.length||0)/60);
+    const wh=Math.round((s.viewminutes||(s.avgviewers||0)*(s.length||0))/60);
     const ch=s.channelurl||s.channeldisplayname;
-    return `<div class="row"><div>▶</div>
+    return `<div class="row">${img(s.channellogo)}
       <div><div class="name"><a href="https://www.twitch.tv/${ch}" target="_blank">${s.channeldisplayname}</a>
       <span class="pill">${s.starttime||""}</span></div>
-      <div class="meta">${Math.round((s.length||0))} min · ${s.game||"Last Pirates"} ·
-      avg ${fmt(s.avgviewers)} · ~${fmt(watchHrs)} watch-hrs · +${fmt(s.followergain)} followers</div></div>
-      <div class="big">${fmt(s.maxviewers)}<div class="meta">peak viewers</div></div></div>`;
+      <div class="meta">${Math.round(s.length||0)} min · avg ${fmt(s.avgviewers)} · ~${fmt(wh)} watch-hrs · +${fmt(s.followergain)} followers</div></div>
+      <div class="big">${fmt(s.maxviewers)}<span>peak</span></div></div>`;
   }).join("");
 }
 
-let liveTimer=null;
-function uptime(iso){
-  if(!iso) return "";
-  const mins=Math.max(0,Math.round((Date.now()-new Date(iso))/60000));
-  const h=Math.floor(mins/60), m=mins%60;
-  return h?`${h}h ${m}m`:`${m}m`;
-}
+/* ---- live ---- */
+function uptime(iso){if(!iso)return"";const m=Math.max(0,Math.round((Date.now()-new Date(iso))/6e4));const h=Math.floor(m/60);return h?`${h}h ${m%60}m`:`${m}m`;}
 async function drawLive(){
   const el=document.getElementById("live");
   let data=null;
-  try{ data=await (await fetch("/api/live",{cache:"no-store"})).json(); }
-  catch(e){ try{ data=await (await fetch("live.json",{cache:"no-store"})).json(); }catch(_){} }
-  if(!data){ el.innerHTML=`<div class="row"><div></div><div class="meta">Live data unavailable (deploy /api/live or run collect_live.py)</div><div></div></div>`; return; }
+  try{data=await(await fetch("/api/live",{cache:"no-store"})).json();}
+  catch(e){try{data=await(await fetch("live.json",{cache:"no-store"})).json();}catch(_){}}
+  if(!data){el.innerHTML=`<div class="empty">Live data unavailable (deploy /api/live or run collect_live.py).</div>`;return;}
   const live=data.live||[];
   document.getElementById("liveCount").textContent=`${live.length} live`;
-  if(!live.length){ el.innerHTML=`<div class="row"><div></div><div class="meta">No one is streaming Last Pirates right now.</div><div></div></div>`; }
-  else{
-    el.innerHTML=live.map(s=>`<div class="row"><div style="color:#f85149">●</div>
-      <div><div class="name"><a href="https://www.twitch.tv/${s.user_login}" target="_blank">${s.user_name}</a>
-      <span class="pill" style="color:#f85149;border-color:#f85149">LIVE ${uptime(s.started_at)}</span>
-      <span class="pill">${s.language||""}</span></div>
-      <div class="meta">${(s.title||"").replace(/</g,"&lt;").slice(0,90)}</div></div>
-      <div class="big">${fmt(s.viewer_count)}<div class="meta">viewers</div></div></div>`).join("");
-  }
-  // auto-refresh every 60s while the Live tab is open
+  el.innerHTML=live.length?live.map(s=>`<div class="row"><div style="color:var(--red);font-size:22px;text-align:center">●</div>
+    <div><div class="name"><a href="https://www.twitch.tv/${s.user_login}" target="_blank">${s.user_name}</a>
+    <span class="pill live">LIVE ${uptime(s.started_at)}</span><span class="pill">${s.language||""}</span></div>
+    <div class="meta">${(s.title||"").replace(/</g,"&lt;").slice(0,100)}</div></div>
+    <div class="big">${fmt(s.viewer_count)}<span>viewers</span></div></div>`).join("")
+    :`<div class="empty">No one is streaming Last Pirates right now.</div>`;
   clearTimeout(liveTimer);
-  if(document.querySelector(".tab[data-tab=live]").classList.contains("active"))
-    liveTimer=setTimeout(drawLive,60000);
+  if(document.querySelector(".tab[data-tab=live]").classList.contains("active")) liveTimer=setTimeout(drawLive,60000);
+}
+
+/* ---- activity (overview): day/week/month from daily channels ---- */
+function bucket(series,mode){
+  if(mode==="day") return series.map(p=>({k:p.date.slice(0,10),v:p.value}));
+  const map=new Map();
+  series.forEach(p=>{
+    const d=new Date(p.date);
+    let key;
+    if(mode==="month") key=p.date.slice(0,7);
+    else{const onejan=new Date(d.getFullYear(),0,1);const wk=Math.ceil((((d-onejan)/864e5)+onejan.getDay()+1)/7);key=`${d.getFullYear()}-W${String(wk).padStart(2,"0")}`;}
+    map.set(key,(map.get(key)||0)+p.value);
+  });
+  return [...map.entries()].map(([k,v])=>({k,v}));
+}
+function activeSlice(series){ // trim leading zeros for nicer UX
+  let i=series.findIndex(p=>p.value>0); if(i<0)i=0; return series.slice(Math.max(0,i-3));
+}
+let actMode="week", actChart=null;
+function buildActivityToggle(){
+  const t=document.getElementById("actToggle");
+  t.innerHTML=["day","week","month"].map(m=>`<button data-m="${m}" class="${m===actMode?'on':''}">${m[0].toUpperCase()+m.slice(1)}</button>`).join("");
+  t.querySelectorAll("button").forEach(b=>b.onclick=()=>{actMode=b.dataset.m;buildActivityToggle();drawActivity();});
+  drawActivity();
+}
+function drawActivity(){
+  const data=bucket(activeSlice(D.timeseries.channels),actMode);
+  if(actChart)actChart.destroy();
+  actChart=new Chart(document.getElementById("cActivity"),{type:"bar",
+    data:{labels:data.map(d=>d.k),datasets:[{label:"Channel-days streaming",data:data.map(d=>d.v),
+      backgroundColor:"#9146ff",borderRadius:4}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:"#93a0b8",maxTicksLimit:12},grid:{display:false}},
+        y:{ticks:{color:"#93a0b8"},grid:{color:"#1b2233"}}}}});
 }
 
 function drawTrends(){
-  if(charted.trends) return; charted.trends=true;
-  const mk=(id,data,label,color)=>new Chart(document.getElementById(id),{
-    type:"line",data:{labels:data.map(p=>p.date.slice(0,10)),
-      datasets:[{label,data:data.map(p=>p.value),borderColor:color,
-        backgroundColor:color+"22",fill:true,tension:.25,pointRadius:0,borderWidth:2}]},
-    options:{maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{x:{ticks:{color:"#8b949e",maxTicksLimit:8},grid:{color:"#1c2230"}},
-        y:{ticks:{color:"#8b949e"},grid:{color:"#1c2230"}}}}});
+  if(charted.trends)return;charted.trends=true;
+  const mk=(id,series,label,color)=>{
+    const data=activeSlice(series);
+    new Chart(document.getElementById(id),{type:"line",
+      data:{labels:data.map(p=>p.date.slice(5,10)),datasets:[{label,data:data.map(p=>p.value),
+        borderColor:color,backgroundColor:color+"22",fill:true,tension:.25,pointRadius:0,borderWidth:2}]},
+      options:{maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{x:{ticks:{color:"#93a0b8",maxTicksLimit:10},grid:{color:"#1b2233"}},
+          y:{ticks:{color:"#93a0b8"},grid:{color:"#1b2233"}}}}});
+  };
   mk("cChannels",D.timeseries.channels,"Channels","#3fb950");
   mk("cViewers",D.timeseries.viewers,"Viewers","#58a6ff");
 }
 
 function drawLangs(){
-  if(charted.langs) return; charted.langs=true;
+  if(charted.langs)return;charted.langs=true;
   const ent=Object.entries(D.languages).filter(([l])=>l).sort((a,b)=>b[1]-a[1]);
-  const top=ent.slice(0,10), pal=["#58a6ff","#3fb950","#e3b341","#f85149","#bc8cff",
-    "#39c5cf","#db61a2","#ff9b50","#a5d6ff","#7ee787"];
+  const top=ent.slice(0,10),pal=["#9146ff","#58a6ff","#3fb950","#e3b341","#f85149","#39c5cf","#db61a2","#ff9b50","#a5d6ff","#7ee787"];
   new Chart(document.getElementById("cLang"),{type:"doughnut",
-    data:{labels:top.map(e=>e[0]),datasets:[{data:top.map(e=>e[1]),backgroundColor:pal}]},
-    options:{maintainAspectRatio:false,plugins:{legend:{position:"right",
-      labels:{color:"#e6edf3",boxWidth:12}}}}});
+    data:{labels:top.map(e=>e[0]),datasets:[{data:top.map(e=>e[1]),backgroundColor:pal,borderWidth:0}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{position:"right",labels:{color:"#e8edf6",boxWidth:12}}}}});
   const max=ent[0][1];
   document.getElementById("langlist").innerHTML=ent.map(([l,v])=>
-    `<div class="lang"><span>${l}</span><span>${fmt(v)}</span></div>
-     <div class="bar" style="width:${(v/max*100).toFixed(1)}%"></div>`).join("");
+    `<div class="lang"><span>${l}</span><span>${fmt(v)}</span></div><div class="bar" style="width:${(v/max*100).toFixed(1)}%"></div>`).join("");
 }
 
 fetch("data.json").then(r=>r.json()).then(d=>{
   D=d; buildNav();
   document.getElementById("meta").textContent=
-    `updated ${(d.generated_at||"").replace("T"," ").slice(0,16)} UTC · source: SullyGnome · 365-day window`;
+    `updated ${(d.generated_at||"").replace("T"," ").slice(0,16)} UTC · source: SullyGnome + Twitch Helix`;
   document.getElementById("foot").innerHTML=
-    `Data: SullyGnome (Twitch). ${fmt(d.channels.length)} channels · ${fmt(d.streams.length)} streams in feed. Dashboard refreshes daily.`;
-  document.getElementById("search").addEventListener("input",allTable);
-  overview(); topChannels(); allTable(); streams();
+    `Data: SullyGnome (Twitch history) + Twitch Helix (live). ${fmt(d.channels.length)} channels · ${fmt(d.streams.length)} recent streams. SullyGnome refreshes on schedule; Live now is real-time.`;
+  overview(); topGrid(); buildFilters(); allGrid(); streams();
 }).catch(e=>{document.getElementById("meta").textContent="failed to load data.json: "+e;});
 </script>
 </body>

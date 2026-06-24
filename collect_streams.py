@@ -38,8 +38,9 @@ HEADERS = {
     "Accept": "application/json, text/javascript, */*; q=0.01",
 }
 
-KEEP = ["channeldisplayname", "channelurl", "starttime", "startDateTime",
-        "length", "avgviewers", "maxviewers", "followergain"]
+KEEP = ["channeldisplayname", "channelurl", "channellogo", "starttime",
+        "startDateTime", "length", "avgviewers", "maxviewers",
+        "followergain", "viewminutes"]
 
 
 def get(session, url):
