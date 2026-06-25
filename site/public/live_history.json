@@ -13,10 +13,10 @@
     "peak_viewers": 2,
     "last_viewers": 2,
     "followers": 123,
-    "is_live": false,
+    "is_live": true,
     "first_seen": "2026-06-25T22:20:25Z",
-    "last_seen": "2026-06-25T22:20:25Z",
-    "ended_at": "2026-06-25T22:20:25Z"
+    "last_seen": "2026-06-25T22:30:46Z",
+    "ended_at": null
   },
   {
     "stream_id": "318250232791",
@@ -29,12 +29,12 @@
     "language": "en",
     "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_venomskiss2001-320x180.jpg",
     "started_at": "2026-06-25T22:13:20Z",
-    "peak_viewers": 7,
-    "last_viewers": 7,
-    "followers": 414,
+    "peak_viewers": 9,
+    "last_viewers": 9,
+    "followers": 415,
     "is_live": true,
     "first_seen": "2026-06-25T22:15:29Z",
-    "last_seen": "2026-06-25T22:25:19Z",
+    "last_seen": "2026-06-25T22:30:46Z",
     "ended_at": null
   },
   {
@@ -67,12 +67,12 @@
     "language": "en",
     "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_simplyswig-320x180.jpg",
     "started_at": "2026-06-25T20:03:00Z",
-    "peak_viewers": 20,
-    "last_viewers": 20,
+    "peak_viewers": 22,
+    "last_viewers": 22,
     "followers": 2666,
     "is_live": true,
     "first_seen": "2026-06-25T22:10:25Z",
-    "last_seen": "2026-06-25T22:25:19Z",
+    "last_seen": "2026-06-25T22:30:46Z",
     "ended_at": null
   },
   {
