@@ -1,5 +1,24 @@
 [
   {
+    "stream_id": "316365210580",
+    "user_id": "104009802",
+    "user_login": "melkayaira",
+    "user_name": "MelkayaIra",
+    "logo": "https://static-cdn.jtvnw.net/jtv_user_pictures/9455ba07-5ab8-41bc-a6b3-2f84e867835a-profile_image-300x300.png",
+    "broadcaster_type": "affiliate",
+    "title": "KOOP DEMOstream",
+    "language": "ru",
+    "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_melkayaira-320x180.jpg",
+    "started_at": "2026-06-25T17:46:00Z",
+    "peak_viewers": 10,
+    "last_viewers": 10,
+    "followers": 413,
+    "is_live": true,
+    "first_seen": "2026-06-25T19:10:27Z",
+    "last_seen": "2026-06-25T19:10:27Z",
+    "ended_at": null
+  },
+  {
     "stream_id": "317791477350",
     "user_id": "1516108102",
     "user_login": "reallgrim",
@@ -13,10 +32,10 @@
     "peak_viewers": 6,
     "last_viewers": 3,
     "followers": 5,
-    "is_live": true,
+    "is_live": false,
     "first_seen": "2026-06-25T17:51:08Z",
     "last_seen": "2026-06-25T19:05:24Z",
-    "ended_at": null
+    "ended_at": "2026-06-25T19:05:24Z"
   },
   {
     "stream_id": "319129233758",
