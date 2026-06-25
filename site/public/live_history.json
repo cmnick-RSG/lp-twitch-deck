@@ -1,5 +1,24 @@
 [
   {
+    "stream_id": "319129233758",
+    "user_id": "1440396452",
+    "user_login": "sahnjee",
+    "user_name": "sahnjee",
+    "logo": "https://static-cdn.jtvnw.net/jtv_user_pictures/d3d50ae2-a8e8-4a87-a979-88615667ec90-profile_image-300x300.png",
+    "broadcaster_type": "affiliate",
+    "title": "Black Myth Wukong then some friendslop!",
+    "language": "en",
+    "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_sahnjee-320x180.jpg",
+    "started_at": "2026-06-25T15:01:17Z",
+    "peak_viewers": 11,
+    "last_viewers": 11,
+    "followers": 136,
+    "is_live": true,
+    "first_seen": "2026-06-25T17:31:11Z",
+    "last_seen": "2026-06-25T17:31:11Z",
+    "ended_at": null
+  },
+  {
     "stream_id": "317100109539",
     "user_id": "1154118598",
     "user_login": "mazzguy",
@@ -30,11 +49,11 @@
     "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_poppymidnight-320x180.jpg",
     "started_at": "2026-06-25T09:55:33Z",
     "peak_viewers": 4,
-    "last_viewers": 4,
+    "last_viewers": 2,
     "followers": 258,
     "is_live": true,
     "first_seen": "2026-06-25T17:25:23Z",
-    "last_seen": "2026-06-25T17:25:23Z",
+    "last_seen": "2026-06-25T17:31:11Z",
     "ended_at": null
   },
   {
@@ -51,10 +70,10 @@
     "peak_viewers": 16,
     "last_viewers": 15,
     "followers": 614,
-    "is_live": true,
+    "is_live": false,
     "first_seen": "2026-06-25T17:20:39Z",
     "last_seen": "2026-06-25T17:25:23Z",
-    "ended_at": null
+    "ended_at": "2026-06-25T17:25:23Z"
   },
   {
     "stream_id": "316295201877",
@@ -68,11 +87,11 @@
     "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_desertcat-320x180.jpg",
     "started_at": "2026-06-25T09:41:47Z",
     "peak_viewers": 15,
-    "last_viewers": 13,
+    "last_viewers": 9,
     "followers": 312,
     "is_live": true,
     "first_seen": "2026-06-25T17:20:39Z",
-    "last_seen": "2026-06-25T17:25:23Z",
+    "last_seen": "2026-06-25T17:31:11Z",
     "ended_at": null
   }
 ]
