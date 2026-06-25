@@ -116,8 +116,11 @@ To verify UI changes headless, load the page with Playwright and check `pageerro
 
 ## 8. CI / auto-refresh
 
-`.github/workflows/update-data.yml` runs **hourly** (and on manual dispatch): runs the four
-collectors + enrich + build, commits `site/public/data.json` → Vercel redeploys.
+`.github/workflows/update-data.yml` runs **every 6h** (cron `0 */6 * * *`, and on manual
+dispatch): runs the four collectors + enrich + build, commits `site/public/data.json` →
+Vercel redeploys. (Was hourly; switched 2026-06-25 because free-tier scheduled Actions drop
+hourly runs under load and the 365-day aggregates barely move within an hour — real-time
+data comes from `/api/live` anyway.)
 - Repo Settings → Actions → Workflow permissions must be **Read and write** (it is — the
   Action has successfully committed).
 - Uses `LP_RECENT_WINDOW=3` so the hourly stream scan is light (polite to SullyGnome).
@@ -160,9 +163,16 @@ skill: `npm i -g uipro-cli`).
 Done: full Twitch module live & auto-refreshing hourly, v3 UI (pro Trends, dual hourly chart,
 sorting everywhere, VOD enrichment, bigger typography, fixed chart tooltips).
 
+2026-06-25 health check: full pipeline verified end-to-end locally (all 5 collectors + build
+OK), local Twitch keys valid (VOD enrichment 60/86), live site + `/api/live` healthy, data
+refreshed & pushed. Found the scheduled CI had effectively stalled (only 2 lifetime runs,
+none on 06-25) → switched cron hourly→6h to improve free-tier reliability.
+
 Open / likely next (confirm priority with Nikita):
-1. **Nikita to add the two Twitch secrets to the GitHub repo** (see §5) so hourly refresh
-   includes VOD enrichment.
+1. **Nikita to add the two Twitch secrets to the GitHub repo** (see §5) so the CI refresh
+   includes VOD enrichment. STILL PENDING as of 2026-06-25 — the one scheduled run committed
+   nothing, so we can't confirm the secrets are set. Verify CI VOD enrichment after the next
+   6h run; if missing, that's the cause.
 2. Further UI polish if he wants (he pushes hard on "professional analytical tool" quality —
    data density, no tiny text, no grammatical/visual sloppiness, working interactions).
 3. **YouTube** module (his next source) — same pattern: a collector writing the same shapes,
