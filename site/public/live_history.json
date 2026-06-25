@@ -15,7 +15,7 @@
     "followers": 4,
     "is_live": true,
     "first_seen": "2026-06-25T17:51:08Z",
-    "last_seen": "2026-06-25T18:05:22Z",
+    "last_seen": "2026-06-25T18:10:31Z",
     "ended_at": null
   },
   {
@@ -72,7 +72,7 @@
     "followers": 258,
     "is_live": true,
     "first_seen": "2026-06-25T17:25:23Z",
-    "last_seen": "2026-06-25T18:05:22Z",
+    "last_seen": "2026-06-25T18:10:31Z",
     "ended_at": null
   },
   {
@@ -106,11 +106,11 @@
     "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_desertcat-320x180.jpg",
     "started_at": "2026-06-25T09:41:47Z",
     "peak_viewers": 15,
-    "last_viewers": 7,
+    "last_viewers": 6,
     "followers": 312,
     "is_live": true,
     "first_seen": "2026-06-25T17:20:39Z",
-    "last_seen": "2026-06-25T18:05:22Z",
+    "last_seen": "2026-06-25T18:10:31Z",
     "ended_at": null
   }
 ]
