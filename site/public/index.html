@@ -41,8 +41,10 @@
   header::after{content:"";position:absolute;right:18px;top:50%;transform:translateY(-50%);
     width:330px;height:130px;background:url(assets/pirates.png) right center/contain no-repeat;
     opacity:.16;pointer-events:none;filter:saturate(1.1)}
-  .logo{height:42px;width:auto;filter:drop-shadow(0 2px 8px rgba(0,0,0,.6))}
-  .brand{display:flex;align-items:center;gap:14px;z-index:1}
+  .logo{height:40px;width:auto;filter:drop-shadow(0 2px 8px rgba(0,0,0,.6))}
+  .brand{display:flex;align-items:center;gap:13px;z-index:1}
+  .brand .tw{height:25px;width:auto;filter:drop-shadow(0 2px 6px rgba(139,92,246,.5))}
+  .brand .plus{color:var(--muted);font-size:17px;font-weight:300;opacity:.5;margin:0 -3px}
   .brand .vl{width:1px;height:34px;background:var(--line2)}
   .brand .tag{font-size:12.5px;color:var(--muted);font-weight:600;line-height:1.35}
   .brand .tag b{color:var(--gold);font-weight:700;display:block;font-size:13px;letter-spacing:.3px}
@@ -248,8 +250,10 @@
 <header>
   <div class="brand">
     <img class="logo" src="assets/logo.png" alt="Last Pirates: Die Together">
+    <span class="plus">×</span>
+    <img class="tw" src="assets/twitch.png" alt="Twitch">
     <div class="vl"></div>
-    <div class="tag"><b>TWITCH ANALYTICS</b>Die Together · live deck</div>
+    <div class="tag"><b>Analytics</b>Die Together · live deck</div>
   </div>
   <div class="reflinks">
     <span class="lbl">Network:</span>
@@ -409,6 +413,11 @@ const AV="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64
 const TH="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='180'%3E%3Crect width='320' height='180' fill='%23262040'/%3E%3C/svg%3E";
 const img=u=>`<img class="av" loading="lazy" src="${u||AV}" onerror="this.src='${AV}'">`;
 const esc=s=>(s||"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+// all absolute timestamps are stored UTC (Twitch/SullyGnome) — display in Kyiv time
+const TZ="Europe/Kyiv";
+function kyiv(iso,withDate=true){if(!iso)return"";const d=new Date(iso);if(isNaN(d))return"";
+  const o={timeZone:TZ,hour:"2-digit",minute:"2-digit",hour12:false};if(withDate){o.day="2-digit";o.month="short";}
+  try{return new Intl.DateTimeFormat("en-GB",o).format(d).replace(",","");}catch(e){return iso.replace("T"," ").slice(5,16);}}
 let D=null,charted={},liveTimer=null,langMap={},liveCount=null;
 
 Chart.defaults.font.family="Inter";Chart.defaults.font.weight="500";Chart.defaults.color="#938da8";
@@ -485,7 +494,7 @@ function overview(){
   document.getElementById("tiles").innerHTML=tiles.map(([v,l,c])=>
     `<div class="tile"><div class="v ${c} num">${v}</div><div class="l">${l}</div></div>`).join("");
   document.getElementById("top8").innerHTML=D.channels.slice(0,6).map(rowCard).join("");
-  document.getElementById("ovMeta").textContent=`updated ${(D.generated_at||"").replace("T"," ").slice(0,16)} UTC`;
+  document.getElementById("ovMeta").textContent=`updated ${kyiv(D.generated_at)} Kyiv time`;
   buildActToggle();fillLiveKpi();
 }
 async function fillLiveKpi(){
@@ -614,7 +623,7 @@ function streamCard(s){
     <div class="body">
       <div class="tl"><img src="${s.channellogo||AV}" onerror="this.src='${AV}'"><a href="https://www.twitch.tv/${login}" target="_blank" rel="noopener">${esc(s.channeldisplayname)}</a></div>
       ${s.title?`<div class="title">${esc(s.title)}</div>`:`<div class="title" style="color:var(--muted)">${esc(s.game||"Last Pirates: Die Together")}</div>`}
-      <div class="chips"><span class="chip">${svg("cal",13)} ${timeAgo(s.startDateTime)} · ${(s.startDateTime||"").replace("T"," ").slice(5,16)}</span>${chips.join("")}</div>
+      <div class="chips"><span class="chip">${svg("cal",13)} ${timeAgo(s.startDateTime)} · ${kyiv(s.startDateTime)}</span>${chips.join("")}</div>
     </div>
     <div class="side">${headline}${vod}</div>
   </div>`;
@@ -746,7 +755,7 @@ document.addEventListener("change",e=>{if(e.target.matches(".check input[type=ch
 fetch("data.json").then(r=>r.json()).then(d=>{
   D=d;d.channels.forEach(c=>langMap[c.displayname]=c.language);buildNav();
   const src=(d.streams||[]).reduce((m,s)=>{m[s.source]=(m[s.source]||0)+1;return m;},{});
-  document.getElementById("strHint").textContent=`Twitch-first · ${fmt((src.twitch||0)+(src.both||0))} live from Twitch + ${fmt(src.sullygnome||0)} from SullyGnome`;
+  document.getElementById("strHint").textContent=`Twitch-first · ${fmt((src.twitch||0)+(src.both||0))} from Twitch + ${fmt(src.sullygnome||0)} from SullyGnome · times in Kyiv`;
   document.getElementById("foot").innerHTML=`<b>Sources:</b> Twitch Helix (live streams + recently-ended VODs: links, views, thumbnails, in real time) and SullyGnome (historical aggregates & viewer depth). `+
     `${fmt(d.channels.length)} channels tracked · ${fmt((d.streams||[]).length)} recent streams · ${fmt((d.streams||[]).filter(x=>x.vod_url).length)} with a live VOD. `+
     `New streams now appear straight from Twitch the moment a broadcast ends; SullyGnome backfills viewer stats. VODs expire on Twitch — captured metrics persist here.`;

@@ -4,7 +4,7 @@ name: Update dashboard data
 # Vercel site shows fresh stats. Runtime is plain `requests` (no browser).
 on:
   schedule:
-    - cron: "0 */6 * * *"   # every 6 hours (UTC) — reliable on free-tier; aggregates barely move hourly, live data comes from /api/live in real time
+    - cron: "0 */2 * * *"   # every 2 hours (UTC) — keeps the Newest feed + per-stream viewer stats fresh; Twitch pull is cheap, SullyGnome scan stays light (window=3, throttled)
   workflow_dispatch: {}       # manual "Run workflow" button
 
 env:

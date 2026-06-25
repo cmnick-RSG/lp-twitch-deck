@@ -26,6 +26,12 @@ face = cov.crop((200, 70, 670, 540))  # tricorn hat + big eyes, centered on capt
 for px, nm in [(64, "favicon.png"), (180, "favicon-180.png")]:
     save_png(face.resize((px, px), Image.LANCZOS), nm)
 
+# 2b) Twitch wordmark logo for the header (purple, transparent)
+tw = Image.open(SRC / "Twitch_logo_(wordmark_only).png").convert("RGBA")
+th = 72
+tw = tw.resize((round(tw.width * th / tw.height), th), Image.LANCZOS)
+save_png(tw, "twitch.png")
+
 # 3) Side pirates — transparent crew, resized for a header/footer accent
 pir = Image.open(SRC / "transparent pirates on side.png").convert("RGBA")
 w = 560
