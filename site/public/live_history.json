@@ -1,5 +1,24 @@
 [
   {
+    "stream_id": "317086224100",
+    "user_id": "1333526028",
+    "user_login": "d_soul0",
+    "user_name": "d_soul0",
+    "logo": "https://static-cdn.jtvnw.net/jtv_user_pictures/9dbfc08f-7f50-4c4c-b91a-e5902c088c6a-profile_image-300x300.png",
+    "broadcaster_type": "",
+    "title": "Dia 3 / Vai uma livezinha?! - jogando com os amigos Last Pirates. Aniversário do Salute!!",
+    "language": "pt",
+    "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_d_soul0-320x180.jpg",
+    "started_at": "2026-06-25T18:05:03Z",
+    "peak_viewers": 1,
+    "last_viewers": 1,
+    "followers": 8,
+    "is_live": true,
+    "first_seen": "2026-06-25T20:40:26Z",
+    "last_seen": "2026-06-25T20:40:26Z",
+    "ended_at": null
+  },
+  {
     "stream_id": "317573498087",
     "user_id": "447876067",
     "user_login": "thoryn_derhexer",
@@ -11,11 +30,11 @@
     "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_thoryn_derhexer-320x180.jpg",
     "started_at": "2026-06-25T17:48:00Z",
     "peak_viewers": 87,
-    "last_viewers": 87,
+    "last_viewers": 82,
     "followers": 5095,
     "is_live": true,
     "first_seen": "2026-06-25T20:03:32Z",
-    "last_seen": "2026-06-25T20:35:23Z",
+    "last_seen": "2026-06-25T20:40:26Z",
     "ended_at": null
   },
   {
