@@ -201,6 +201,16 @@ fine-grained PAT (Actions: read/write on this repo only) that Nikita holds:
   body: {"ref":"main"}   (success = HTTP 204)
 Two cron-job.org jobs: live-snapshot.yml every 30 min, update-data.yml every 2h. The GitHub
 `schedule:` triggers are kept as a (flaky) backup; concurrency group `site-refresh` serializes all.
+v4.5 — CRITICAL deploy gotcha: **Vercel honours `[skip ci]` in commit messages and SKIPS the
+deploy.** The data-refresh bot historically used `[skip ci]`, so its commits updated git but
+NEVER deployed to the live site (data only refreshed on a human non-skip push). Fix:
+ - update-data.yml (2h, data.json) commits WITHOUT `[skip ci]` → Vercel deploys it (~12/day).
+ - live-snapshot.yml (30 min, live_history.json) KEEPS `[skip ci]` ON PURPOSE → no deploy churn;
+   the frontend reads live_history.json straight from **raw.githubusercontent.com** (CORS=*,
+   ~5-min cache) so it sees snapshots within minutes WITHOUT any Vercel deploy.
+ - Newest feed = /api/live (instant live, serverless, no deploy) ∪ raw live_history (persisted
+   ended, no deploy) ∪ data.json baseline (deployed every 2h). No push-triggered workflow exists,
+   so dropping `[skip ci]` causes no CI loop.
 
 ## 11. Where we are / next steps
 

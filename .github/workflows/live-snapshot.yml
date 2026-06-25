@@ -41,6 +41,9 @@ jobs:
             echo "No live changes."
           else
             git pull --rebase --autostash origin main || true
+            # "[skip ci]" is DELIBERATE here: Vercel honours it and skips the deploy, so the
+            # 30-min snapshots don't churn Vercel. The frontend reads live_history.json
+            # directly from GitHub raw, so it sees this commit within ~5 min without a deploy.
             git commit -m "live: snapshot [skip ci]"
             git push
           fi

@@ -64,6 +64,9 @@ jobs:
             echo "No data changes."
           else
             git pull --rebase --autostash origin main || true
-            git commit -m "data: refresh streams [skip ci]"
+            # NOTE: no "[skip ci]" — Vercel honours that tag and would SKIP the deploy,
+            # leaving the live site's data.json stale. We WANT this commit to deploy.
+            # (No GitHub workflow triggers on push — only schedule/dispatch — so no CI loop.)
+            git commit -m "data: refresh streams"
             git push
           fi

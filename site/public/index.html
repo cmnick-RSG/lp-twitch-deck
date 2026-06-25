@@ -779,7 +779,11 @@ function histToStream(h){
 async function overlayLive(){
   if(!D)return;
   let hist=[],apiLive=[];
-  try{const j=await(await fetch("live_history.json",{cache:"no-store"})).json();if(Array.isArray(j))hist=j;}catch(e){}
+  // read live history straight from GitHub raw — reflects the bot's 30-min commits within
+  // ~5 min with NO Vercel redeploy needed; fall back to the deployed copy.
+  const LH_RAW="https://raw.githubusercontent.com/cmnick-RSG/lp-twitch-deck/main/site/public/live_history.json";
+  try{const j=await(await fetch(LH_RAW,{cache:"no-store"})).json();if(Array.isArray(j))hist=j;}
+  catch(e){try{const j=await(await fetch("live_history.json",{cache:"no-store"})).json();if(Array.isArray(j))hist=j;}catch(_){}}
   try{apiLive=((await(await fetch("/api/live",{cache:"no-store"})).json()).live)||[];}
   catch(e){try{apiLive=((await(await fetch("live.json",{cache:"no-store"})).json()).live)||[];}catch(_){}}
   const base=D._base||[];
