@@ -3,285 +3,519 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Last Pirates — Twitch Deck</title>
+<title>Last Pirates — Twitch Analytics</title>
+<meta name="description" content="Real-time Twitch analytics for Last Pirates: Die Together — live streams, streamers, VODs, trends and regions.">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/favicon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root{
-    --bg:#0b0b1a; --bg2:#11112a; --panel:#1a1830; --panel2:#211f3b; --line:#2e2a55;
-    --primary:#7c3aed; --primary2:#a78bfa; --accent:#f43f5e; --blue:#58a6ff;
-    --green:#22c55e; --gold:#fbbf24; --text:#e7e9f5; --muted:#9aa0c4; --radius:16px;
+    --bg:#0c0a14; --bg2:#120f1f; --panel:#171326; --panel2:#1f1a33; --panel3:#262040;
+    --line:#2c2746; --line2:#3a3358;
+    --gold:#f5c451; --gold2:#ffe09a; --purple:#8b5cf6; --purple2:#b29bff;
+    --ember:#f0573c; --green:#34d399; --blue:#5fb0ef;
+    --text:#eceaf6; --text2:#c8c4dd; --muted:#938da8; --radius:16px;
+    --shadow:0 14px 40px rgba(0,0,0,.5);
   }
   *{box-sizing:border-box}
-  body{margin:0;background:
-    radial-gradient(900px 420px at 88% -8%,rgba(124,58,237,.22),transparent 60%),
-    radial-gradient(700px 360px at 5% 0%,rgba(244,63,94,.10),transparent 55%),var(--bg);
-    color:var(--text);font-family:Inter,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
-  a{color:var(--primary2);text-decoration:none} a:hover{text-decoration:underline}
-  ::selection{background:var(--primary);color:#fff}
-  .mono{font-family:'JetBrains Mono',monospace}
-  header{padding:18px 30px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:15px;flex-wrap:wrap}
-  .badge{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--primary),#5b21b6);
-    display:flex;align-items:center;justify-content:center;font-size:21px;box-shadow:0 6px 22px rgba(124,58,237,.5)}
-  header h1{font-size:19px;margin:0;font-weight:800} header .sub{color:var(--muted);font-size:12.5px;margin-top:2px}
-  .reflinks{margin-left:auto;display:flex;gap:13px;font-size:12.5px;align-items:center;flex-wrap:wrap}
-  .reflinks .lbl{color:var(--muted)}
-  nav{display:flex;gap:4px;padding:9px 24px;border-bottom:1px solid var(--line);flex-wrap:wrap;
-    position:sticky;top:0;background:rgba(11,11,26,.9);backdrop-filter:blur(10px);z-index:20}
-  nav button{background:transparent;border:0;color:var(--muted);padding:9px 15px;border-radius:10px;
-    cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;transition:.15s}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
+  body{margin:0;min-height:100vh;color:var(--text);
+    font-family:Inter,-apple-system,Segoe UI,Roboto,sans-serif;
+    font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(1100px 520px at 86% -10%,rgba(245,196,81,.12),transparent 60%),
+      radial-gradient(820px 420px at 2% 2%,rgba(139,92,246,.14),transparent 58%),
+      var(--bg);}
+  a{color:var(--gold2);text-decoration:none}
+  ::selection{background:var(--gold);color:#1a1300}
+  svg{display:block}
+  .num{font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+
+  /* ---------- header ---------- */
+  header{position:relative;display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+    padding:16px 30px;border-bottom:1px solid var(--line);overflow:hidden}
+  header::after{content:"";position:absolute;right:18px;top:50%;transform:translateY(-50%);
+    width:330px;height:130px;background:url(assets/pirates.png) right center/contain no-repeat;
+    opacity:.16;pointer-events:none;filter:saturate(1.1)}
+  .logo{height:42px;width:auto;filter:drop-shadow(0 2px 8px rgba(0,0,0,.6))}
+  .brand{display:flex;align-items:center;gap:14px;z-index:1}
+  .brand .vl{width:1px;height:34px;background:var(--line2)}
+  .brand .tag{font-size:12.5px;color:var(--muted);font-weight:600;line-height:1.35}
+  .brand .tag b{color:var(--gold);font-weight:700;display:block;font-size:13px;letter-spacing:.3px}
+  .reflinks{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;z-index:1}
+  .reflinks .lbl{color:var(--muted);font-size:12px;font-weight:600;margin-right:2px}
+  .reflinks a{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;
+    color:var(--text2);padding:6px 11px;border:1px solid var(--line);border-radius:9px;
+    background:var(--panel);transition:.15s}
+  .reflinks a:hover{border-color:var(--purple);color:#fff;background:var(--panel2)}
+  .reflinks svg{width:13px;height:13px;opacity:.6}
+
+  /* ---------- nav ---------- */
+  nav{display:flex;gap:3px;padding:8px 22px;border-bottom:1px solid var(--line);flex-wrap:wrap;
+    position:sticky;top:0;z-index:30;background:rgba(12,10,20,.86);backdrop-filter:blur(12px)}
+  nav button{display:inline-flex;align-items:center;gap:8px;background:transparent;border:0;
+    color:var(--muted);padding:10px 15px;border-radius:10px;cursor:pointer;font-size:14px;
+    font-weight:600;font-family:inherit;transition:.15s;position:relative}
+  nav button svg{width:17px;height:17px}
   nav button:hover{color:var(--text);background:var(--panel)}
-  nav button.active{color:#fff;background:linear-gradient(135deg,rgba(124,58,237,.3),rgba(124,58,237,.12));
-    box-shadow:inset 0 -2px 0 var(--primary)}
-  main{padding:24px 30px;max-width:1320px;margin:0 auto}
-  .tab{display:none;animation:fade .3s ease} .tab.active{display:block}
-  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-  .sec-h{display:flex;align-items:center;gap:10px;margin:30px 0 14px}
-  .sec-h h2{font-size:13px;margin:0;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
-  .sec-h .ln{flex:1;height:1px;background:var(--line)}
-  /* KPI tiles */
-  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:13px}
-  .tile{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);
-    border-radius:var(--radius);padding:17px;position:relative;overflow:hidden}
-  .tile::after{content:"";position:absolute;inset:0 0 auto auto;width:60px;height:60px;
-    background:radial-gradient(circle,rgba(124,58,237,.25),transparent 70%);border-radius:50%}
-  .tile .v{font-size:36px;font-weight:900;line-height:1;letter-spacing:-1px}
-  .tile .l{color:var(--muted);font-size:12.5px;margin-top:9px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
-  .v.p{color:var(--primary2)} .v.a{color:var(--accent)} .v.g{color:var(--green)} .v.b{color:var(--blue)} .v.gold{color:var(--gold)}
-  /* momentum strip */
+  nav button.active{color:#fff;background:linear-gradient(180deg,rgba(245,196,81,.16),rgba(245,196,81,.05))}
+  nav button.active::after{content:"";position:absolute;left:14px;right:14px;bottom:3px;height:2px;
+    border-radius:2px;background:var(--gold)}
+  nav button .dot{width:7px;height:7px;border-radius:50%;background:var(--ember);box-shadow:0 0 0 0 rgba(240,87,60,.6);
+    animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(240,87,60,.55)}70%{box-shadow:0 0 0 7px rgba(240,87,60,0)}100%{box-shadow:0 0 0 0 rgba(240,87,60,0)}}
+
+  main{padding:24px 30px 60px;max-width:1340px;margin:0 auto}
+  .tab{display:none;animation:fade .28s ease}
+  .tab.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+
+  .sec-h{display:flex;align-items:center;gap:12px;margin:30px 0 15px}
+  .sec-h:first-child{margin-top:6px}
+  .sec-h h2{font-size:12.5px;margin:0;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:var(--muted);white-space:nowrap}
+  .sec-h .ln{flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+  .sec-h .hint{font-size:12px;color:var(--muted);font-weight:500;text-transform:none;letter-spacing:0}
+
+  /* ---------- KPI hero ---------- */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(184px,1fr));gap:13px}
+  .kpi{position:relative;background:linear-gradient(165deg,var(--panel2),var(--panel));
+    border:1px solid var(--line);border-radius:var(--radius);padding:16px 17px 14px;overflow:hidden;
+    transition:.16s;display:flex;flex-direction:column;gap:2px}
+  .kpi.click{cursor:pointer}
+  .kpi.click:hover{border-color:var(--gold);transform:translateY(-3px);box-shadow:var(--shadow)}
+  .kpi .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .kpi .ic{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+    background:var(--panel3);color:var(--gold)}
+  .kpi .ic svg{width:16px;height:16px}
+  .kpi.em .ic{color:var(--ember)} .kpi.pu .ic{color:var(--purple2)} .kpi.gr .ic{color:var(--green)} .kpi.bl .ic{color:var(--blue)}
+  .kpi .v{font-size:33px;font-weight:900;line-height:1.05;margin-top:9px}
+  .kpi.em .v{color:var(--ember)} .kpi.pu .v{color:var(--purple2)} .kpi.gr .v{color:var(--green)} .kpi.bl .v{color:var(--blue)} .kpi .v.gold{color:var(--gold)}
+  .kpi .l{color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-top:5px}
+  .kpi .spark{margin-top:9px;height:30px}
+  .kpi .live-badge{font-size:10.5px;font-weight:800;color:var(--ember);display:inline-flex;align-items:center;gap:5px}
+  .kpi .live-badge .dot{width:7px;height:7px;border-radius:50%;background:var(--ember);animation:pulse 1.8s infinite}
+  .delta{font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:3px}
+  .delta.up{color:var(--green)} .delta.down{color:var(--ember)} .delta.flat{color:var(--muted)}
+
+  /* ---------- momentum ---------- */
   .momentum{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}
-  .mom{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:15px 17px;text-align:left}
-  .mom .w{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-  .mom .n{font-size:26px;font-weight:800;margin-top:5px} .mom .sub{font-size:11px;color:var(--muted);margin-top:2px}
-  .chartwrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:16px;height:300px;position:relative}
-  .chartwrap.tall{height:340px}
-  .toggle{display:inline-flex;gap:2px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:3px;margin-left:auto}
-  .toggle button{background:transparent;border:0;color:var(--muted);padding:5px 13px;border-radius:7px;cursor:pointer;font-size:12.5px;font-family:inherit;font-weight:600}
-  .toggle button.on{background:var(--primary);color:#fff}
-  /* channel grid */
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:14px}
-  .card{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:var(--radius);
-    padding:16px;text-align:center;transition:.18s;position:relative}
-  .card:hover{border-color:var(--primary);transform:translateY(-3px);box-shadow:0 12px 30px rgba(0,0,0,.45)}
-  .card .rk{position:absolute;top:9px;left:11px;font-size:11px;color:var(--muted);font-weight:700}
-  .av{width:66px;height:66px;border-radius:50%;object-fit:cover;margin:2px auto 10px;display:block;border:2px solid var(--primary);background:var(--panel2)}
-  .card .nm{font-weight:700;font-size:14.5px;margin-bottom:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .tags{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-bottom:11px;min-height:21px}
-  .tag{font-size:10.5px;padding:2px 8px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);color:var(--muted)}
-  .tag.p{background:rgba(124,58,237,.2);border-color:var(--primary);color:#c9b3ff}
-  .tag.t{background:rgba(251,191,36,.14);border-color:var(--gold);color:var(--gold)}
-  .card .stats{display:grid;grid-template-columns:1fr 1fr;gap:7px;font-size:12px}
-  .card .stats b{display:block;font-size:15px;font-weight:800} .card .stats span{color:var(--muted);font-size:10px}
-  /* rows */
-  .row{display:grid;grid-template-columns:46px 1fr auto;gap:13px;align-items:center;background:var(--panel);
-    border:1px solid var(--line);border-radius:13px;padding:11px 15px;margin-bottom:9px;transition:.15s}
-  .row:hover{border-color:var(--primary)}
+  .mom{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px 17px;cursor:pointer;transition:.15s}
+  .mom:hover{border-color:var(--purple);background:var(--panel2)}
+  .mom .w{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:700}
+  .mom .n{font-size:27px;font-weight:800;margin-top:6px}
+  .mom .sub{font-size:11.5px;color:var(--muted);margin-top:3px}
+
+  /* ---------- compact tiles ---------- */
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+  .tile{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px 16px}
+  .tile .v{font-size:25px;font-weight:800;line-height:1}
+  .tile .l{color:var(--muted);font-size:11.5px;margin-top:8px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+  .v.p{color:var(--purple2)} .v.a{color:var(--ember)} .v.g{color:var(--green)} .v.b{color:var(--blue)} .v.gold{color:var(--gold)}
+
+  /* ---------- charts ---------- */
+  .chartwrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px;margin-bottom:16px;height:312px;position:relative}
+  .chartwrap.tall{height:380px}
+  .toggle{display:inline-flex;gap:2px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:3px}
+  .toggle button{background:transparent;border:0;color:var(--muted);padding:6px 13px;border-radius:7px;
+    cursor:pointer;font-size:12.5px;font-family:inherit;font-weight:600;transition:.12s}
+  .toggle button:hover{color:var(--text)}
+  .toggle button.on{background:var(--gold);color:#1a1300}
+
+  /* ---------- toolbar / filters ---------- */
+  .toolbar{display:flex;gap:11px;flex-wrap:wrap;align-items:flex-end;margin-bottom:18px}
+  .fld{display:flex;flex-direction:column;gap:5px}
+  .fld>span{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding-left:2px}
+  .ctl{height:40px;background:var(--panel);border:1px solid var(--line);color:var(--text);
+    padding:0 13px;border-radius:10px;font-size:13.5px;font-family:inherit;font-weight:500;transition:.15s}
+  select.ctl{cursor:pointer;padding-right:30px;appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%23938da8' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 11px center}
+  .ctl:focus,.ctl:hover{outline:none;border-color:var(--gold)}
+  .search{position:relative;display:flex;align-items:center}
+  .search svg{position:absolute;left:12px;width:16px;height:16px;color:var(--muted);pointer-events:none}
+  .search .ctl{padding-left:36px;min-width:230px}
+  .check{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:10px;
+    border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:13.5px;font-weight:600;
+    color:var(--text2);user-select:none;transition:.15s;white-space:nowrap}
+  .check:hover{border-color:var(--gold)}
+  .check input{width:16px;height:16px;accent-color:var(--gold);cursor:pointer;margin:0}
+  .check.on{border-color:var(--gold);color:var(--gold);background:rgba(245,196,81,.08)}
+  .count{color:var(--muted);font-size:12.5px;font-weight:600}
+
+  /* ---------- channel cards ---------- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(202px,1fr));gap:14px}
+  .card{position:relative;background:linear-gradient(170deg,var(--panel2),var(--panel));
+    border:1px solid var(--line);border-radius:var(--radius);padding:17px 16px 15px;text-align:center;transition:.16s}
+  .card:hover{border-color:var(--gold);transform:translateY(-3px);box-shadow:var(--shadow)}
+  .card .rk{position:absolute;top:10px;left:12px;font-size:11px;color:var(--muted);font-weight:800}
+  .av{width:68px;height:68px;border-radius:50%;object-fit:cover;margin:4px auto 11px;display:block;
+    border:2px solid var(--gold);background:var(--panel3)}
+  .card .nm{font-weight:800;font-size:15px;margin-bottom:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .nm a{color:var(--text)} .card .nm a:hover{color:var(--gold)}
+  .tags{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-bottom:12px;min-height:21px}
+  .tag{font-size:10.5px;padding:2px 9px;border-radius:999px;background:var(--panel3);border:1px solid var(--line);color:var(--text2);font-weight:600}
+  .tag.p{background:rgba(139,92,246,.18);border-color:var(--purple);color:var(--purple2)}
+  .tag.t{background:rgba(245,196,81,.13);border-color:var(--gold);color:var(--gold)}
+  .card .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px 7px;font-size:12px}
+  .card .stats b{display:block;font-size:15.5px;font-weight:800}
+  .card .stats span{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.3px}
+
+  /* ---------- rows (top channels preview) ---------- */
+  .row{display:grid;grid-template-columns:44px 1fr auto;gap:14px;align-items:center;background:var(--panel);
+    border:1px solid var(--line);border-radius:13px;padding:11px 16px;margin-bottom:9px;transition:.15s}
+  .row:hover{border-color:var(--gold)}
   .row .av{width:42px;height:42px;margin:0;border-width:2px}
-  .row .name{font-weight:700} .row .meta{color:var(--muted);font-size:12.5px;margin-top:3px}
-  .big{font-size:23px;font-weight:900;text-align:right;letter-spacing:-.5px} .big span{display:block;color:var(--muted);font-size:11px;font-weight:600;margin-top:3px;letter-spacing:0}
-  /* stream cards w/ thumbnail */
-  .scard{display:grid;grid-template-columns:168px 1fr auto;gap:15px;align-items:center;background:var(--panel);
-    border:1px solid var(--line);border-radius:14px;padding:11px;margin-bottom:10px;transition:.15s}
-  .scard:hover{border-color:var(--primary)}
-  .thumb{width:168px;height:94px;border-radius:9px;object-fit:cover;background:var(--panel2);border:1px solid var(--line)}
-  .scard .tl{display:flex;align-items:center;gap:8px;font-weight:700}
-  .scard .tl img{width:26px;height:26px;border-radius:50%}
-  .scard .meta{color:var(--muted);font-size:12.5px;margin-top:5px}
-  .vodbtn{display:inline-block;margin-top:7px;font-size:11.5px;padding:4px 11px;border-radius:8px;
-    background:rgba(124,58,237,.18);border:1px solid var(--primary);color:#c9b3ff}
-  .pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:2px 9px;font-size:11px;color:var(--muted);margin-left:6px}
-  .pill.live{color:#fff;background:var(--accent);border-color:var(--accent);font-weight:700}
-  /* filters */
-  .filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
-  .filters input,.filters select{background:var(--panel);border:1px solid var(--line);color:var(--text);
-    padding:9px 13px;border-radius:10px;font-size:13.5px;font-family:inherit}
-  .filters input{min-width:210px} .filters input:focus,.filters select:focus{outline:none;border-color:var(--primary)}
-  .filters label{color:var(--muted);font-size:13px;display:flex;gap:6px;align-items:center;cursor:pointer}
-  .count{color:var(--muted);font-size:12.5px}
-  .lang{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
-  .bar{height:7px;background:linear-gradient(90deg,var(--primary),var(--accent));border-radius:4px;margin-top:4px}
-  .foot{color:var(--muted);font-size:12px;margin-top:36px;border-top:1px solid var(--line);padding-top:16px;line-height:1.7}
-  .empty{color:var(--muted);padding:34px;text-align:center;border:1px dashed var(--line);border-radius:13px}
+  .row .name{font-weight:700} .row .name a{color:var(--text)} .row .name a:hover{color:var(--gold)}
+  .row .meta{color:var(--muted);font-size:12.5px;margin-top:3px}
+  .big{font-size:22px;font-weight:900;text-align:right;letter-spacing:-.5px}
+  .big span{display:block;color:var(--muted);font-size:10.5px;font-weight:600;margin-top:3px;letter-spacing:.3px;text-transform:uppercase}
+
+  /* ---------- stream cards ---------- */
+  .slist{display:grid;gap:11px}
+  .scard{display:grid;grid-template-columns:188px 1fr auto;gap:16px;align-items:stretch;background:var(--panel);
+    border:1px solid var(--line);border-radius:var(--radius);padding:12px;transition:.16s}
+  .scard:hover{border-color:var(--gold);box-shadow:var(--shadow)}
+  .thumb-wrap{position:relative;width:188px;height:106px;border-radius:11px;overflow:hidden;background:var(--panel3);flex-shrink:0}
+  .thumb{width:100%;height:100%;object-fit:cover}
+  .thumb-wrap .dur{position:absolute;right:6px;bottom:6px;background:rgba(8,6,14,.85);color:#fff;
+    font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px}
+  .thumb-wrap .src{position:absolute;left:6px;top:6px;font-size:9.5px;font-weight:800;letter-spacing:.4px;
+    padding:2px 7px;border-radius:6px;text-transform:uppercase}
+  .src.twitch{background:rgba(139,92,246,.92);color:#fff} .src.both{background:rgba(52,211,153,.92);color:#04231a}
+  .src.sully{background:rgba(95,176,239,.9);color:#04203a}
+  .scard .body{display:flex;flex-direction:column;min-width:0;padding:3px 0}
+  .scard .tl{display:flex;align-items:center;gap:9px;min-width:0}
+  .scard .tl img{width:30px;height:30px;border-radius:50%;flex-shrink:0;border:1.5px solid var(--line2);object-fit:cover}
+  .scard .tl a{font-weight:800;font-size:16.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .scard .tl a:hover{color:var(--gold)}
+  .scard .title{color:var(--text2);font-size:13.5px;margin-top:7px;line-height:1.4;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:auto;padding-top:9px}
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--text2);
+    background:var(--panel3);border:1px solid var(--line);border-radius:8px;padding:4px 9px}
+  .chip svg{width:13px;height:13px;color:var(--muted)}
+  .chip.lang{color:var(--purple2)}
+  .scard .side{display:flex;flex-direction:column;align-items:flex-end;justify-content:space-between;gap:10px;text-align:right}
+  .scard .headline{font-size:26px;font-weight:900;letter-spacing:-.5px}
+  .scard .headline span{display:block;color:var(--muted);font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-top:2px}
+  .scard .hl-peak{color:var(--ember)} .scard .hl-views{color:var(--gold)}
+  .vodbtn{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:9px;
+    background:var(--purple);color:#fff;transition:.15s;white-space:nowrap}
+  .vodbtn:hover{background:var(--purple2);color:#1a1233}
+  .vodbtn svg{width:13px;height:13px}
+  .vodbtn.dead{background:none;border:1px solid var(--line);color:var(--muted);cursor:default}
+
+  /* ---------- regions ---------- */
+  .regrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+  .regcard{background:linear-gradient(165deg,var(--panel2),var(--panel));border:1px solid var(--line);
+    border-radius:var(--radius);padding:17px}
+  .regcard .rh{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .regcard .rn{font-weight:800;font-size:15px}
+  .regcard .rdot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+  .regcard .rshare{font-size:23px;font-weight:900;margin-top:11px}
+  .regcard .rbar{height:7px;border-radius:5px;background:var(--panel3);margin-top:9px;overflow:hidden}
+  .regcard .rbar i{display:block;height:100%;border-radius:5px}
+  .regcard .rmeta{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:10px;font-weight:600}
+  .regcard .rtop{font-size:11.5px;color:var(--text2);margin-top:7px}
+  .langtable{margin-top:8px}
+  .lang{display:grid;grid-template-columns:130px 1fr 70px;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+  .lang .lname{font-size:13.5px;font-weight:600}
+  .lang .lbarwrap{height:8px;background:var(--panel3);border-radius:5px;overflow:hidden}
+  .lang .lbar{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--gold),var(--ember))}
+  .lang .lval{text-align:right;font-size:13px;font-weight:700;color:var(--text2)}
+
+  .empty{color:var(--muted);padding:40px;text-align:center;border:1px dashed var(--line);border-radius:14px;font-size:14px}
+  .foot{color:var(--muted);font-size:12px;margin-top:40px;border-top:1px solid var(--line);padding-top:18px;line-height:1.8}
+  .foot b{color:var(--text2)}
+
+  @media(max-width:720px){
+    header,nav,main{padding-left:16px;padding-right:16px}
+    header::after{display:none}
+    .momentum{grid-template-columns:repeat(2,1fr)}
+    .scard{grid-template-columns:1fr}
+    .thumb-wrap{width:100%;height:170px}
+    .scard .side{flex-direction:row;align-items:center}
+    .lang{grid-template-columns:96px 1fr 60px}
+  }
 </style>
 </head>
 <body>
 <header>
-  <div class="badge">🏴‍☠️</div>
-  <div><h1>Last Pirates — Twitch Deck</h1><div class="sub" id="meta">loading…</div></div>
-  <div class="reflinks"><span class="lbl">Related:</span>
-    <a href="https://rsg-hub-two.vercel.app/" target="_blank">RSG Hub ↗</a>
-    <a href="https://lpdt-dashboard.vercel.app/" target="_blank">Steam Deck ↗</a>
-    <a href="https://dashboard-vert-three-28.vercel.app/" target="_blank">Dashboard ↗</a>
+  <div class="brand">
+    <img class="logo" src="assets/logo.png" alt="Last Pirates: Die Together">
+    <div class="vl"></div>
+    <div class="tag"><b>TWITCH ANALYTICS</b>Die Together · live deck</div>
+  </div>
+  <div class="reflinks">
+    <span class="lbl">Network:</span>
+    <a href="https://rsg-hub-two.vercel.app/" target="_blank" rel="noopener">RSG Hub <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6"/></svg></a>
+    <a href="https://lpdt-dashboard.vercel.app/" target="_blank" rel="noopener">Steam Deck <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6"/></svg></a>
   </div>
 </header>
 <nav id="nav"></nav>
 <main>
+  <!-- OVERVIEW -->
   <section class="tab active" data-tab="overview">
-    <div class="sec-h"><h2>Unique streamers by window</h2><div class="ln"></div></div>
+    <div class="sec-h"><h2>At a glance</h2><span class="hint" id="ovMeta"></span><div class="ln"></div></div>
+    <div class="kpis" id="kpis"></div>
+    <div class="sec-h"><h2>Unique streamers by window</h2><span class="hint">click to open the channel list</span><div class="ln"></div></div>
     <div class="momentum" id="momentum"></div>
     <div class="sec-h"><h2>All-time totals</h2><div class="ln"></div></div>
     <div class="tiles" id="tiles"></div>
-    <div class="sec-h"><h2>Last 3 days — viewers &amp; channels (hourly)</h2><div class="ln"></div></div>
+    <div class="sec-h"><h2>Last 3 days — viewers &amp; live channels (hourly)</h2><div class="ln"></div></div>
     <div class="chartwrap"><canvas id="cHourly"></canvas></div>
-    <div class="sec-h"><h2>Channels streaming over time</h2><span class="toggle" id="actToggle"></span></div>
+    <div class="sec-h"><h2>Channels streaming over time</h2><span class="toggle" id="actToggle"></span><div class="ln"></div></div>
     <div class="chartwrap"><canvas id="cActivity"></canvas></div>
-    <div class="sec-h"><h2>Top channels by hours watched</h2><div class="ln"></div></div>
+    <div class="sec-h"><h2>Top channels</h2><span class="hint">by hours watched</span><div class="ln"></div></div>
     <div id="top8"></div>
   </section>
 
-  <section class="tab" data-tab="live">
-    <div class="sec-h"><h2>Live on Twitch right now <span id="liveCount" class="pill"></span></h2><div class="ln"></div></div>
-    <div id="live"></div>
+  <!-- TRENDS & ANALYTICS -->
+  <section class="tab" data-tab="trends">
+    <div class="sec-h"><h2>Trends &amp; Analytics</h2><span class="hint">build your own view of the game's Twitch performance</span><div class="ln"></div></div>
+    <div class="toolbar">
+      <label class="fld"><span>Metric</span>
+        <select id="tMetric" class="ctl">
+          <option value="viewers">Average viewers</option>
+          <option value="channels">Channels streaming</option>
+          <option value="viewerratio">Viewers per channel</option>
+        </select></label>
+      <label class="fld"><span>Range</span>
+        <select id="tRange" class="ctl">
+          <option value="7">Last 7 days</option><option value="30">Last 30 days</option>
+          <option value="90">Last 90 days</option><option value="all" selected>All time</option>
+        </select></label>
+      <label class="fld"><span>Granularity</span>
+        <select id="tGran" class="ctl"><option value="day">Daily</option><option value="hour">Hourly (3d)</option></select></label>
+      <label class="fld"><span>Chart</span><span class="toggle" id="tType"></span></label>
+      <label class="check" id="tMaLbl"><input type="checkbox" id="tMa"> 7-pt moving avg</label>
+    </div>
+    <div class="tiles" id="tStats" style="margin-bottom:16px"></div>
+    <div class="chartwrap tall"><canvas id="cTrend"></canvas></div>
+    <div class="sec-h"><h2>Read-out</h2><div class="ln"></div></div>
+    <div id="tInsight" class="tile" style="line-height:1.7"></div>
   </section>
 
+  <!-- LIVE -->
+  <section class="tab" data-tab="live">
+    <div class="sec-h"><h2>Live on Twitch right now</h2><span class="hint" id="liveMeta">real-time · refreshes every 60s</span><div class="ln"></div></div>
+    <div class="slist" id="live"></div>
+  </section>
+
+  <!-- TOP -->
   <section class="tab" data-tab="top">
-    <div class="sec-h"><h2>Top channels <span class="count" id="topCount"></span></h2><div class="ln"></div></div>
-    <div class="filters">
-      <select id="tcSort">
-        <option value="viewminutes">Hours watched</option><option value="maxviewers">Peak viewers</option>
-        <option value="avgviewers">Avg viewers</option><option value="streamedminutes">Hours streamed</option><option value="followers">Followers</option>
-      </select>
-      <select id="tcN"><option value="12">Top 12</option><option value="24" selected>Top 24</option><option value="48">Top 48</option><option value="96">Top 96</option></select>
-      <select id="tcLang"></select>
-      <label><input type="checkbox" id="tcPartner"> Partners only</label>
+    <div class="sec-h"><h2>Top channels</h2><span class="count" id="topCount"></span><div class="ln"></div></div>
+    <div class="toolbar">
+      <label class="fld"><span>Sort by</span>
+        <select id="tcSort" class="ctl">
+          <option value="viewminutes">Hours watched</option><option value="maxviewers">Peak viewers</option>
+          <option value="avgviewers">Avg viewers</option><option value="streamedminutes">Hours streamed</option><option value="followers">Followers</option>
+        </select></label>
+      <label class="fld"><span>Show</span>
+        <select id="tcN" class="ctl"><option value="12">Top 12</option><option value="24" selected>Top 24</option><option value="48">Top 48</option><option value="96">Top 96</option></select></label>
+      <label class="fld"><span>Language</span><select id="tcLang" class="ctl"></select></label>
+      <label class="check"><input type="checkbox" id="tcPartner"> Partners only</label>
     </div>
     <div class="grid" id="topgrid"></div>
   </section>
 
+  <!-- ALL -->
   <section class="tab" data-tab="all">
-    <div class="sec-h"><h2>All channels <span class="count" id="allCount"></span></h2><div class="ln"></div></div>
-    <div class="filters">
-      <input id="fSearch" placeholder="🔍 search channel…">
-      <select id="fLang"></select>
-      <select id="fTier">
-        <option value="">All sizes</option><option value="mega">Mega (1M+)</option>
-        <option value="large">Large (100k+)</option><option value="mid">Mid (10k+)</option><option value="small">Small (&lt;10k)</option>
-      </select>
-      <select id="fSort">
-        <option value="viewminutes">Hours watched</option><option value="maxviewers">Peak viewers</option>
-        <option value="avgviewers">Avg viewers</option><option value="streamedminutes">Hours streamed</option><option value="followers">Followers</option>
-      </select>
-      <select id="fDir"><option value="desc">High → Low</option><option value="asc">Low → High</option></select>
-      <label><input type="checkbox" id="fPartner"> Partners only</label>
+    <div class="sec-h"><h2>All channels</h2><span class="count" id="allCount"></span><div class="ln"></div></div>
+    <div class="toolbar">
+      <label class="fld"><span>Search</span>
+        <span class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="fSearch" class="ctl" placeholder="channel name…"></span></label>
+      <label class="fld"><span>Language</span><select id="fLang" class="ctl"></select></label>
+      <label class="fld"><span>Size</span>
+        <select id="fTier" class="ctl">
+          <option value="">All sizes</option><option value="mega">Mega (1M+)</option>
+          <option value="large">Large (100k+)</option><option value="mid">Mid (10k+)</option><option value="small">Small (&lt;10k)</option>
+        </select></label>
+      <label class="fld"><span>Sort by</span>
+        <select id="fSort" class="ctl">
+          <option value="viewminutes">Hours watched</option><option value="maxviewers">Peak viewers</option>
+          <option value="avgviewers">Avg viewers</option><option value="streamedminutes">Hours streamed</option><option value="followers">Followers</option>
+        </select></label>
+      <label class="fld"><span>Order</span><select id="fDir" class="ctl"><option value="desc">High → Low</option><option value="asc">Low → High</option></select></label>
+      <label class="check"><input type="checkbox" id="fPartner"> Partners only</label>
     </div>
     <div class="grid" id="allgrid"></div>
   </section>
 
+  <!-- STREAMS -->
   <section class="tab" data-tab="streams">
-    <div class="sec-h"><h2>Newest Last Pirates streams <span class="count" id="strCount"></span></h2><div class="ln"></div></div>
-    <div class="filters">
-      <input id="sSearch" placeholder="🔍 search channel…">
-      <select id="sLang"></select>
-      <select id="sSort">
-        <option value="date">Newest first</option><option value="maxviewers">Peak viewers</option>
-        <option value="vod_views">VOD views</option><option value="viewminutes">Watch time</option>
-      </select>
-      <label><input type="checkbox" id="sVod"> With VOD only</label>
+    <div class="sec-h"><h2>Newest streams</h2><span class="hint" id="strHint"></span><div class="ln"></div></div>
+    <div class="toolbar">
+      <label class="fld"><span>Search</span>
+        <span class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="sSearch" class="ctl" placeholder="channel name…"></span></label>
+      <label class="fld"><span>Language</span><select id="sLang" class="ctl"></select></label>
+      <label class="fld"><span>Sort by</span>
+        <select id="sSort" class="ctl">
+          <option value="date">Newest first</option><option value="maxviewers">Peak viewers</option>
+          <option value="vod_views">VOD views</option><option value="length">Duration</option>
+        </select></label>
+      <label class="check"><input type="checkbox" id="sVod"> With VOD only</label>
+      <span class="count" id="strCount" style="align-self:center"></span>
     </div>
-    <div id="streams"></div>
+    <div class="slist" id="streams"></div>
   </section>
 
-  <section class="tab" data-tab="trends">
-    <div class="sec-h"><h2>Trends — customizable</h2><div class="ln"></div></div>
-    <div class="filters">
-      <select id="tMetric">
-        <option value="viewers">Average viewers</option>
-        <option value="channels">Channels streaming</option>
-        <option value="viewerratio">Viewer ratio</option>
-      </select>
-      <select id="tRange">
-        <option value="7">Last 7 days</option><option value="30">Last 30 days</option>
-        <option value="90">Last 90 days</option><option value="all" selected>All time</option>
-      </select>
-      <select id="tGran"><option value="day">Daily</option><option value="hour">Hourly (last 3 days)</option></select>
-      <span class="toggle" id="tType"></span>
+  <!-- REGIONS -->
+  <section class="tab" data-tab="regions">
+    <div class="sec-h"><h2>Regions</h2><span class="hint">by broadcast language · share of hours watched</span><div class="ln"></div></div>
+    <div class="regrid" id="regcards" style="margin-bottom:8px"></div>
+    <div class="sec-h"><h2>Distribution</h2><div class="ln"></div></div>
+    <div style="display:grid;grid-template-columns:minmax(0,360px) 1fr;gap:20px;align-items:start" id="regSplit">
+      <div class="chartwrap" style="height:330px"><canvas id="cRegion"></canvas></div>
+      <div><div class="sec-h" style="margin-top:0"><h2>By language</h2><div class="ln"></div></div><div class="langtable" id="langlist"></div></div>
     </div>
-    <div class="tiles" id="tStats" style="margin-bottom:16px"></div>
-    <div class="chartwrap tall"><canvas id="cTrend"></canvas></div>
-  </section>
-
-  <section class="tab" data-tab="langs">
-    <div class="sec-h"><h2>Languages</h2><div class="ln"></div></div>
-    <div style="max-width:560px"><div class="chartwrap"><canvas id="cLang"></canvas></div></div>
-    <div id="langlist" style="max-width:560px"></div>
   </section>
 
   <div class="foot" id="foot"></div>
 </main>
 
 <script>
-const TABS=[["overview","Overview"],["live","🔴 Live now"],["top","Top channels"],
-  ["all","All channels"],["streams","Newest streams"],["trends","Trends"],["langs","Languages"]];
-const fmt=n=>n==null?"—":Number(n).toLocaleString("en-US");
+/* ============ icons (Lucide, inline SVG — no emoji) ============ */
+const I={
+  overview:'<path d="M12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
+  trends:'<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
+  live:'<circle cx="12" cy="12" r="2.5"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49M7.76 16.24a6 6 0 0 1 0-8.49M19.07 4.93a10 10 0 0 1 0 14.14M4.93 19.07a10 10 0 0 1 0-14.14"/>',
+  top:'<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.7V17c0 .6-.5 1-1 1.2C7.9 18.8 7 20.2 7 22"/><path d="M14 14.7V17c0 .6.5 1 1 1.2 1.1.6 2 2 2 2.8"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  streams:'<path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2"/>',
+  regions:'<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
+  eye:'<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  hours:'<circle cx="12" cy="12" r="10"/><polyline points="12 7 12 12 15 14"/>',
+  play:'<polygon points="6 3 20 12 6 21 6 3"/>',
+  flame:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5Z"/>',
+  cal:'<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/>',
+  spark:'<path d="m13 2-3 7h4l-3 7"/>',
+};
+const svg=(n,w=18)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="${w}" height="${w}">${I[n]}</svg>`;
+
+const TABS=[["overview","Overview","overview"],["trends","Trends & Analytics","trends"],
+  ["live","Live now","live"],["top","Top channels","top"],["all","All channels","users"],
+  ["streams","Newest streams","streams"],["regions","Regions","regions"]];
+
+const fmt=n=>n==null||n===""?"—":Number(n).toLocaleString("en-US");
 const hrs=m=>fmt(Math.round((m||0)/60));
-const AV="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23211f3b'/%3E%3C/svg%3E";
-const TH="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='168' height='94'%3E%3Crect width='168' height='94' fill='%23211f3b'/%3E%3C/svg%3E";
+const AV="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23262040'/%3E%3C/svg%3E";
+const TH="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='180'%3E%3Crect width='320' height='180' fill='%23262040'/%3E%3C/svg%3E";
 const img=u=>`<img class="av" loading="lazy" src="${u||AV}" onerror="this.src='${AV}'">`;
-let D=null,charted={},liveTimer=null,langMap={};
-// global Chart.js styling: readable tooltips + index hover that actually works
-Chart.defaults.font.family="Inter";Chart.defaults.font.weight="500";Chart.defaults.color="#9aa0c4";
-Chart.defaults.plugins.tooltip.backgroundColor="rgba(20,18,40,.97)";
-Chart.defaults.plugins.tooltip.borderColor="#7c3aed";Chart.defaults.plugins.tooltip.borderWidth=1;
+const esc=s=>(s||"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+let D=null,charted={},liveTimer=null,langMap={},liveCount=null;
+
+Chart.defaults.font.family="Inter";Chart.defaults.font.weight="500";Chart.defaults.color="#938da8";
+Chart.defaults.plugins.tooltip.backgroundColor="rgba(18,15,31,.97)";
+Chart.defaults.plugins.tooltip.borderColor="#f5c451";Chart.defaults.plugins.tooltip.borderWidth=1;
 Chart.defaults.plugins.tooltip.padding=11;Chart.defaults.plugins.tooltip.cornerRadius=9;
-Chart.defaults.plugins.tooltip.titleColor="#fff";Chart.defaults.plugins.tooltip.bodyColor="#e7e9f5";
+Chart.defaults.plugins.tooltip.titleColor="#fff";Chart.defaults.plugins.tooltip.bodyColor="#eceaf6";
 Chart.defaults.plugins.tooltip.titleFont={weight:"700",size:13};Chart.defaults.plugins.tooltip.bodyFont={size:13};
 Chart.defaults.interaction={mode:"index",intersect:false};Chart.defaults.maintainAspectRatio=false;
 
 function tier(f){f=f||0;return f>=1e6?["mega","1M+"]:f>=1e5?["large","100k+"]:f>=1e4?["mid","10k+"]:["small","<10k"];}
 function tags(c){let h=`<span class="tag t">${tier(c.followers)[1]}</span>`;if(c.partner)h+=`<span class="tag p">partner</span>`;if(c.language)h+=`<span class="tag">${c.language}</span>`;return h;}
 
+/* sparkline -> inline svg path */
+function spark(vals,color){
+  vals=vals.filter(v=>v!=null);if(vals.length<2)return"";
+  const w=150,h=30,mn=Math.min(...vals),mx=Math.max(...vals),rg=mx-mn||1;
+  const pts=vals.map((v,i)=>`${(i/(vals.length-1)*w).toFixed(1)},${(h-2-((v-mn)/rg)*(h-4)).toFixed(1)}`);
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" width="100%" height="30">
+    <polyline fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="${pts.join(" ")}"/></svg>`;
+}
+
+const rendered={};
+function go(id){
+  document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x.dataset.t===id));
+  document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x.dataset.tab===id));
+  window.scrollTo({top:0,behavior:"smooth"});
+  // lazy-render heavy tabs only the first time they're opened (fewer images up front)
+  if(id==="top"&&!rendered.top){rendered.top=1;topGrid();}
+  if(id==="all"&&!rendered.all){rendered.all=1;allGrid();}
+  if(id==="streams"&&!rendered.streams){rendered.streams=1;streams();}
+  if(id==="overview")drawOverviewCharts();
+  if(id==="trends")drawTrends();if(id==="regions")drawRegions();if(id==="live")drawLive();
+}
 function buildNav(){
   const nav=document.getElementById("nav");
-  TABS.forEach(([id,label],i)=>{const b=document.createElement("button");b.textContent=label;b.className=i===0?"active":"";
-    b.onclick=()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));
-      document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");
-      document.querySelector(`.tab[data-tab=${id}]`).classList.add("active");
-      if(id==="overview")drawOverviewCharts();if(id==="trends")drawTrends();if(id==="langs")drawLangs();if(id==="live")drawLive();};
-    nav.appendChild(b);});
+  nav.innerHTML="";
+  TABS.forEach(([id,label,ic],i)=>{const b=document.createElement("button");
+    b.dataset.t=id;b.className=i===0?"active":"";
+    b.innerHTML=`${svg(ic,17)}<span>${label}</span>${id==="live"?'<span class="dot" id="navdot" style="display:none"></span>':""}`;
+    b.onclick=()=>go(id);nav.appendChild(b);});
 }
 
 /* ---------- overview ---------- */
 function overview(){
   const s=D.summary,w=D.windows||{};
+  const chSeries=(D.timeseries.channels||[]).map(p=>p.value);
+  const vwSeries=(D.timeseries.viewers||[]).map(p=>p.value);
+  const last=a=>a.slice(-30);
+  const kpis=[
+    {ic:"live",cls:"em",v:`<span id="kpiLive">…</span>`,l:"Live right now",go:"live",badge:true},
+    {ic:"users",cls:"pu",v:fmt(w["30"]),l:"Streamers · 30 days",go:"all",spark:spark(last(chSeries),"#b29bff")},
+    {ic:"eye",cls:"",v:fmt(s.total_hours_watched),l:"Hours watched · all-time",go:"trends",gold:true,spark:spark(last(vwSeries),"#f5c451")},
+    {ic:"flame",cls:"em",v:fmt(s.peak_concurrent_viewers),l:"Peak viewers · all-time",go:"trends"},
+    {ic:"streams",cls:"bl",v:fmt((D.streams||[]).length),l:"Recent streams tracked",go:"streams"},
+  ];
+  document.getElementById("kpis").innerHTML=kpis.map(k=>`
+    <div class="kpi click ${k.cls}" onclick="go('${k.go}')">
+      <div class="top"><div class="ic">${svg(k.ic,16)}</div>${k.badge?'<span class="live-badge"><span class="dot"></span>REAL-TIME</span>':""}</div>
+      <div class="v ${k.gold?"gold":""}">${k.v}</div>
+      <div class="l">${k.l}</div>${k.spark||""}
+    </div>`).join("");
+
   const mom=[["Last 3 days",w["3"],"recently active"],["Last 7 days",w["7"],"this week"],
     ["Last 30 days",w["30"],"this month"],["All-time",w["365"]||s.total_streamers,"365-day total"]];
   document.getElementById("momentum").innerHTML=mom.map(([w_,n,sub])=>
-    `<div class="mom"><div class="w">${w_}</div><div class="n">${fmt(n)}</div><div class="sub">${sub}</div></div>`).join("");
+    `<div class="mom" onclick="go('all')"><div class="w">${w_}</div><div class="n num">${fmt(n)}</div><div class="sub">${sub}</div></div>`).join("");
+
   const tiles=[
-    [fmt(s.total_hours_watched),"Hours watched","g"],[fmt(s.total_hours_streamed),"Hours streamed","b"],
-    [fmt(s.peak_concurrent_viewers),"Peak viewers","gold"],[fmt(s.partner_channels),"Twitch partners","p"],
-    [fmt(s.distinct_languages),"Languages",""],[fmt(D.streams.length),"Streams tracked","a"],
-    [fmt(D.streams.filter(x=>x.vod_url).length),"VODs captured","p"],
-    [s.top_language||"—","Top language",""],
+    [hrs(s.total_hours_streamed*60),"Hours streamed","b"],[fmt(s.partner_channels),"Twitch partners","p"],
+    [fmt(s.distinct_languages),"Languages","gold"],[fmt((D.streams||[]).filter(x=>x.vod_url).length),"VODs available","a"],
+    [s.top_language||"—","Top language","g"],[fmt(s.top_channel_peak_viewers),"Biggest single peak",""],
   ];
   document.getElementById("tiles").innerHTML=tiles.map(([v,l,c])=>
-    `<div class="tile"><div class="v ${c}">${v}</div><div class="l">${l}</div></div>`).join("");
-  document.getElementById("top8").innerHTML=D.channels.slice(0,8).map(rowCard).join("");
-  buildActToggle();
+    `<div class="tile"><div class="v ${c} num">${v}</div><div class="l">${l}</div></div>`).join("");
+  document.getElementById("top8").innerHTML=D.channels.slice(0,6).map(rowCard).join("");
+  document.getElementById("ovMeta").textContent=`updated ${(D.generated_at||"").replace("T"," ").slice(0,16)} UTC`;
+  buildActToggle();fillLiveKpi();
+}
+async function fillLiveKpi(){
+  try{const d=await(await fetch("/api/live",{cache:"no-store"})).json();liveCount=(d.live||[]).length;}
+  catch(e){try{const d=await(await fetch("live.json",{cache:"no-store"})).json();liveCount=(d.live||[]).length;}catch(_){liveCount=null;}}
+  const el=document.getElementById("kpiLive");if(el)el.textContent=liveCount==null?"—":liveCount;
+  const nd=document.getElementById("navdot");if(nd)nd.style.display=liveCount>0?"inline-block":"none";
 }
 function rowCard(c){return `<div class="row">${img(c.logo)}
-  <div><div class="name"><a href="${c.twitchurl}" target="_blank">${c.displayname}</a>${tags(c)}</div>
+  <div><div class="name"><a href="${c.twitchurl}" target="_blank" rel="noopener">${esc(c.displayname)}</a> ${tags(c)}</div>
   <div class="meta">${fmt(c.followers)} followers · peak ${fmt(c.maxviewers)} · ${hrs(c.streamedminutes)} h streamed</div></div>
-  <div class="big">${hrs(c.viewminutes)}<span>hours watched</span></div></div>`;}
+  <div class="big num">${hrs(c.viewminutes)}<span>hours watched</span></div></div>`;}
 
 let hourlyChart=null,actChart=null,actMode="week";
 function drawOverviewCharts(){drawHourly();drawActivity();}
-function axes(extra){return Object.assign({x:{ticks:{color:"#9aa0c4",maxTicksLimit:11},grid:{display:false}},
-  y:{beginAtZero:true,ticks:{color:"#9aa0c4"},grid:{color:"#211f3b"}}},extra||{});}
-function OPTS(legend){return{plugins:{legend:{display:!!legend,labels:{usePointStyle:true,color:"#e7e9f5",padding:16}}},
+function axes(extra){return Object.assign({x:{ticks:{color:"#938da8",maxTicksLimit:11},grid:{display:false}},
+  y:{beginAtZero:true,ticks:{color:"#938da8"},grid:{color:"#211d36"}}},extra||{});}
+function OPTS(legend){return{plugins:{legend:{display:!!legend,labels:{usePointStyle:true,color:"#eceaf6",padding:16}}},
   scales:axes(),elements:{point:{hoverRadius:5}}};}
 function drawHourly(){
   if(hourlyChart)return;
   const v=(D.hourly&&D.hourly.viewers)||[],c=(D.hourly&&D.hourly.channels)||[];
   hourlyChart=new Chart(document.getElementById("cHourly"),{
     data:{labels:v.map(p=>p.t.slice(5,16)),datasets:[
-      {type:"line",label:"Viewers",data:v.map(p=>p.v),yAxisID:"y",borderColor:"#f43f5e",backgroundColor:"rgba(244,63,94,.15)",fill:true,tension:.3,pointRadius:0,pointHoverRadius:5,borderWidth:2},
-      {type:"line",label:"Channels live",data:c.map(p=>p.v),yAxisID:"y1",borderColor:"#7c3aed",fill:false,tension:.3,pointRadius:0,pointHoverRadius:5,borderWidth:2,borderDash:[5,4]}]},
-    options:{plugins:{legend:{display:true,labels:{usePointStyle:true,color:"#e7e9f5",padding:16}}},
-      scales:{x:{ticks:{color:"#9aa0c4",maxTicksLimit:10},grid:{display:false}},
-        y:{position:"left",beginAtZero:true,title:{display:true,text:"Viewers",color:"#f43f5e"},ticks:{color:"#9aa0c4"},grid:{color:"#211f3b"}},
-        y1:{position:"right",beginAtZero:true,title:{display:true,text:"Channels",color:"#a78bfa"},ticks:{color:"#9aa0c4"},grid:{display:false}}}}
+      {type:"line",label:"Viewers",data:v.map(p=>p.v),yAxisID:"y",borderColor:"#f0573c",backgroundColor:"rgba(240,87,60,.15)",fill:true,tension:.3,pointRadius:0,pointHoverRadius:5,borderWidth:2},
+      {type:"line",label:"Channels live",data:c.map(p=>p.v),yAxisID:"y1",borderColor:"#8b5cf6",fill:false,tension:.3,pointRadius:0,pointHoverRadius:5,borderWidth:2,borderDash:[5,4]}]},
+    options:{plugins:{legend:{display:true,labels:{usePointStyle:true,color:"#eceaf6",padding:16}}},
+      scales:{x:{ticks:{color:"#938da8",maxTicksLimit:10},grid:{display:false}},
+        y:{position:"left",beginAtZero:true,title:{display:true,text:"Viewers",color:"#f0573c"},ticks:{color:"#938da8"},grid:{color:"#211d36"}},
+        y1:{position:"right",beginAtZero:true,title:{display:true,text:"Channels",color:"#b29bff"},ticks:{color:"#938da8"},grid:{display:false}}}}
   });
 }
 function bucket(series,mode){
@@ -289,7 +523,6 @@ function bucket(series,mode){
   const m=new Map();series.forEach(p=>{const d=new Date(p.date);let k;
     if(mode==="month")k=p.date.slice(0,7);else{const j=new Date(d.getFullYear(),0,1);k=`W${String(Math.ceil((((d-j)/864e5)+j.getDay()+1)/7)).padStart(2,"0")}`;}
     const o=m.get(k)||{s:0,n:0};o.s+=p.value;o.n++;m.set(k,o);});
-  // week/month show AVERAGE channels per day (clearer than a running sum)
   return[...m.entries()].map(([k,o])=>({k,v:Math.round(o.s/o.n)}));
 }
 function activeSlice(s){let i=s.findIndex(p=>p.value>0);if(i<0)i=0;return s.slice(Math.max(0,i-2));}
@@ -298,74 +531,93 @@ function buildActToggle(){const t=document.getElementById("actToggle");
   t.querySelectorAll("button").forEach(b=>b.onclick=()=>{actMode=b.dataset.m;buildActToggle();if(actChart){actChart.destroy();actChart=null;}drawActivity();});}
 function drawActivity(){const data=bucket(activeSlice(D.timeseries.channels),actMode);if(actChart)return;
   const lbl=actMode==="day"?"Channels streaming that day":"Avg channels streaming / day";
-  actChart=new Chart(document.getElementById("cActivity"),{
-    type:"bar",
-    data:{labels:data.map(d=>d.k),datasets:[{label:lbl,data:data.map(d=>d.v),backgroundColor:"#7c3aed",borderRadius:5,maxBarThickness:34}]},
-    options:OPTS(false)
-  });
+  actChart=new Chart(document.getElementById("cActivity"),{type:"bar",
+    data:{labels:data.map(d=>d.k),datasets:[{label:lbl,data:data.map(d=>d.v),backgroundColor:"#8b5cf6",borderRadius:5,maxBarThickness:34}]},
+    options:OPTS(false)});
 }
 
 /* ---------- channel cards ---------- */
 function card(c){return `<div class="card"><div class="rk">#${c.rownum}</div>${img(c.logo)}
-  <div class="nm"><a href="${c.twitchurl}" target="_blank">${c.displayname}</a></div>
+  <div class="nm"><a href="${c.twitchurl}" target="_blank" rel="noopener">${esc(c.displayname)}</a></div>
   <div class="tags">${tags(c)}</div>
-  <div class="stats"><div><b>${hrs(c.viewminutes)}</b><span>watch hrs</span></div><div><b>${fmt(c.maxviewers)}</b><span>peak</span></div>
-  <div><b>${fmt(c.avgviewers)}</b><span>avg</span></div><div><b>${fmt(c.followers)}</b><span>followers</span></div></div></div>`;}
+  <div class="stats"><div><b class="num">${hrs(c.viewminutes)}</b><span>watch hrs</span></div><div><b class="num">${fmt(c.maxviewers)}</b><span>peak</span></div>
+  <div><b class="num">${fmt(c.avgviewers)}</b><span>avg</span></div><div><b class="num">${fmt(c.followers)}</b><span>followers</span></div></div></div>`;}
+function langOptions(vals){return `<option value="">All languages</option>`+[...new Set(vals.filter(Boolean))].sort().map(l=>`<option>${l}</option>`).join("");}
 function buildTopFilters(){
-  const langs=[...new Set(D.channels.map(c=>c.language).filter(Boolean))].sort();
-  tcLang.innerHTML=`<option value="">All languages</option>`+langs.map(l=>`<option>${l}</option>`).join("");
+  document.getElementById("tcLang").innerHTML=langOptions(D.channels.map(c=>c.language));
   ["tcSort","tcN","tcLang","tcPartner"].forEach(id=>document.getElementById(id).addEventListener("input",topGrid));
 }
 function topGrid(){
   const sort=tcSort.value,n=parseInt(tcN.value),lang=tcLang.value,partner=tcPartner.checked;
   let r=D.channels.filter(c=>(!lang||c.language===lang)&&(!partner||c.partner));
   r.sort((a,b)=>(b[sort]||0)-(a[sort]||0));r=r.slice(0,n);
-  topCount.textContent=`showing ${r.length}`;
+  document.getElementById("topCount").textContent=`showing ${r.length}`;
   document.getElementById("topgrid").innerHTML=r.map(card).join("");
+  syncCheck();
 }
-
 function buildFilters(){
-  const langs=[...new Set(D.channels.map(c=>c.language).filter(Boolean))].sort();
-  document.getElementById("fLang").innerHTML=`<option value="">All languages</option>`+langs.map(l=>`<option>${l}</option>`).join("");
+  document.getElementById("fLang").innerHTML=langOptions(D.channels.map(c=>c.language));
   ["fSearch","fLang","fTier","fSort","fDir","fPartner"].forEach(id=>document.getElementById(id).addEventListener("input",allGrid));
 }
 function allGrid(){
   const q=fSearch.value.toLowerCase(),lang=fLang.value,tk=fTier.value,sort=fSort.value,partner=fPartner.checked,dir=fDir.value==="asc"?-1:1;
   let r=D.channels.filter(c=>c.displayname.toLowerCase().includes(q)&&(!lang||c.language===lang)&&(!partner||c.partner)&&(!tk||tier(c.followers)[0]===tk));
   r.sort((a,b)=>((b[sort]||0)-(a[sort]||0))*dir);
-  allCount.textContent=`${r.length} of ${D.channels.length}`;
-  allgrid.innerHTML=r.length?r.slice(0,300).map(card).join(""):`<div class="empty">No channels match.</div>`;
+  document.getElementById("allCount").textContent=`${fmt(r.length)} of ${fmt(D.channels.length)}`;
+  document.getElementById("allgrid").innerHTML=r.length?r.slice(0,300).map(card).join(""):`<div class="empty">No channels match your filters.</div>`;
+  syncCheck();
 }
 
 /* ---------- streams ---------- */
+function timeAgo(iso){if(!iso)return"";const s=Math.max(0,(Date.now()-new Date(iso))/1000);
+  const h=Math.floor(s/3600),d=Math.floor(h/24);if(d>0)return`${d}d ago`;if(h>0)return`${h}h ago`;return`${Math.floor(s/60)}m ago`;}
+function dur(min){min=Math.round(min||0);const h=Math.floor(min/60),m=min%60;return h?`${h}h ${m}m`:`${m}m`;}
 function buildStreamFilters(){
-  const langs=[...new Set(D.streams.map(s=>langMap[s.channeldisplayname]).filter(Boolean))].sort();
-  sLang.innerHTML=`<option value="">All languages</option>`+langs.map(l=>`<option>${l}</option>`).join("");
+  document.getElementById("sLang").innerHTML=langOptions(D.streams.map(s=>s.language));
   ["sSearch","sLang","sSort","sVod"].forEach(id=>document.getElementById(id).addEventListener("input",streams));
 }
 function streams(){
   const el=document.getElementById("streams");
-  if(!D.streams||!D.streams.length){el.innerHTML=`<div class="empty">Feed empty.</div>`;return;}
+  if(!D.streams||!D.streams.length){el.innerHTML=`<div class="empty">Feed is empty right now.</div>`;return;}
   const q=sSearch.value.toLowerCase(),lang=sLang.value,sort=sSort.value,vodOnly=sVod.checked;
-  let r=D.streams.filter(s=>s.channeldisplayname.toLowerCase().includes(q)
-    &&(!lang||langMap[s.channeldisplayname]===lang)&&(!vodOnly||s.vod_url));
+  let r=D.streams.filter(s=>(s.channeldisplayname||"").toLowerCase().includes(q)
+    &&(!lang||s.language===lang)&&(!vodOnly||s.vod_url));
   if(sort==="date")r.sort((a,b)=>(b.startDateTime||"").localeCompare(a.startDateTime||""));
   else r.sort((a,b)=>(b[sort]||0)-(a[sort]||0));
-  strCount.textContent=`${r.length} streams`;
-  el.innerHTML=r.slice(0,120).map(s=>{
-    const wh=Math.round((s.viewminutes||(s.avgviewers||0)*(s.length||0))/60);
-    const ch=s.channelurl||s.channeldisplayname;const lg=langMap[s.channeldisplayname];
-    const vod=s.vod_url?`<a class="vodbtn" href="${s.vod_url}" target="_blank">▶ VOD · ${fmt(s.vod_views)} views · ${s.vod_duration||""}</a>`
-      :`<span class="vodbtn" style="opacity:.5;background:none;border-color:var(--line);color:var(--muted)">VOD expired</span>`;
-    return `<div class="scard">
+  document.getElementById("strCount").textContent=`${fmt(r.length)} shown`;
+  el.innerHTML=r.slice(0,140).map(streamCard).join("");
+  syncCheck();
+}
+function streamCard(s){
+  const login=s.channelurl||s.channeldisplayname;
+  const srcCls=s.source==="twitch"?"twitch":s.source==="both"?"both":"sully";
+  const srcLbl=s.source==="sullygnome"?"SullyGnome":"Twitch";
+  const hasPeak=s.maxviewers!=null;
+  const headline=hasPeak
+    ?`<div class="headline hl-peak num">${fmt(s.maxviewers)}<span>peak viewers</span></div>`
+    :`<div class="headline hl-views num">${fmt(s.vod_views)}<span>VOD views</span></div>`;
+  const vod=s.vod_url
+    ?`<a class="vodbtn" href="${s.vod_url}" target="_blank" rel="noopener">${svg("play",13)} Watch VOD</a>`
+    :`<span class="vodbtn dead">VOD expired</span>`;
+  const chips=[];
+  if(hasPeak&&s.avgviewers!=null)chips.push(`<span class="chip">${svg("eye",13)} ${fmt(s.avgviewers)} avg</span>`);
+  if(hasPeak&&s.vod_url&&s.vod_views!=null)chips.push(`<span class="chip">${svg("play",13)} ${fmt(s.vod_views)} VOD views</span>`);
+  chips.push(`<span class="chip">${svg("clock",13)} ${dur(s.length)}</span>`);
+  if(s.language)chips.push(`<span class="chip lang">${s.language}</span>`);
+  if(s.viewminutes)chips.push(`<span class="chip">${svg("hours",13)} ${hrs(s.viewminutes)} watch-hrs</span>`);
+  return `<div class="scard">
+    <div class="thumb-wrap">
       <img class="thumb" loading="lazy" src="${s.vod_thumb||TH}" onerror="this.src='${TH}'">
-      <div><div class="tl"><img src="${s.channellogo||AV}" onerror="this.src='${AV}'">
-        <a href="https://www.twitch.tv/${ch}" target="_blank">${s.channeldisplayname}</a>
-        <span class="pill">${s.starttime||""}</span>${lg?`<span class="pill">${lg}</span>`:""}</div>
-        <div class="meta">${Math.round(s.length||0)} min · avg ${fmt(s.avgviewers)} · ~${fmt(wh)} watch-hrs · +${fmt(s.followergain)} followers</div>
-        ${vod}</div>
-      <div class="big">${fmt(s.maxviewers)}<span>peak</span></div></div>`;
-  }).join("");
+      <span class="src ${srcCls}">${srcLbl}</span>
+      ${s.vod_duration?`<span class="dur">${s.vod_duration}</span>`:""}
+    </div>
+    <div class="body">
+      <div class="tl"><img src="${s.channellogo||AV}" onerror="this.src='${AV}'"><a href="https://www.twitch.tv/${login}" target="_blank" rel="noopener">${esc(s.channeldisplayname)}</a></div>
+      ${s.title?`<div class="title">${esc(s.title)}</div>`:`<div class="title" style="color:var(--muted)">${esc(s.game||"Last Pirates: Die Together")}</div>`}
+      <div class="chips"><span class="chip">${svg("cal",13)} ${timeAgo(s.startDateTime)} · ${(s.startDateTime||"").replace("T"," ").slice(5,16)}</span>${chips.join("")}</div>
+    </div>
+    <div class="side">${headline}${vod}</div>
+  </div>`;
 }
 
 /* ---------- live ---------- */
@@ -373,68 +625,135 @@ function uptime(iso){if(!iso)return"";const m=Math.max(0,Math.round((Date.now()-
 async function drawLive(){
   const el=document.getElementById("live");let data=null;
   try{data=await(await fetch("/api/live",{cache:"no-store"})).json();}catch(e){try{data=await(await fetch("live.json",{cache:"no-store"})).json();}catch(_){}}
-  if(!data){el.innerHTML=`<div class="empty">Live data unavailable.</div>`;return;}
-  const live=data.live||[];liveCount.textContent=`${live.length} live`;
+  if(!data){el.innerHTML=`<div class="empty">Live data is unavailable right now.</div>`;return;}
+  const live=data.live||[];liveCount=live.length;
+  document.getElementById("liveMeta").textContent=`${live.length} live · real-time · refreshes every 60s`;
+  const nd=document.getElementById("navdot");if(nd)nd.style.display=live.length>0?"inline-block":"none";
   el.innerHTML=live.length?live.map(s=>`<div class="scard">
-    <img class="thumb" loading="lazy" src="${s.thumbnail||TH}" onerror="this.src='${TH}'">
-    <div><div class="tl"><a href="https://www.twitch.tv/${s.user_login}" target="_blank">${s.user_name}</a>
-    <span class="pill live">● LIVE ${uptime(s.started_at)}</span><span class="pill">${s.language||""}</span></div>
-    <div class="meta">${(s.title||"").replace(/</g,"&lt;").slice(0,110)}</div></div>
-    <div class="big">${fmt(s.viewer_count)}<span>viewers</span></div></div>`).join("")
-    :`<div class="empty">No one is streaming Last Pirates right now. Check back — this updates in real time.</div>`;
+    <div class="thumb-wrap"><img class="thumb" loading="lazy" src="${(s.thumbnail||TH).replace('{width}','320').replace('{height}','180')}" onerror="this.src='${TH}'">
+      <span class="src twitch">● LIVE</span></div>
+    <div class="body"><div class="tl"><a href="https://www.twitch.tv/${s.user_login}" target="_blank" rel="noopener">${esc(s.user_name)}</a></div>
+      <div class="title">${esc((s.title||"").slice(0,140))}</div>
+      <div class="chips"><span class="chip">${svg("clock",13)} ${uptime(s.started_at)} uptime</span>${s.language?`<span class="chip lang">${s.language}</span>`:""}</div></div>
+    <div class="side"><div class="headline hl-peak num">${fmt(s.viewer_count)}<span>viewers now</span></div>
+      <a class="vodbtn" href="https://www.twitch.tv/${s.user_login}" target="_blank" rel="noopener">${svg("play",13)} Watch live</a></div></div>`).join("")
+    :`<div class="empty">No one is streaming Last Pirates right now.<br>This updates in real time — check back soon.</div>`;
   clearTimeout(liveTimer);
   if(document.querySelector(".tab[data-tab=live]").classList.contains("active"))liveTimer=setTimeout(drawLive,60000);
 }
 
+/* ---------- trends & analytics ---------- */
 let trendChart=null,trendType="line";
-const TMETA={viewers:["Average viewers","#58a6ff"],channels:["Channels streaming","#22c55e"],viewerratio:["Viewer ratio","#fbbf24"]};
+const TMETA={viewers:["Average viewers","#5fb0ef"],channels:["Channels streaming","#34d399"],viewerratio:["Viewers per channel","#f5c451"]};
 function trendSeries(){
   const metric=tMetric.value,gran=tGran.value,range=tRange.value;
   let s;
   if(gran==="hour"&&D.hourly&&D.hourly[metric]&&D.hourly[metric].length)
     s=D.hourly[metric].map(p=>({x:p.t,v:p.v,h:true}));
   else s=(D.timeseries[metric]||[]).map(p=>({x:p.date,v:p.value,h:false}));
-  let i=s.findIndex(p=>p.v>0);if(i<0)i=0;s=s.slice(Math.max(0,i-2));      // trim leading zeros
-  if(s[0]&&!s[0].h&&range!=="all")s=s.slice(-parseInt(range));            // range (daily only)
+  let i=s.findIndex(p=>p.v>0);if(i<0)i=0;s=s.slice(Math.max(0,i-2));
+  if(s[0]&&!s[0].h&&range!=="all")s=s.slice(-parseInt(range));
   return s;
 }
+function movingAvg(vals,win){return vals.map((_,i)=>{const a=vals.slice(Math.max(0,i-win+1),i+1);return a.reduce((x,y)=>x+y,0)/a.length;});}
 function drawTrends(){
   if(!charted.trends){charted.trends=true;buildTrendControls();}
   const metric=tMetric.value,[label,c]=TMETA[metric];
-  if(tGran.value==="hour"&&!(D.hourly&&D.hourly[metric]&&D.hourly[metric].length)){tGran.value="day";}
+  if(tGran.value==="hour"&&!(D.hourly&&D.hourly[metric]&&D.hourly[metric].length))tGran.value="day";
   const s=trendSeries(),vals=s.map(p=>p.v);
   const mx=vals.length?Math.max(...vals):0,avg=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;
+  const latest=vals.length?vals[vals.length-1]:0,first=vals.length?vals[0]:0;
+  const chg=first?((latest-first)/first*100):0;
   const peakAt=s.length?s[vals.indexOf(mx)].x:"";
-  tStats.innerHTML=[["Peak",fmt(Math.round(mx)),"gold"],["Average",fmt(Math.round(avg)),"b"],
-    ["Peak on",(peakAt||"").slice(0,10),"p"],["Data points",fmt(s.length),""]]
-    .map(([l,v,cl])=>`<div class="tile"><div class="v ${cl}" style="font-size:26px">${v}</div><div class="l">${l}</div></div>`).join("");
+  const chgCls=chg>1?"up":chg<-1?"down":"flat",chgArr=chg>1?"▲":chg<-1?"▼":"▬";
+  document.getElementById("tStats").innerHTML=[
+    ["Peak",fmt(Math.round(mx)),"gold"],["Average",fmt(Math.round(avg)),"b"],
+    ["Latest",fmt(Math.round(latest)),"g"],["Change over range",`<span class="delta ${chgCls}">${chgArr} ${Math.abs(chg).toFixed(1)}%</span>`,""],
+    ["Data points",fmt(s.length),"p"]
+  ].map(([l,v,cl])=>`<div class="tile"><div class="v ${cl} num" style="font-size:24px">${v}</div><div class="l">${l}</div></div>`).join("");
+
   if(trendChart)trendChart.destroy();
   const fmtX=x=>s[0]&&s[0].h?x.slice(5,16):x.slice(5,10);
+  const ds=[{label,data:vals,borderColor:c,backgroundColor:trendType==="bar"?c:c+"30",
+    fill:trendType==="line",tension:.25,pointRadius:0,pointHoverRadius:5,borderWidth:2,borderRadius:4,maxBarThickness:26,order:2}];
+  if(tMa.checked&&vals.length>6)ds.push({type:"line",label:"7-pt moving avg",data:movingAvg(vals,7),
+    borderColor:"#ffe09a",borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,tension:.3,order:1});
   trendChart=new Chart(document.getElementById("cTrend"),{type:trendType,
-    data:{labels:s.map(p=>fmtX(p.x)),datasets:[{label,data:vals,borderColor:c,backgroundColor:trendType==="bar"?c:c+"33",
-      fill:trendType==="line",tension:.25,pointRadius:0,pointHoverRadius:5,borderWidth:2,borderRadius:4,maxBarThickness:26}]},
-    options:OPTS(false)});
+    data:{labels:s.map(p=>fmtX(p.x)),datasets:ds},
+    options:{plugins:{legend:{display:tMa.checked,labels:{usePointStyle:true,color:"#eceaf6",padding:14}}},scales:axes(),elements:{point:{hoverRadius:5}}}});
+
+  const rng=tRange.value==="all"?"all-time":`the last ${tRange.value} days`;
+  const dir=chg>1?`<b style="color:var(--green)">up ${chg.toFixed(1)}%</b>`:chg<-1?`<b style="color:var(--ember)">down ${Math.abs(chg).toFixed(1)}%</b>`:`<b>roughly flat</b>`;
+  document.getElementById("tInsight").innerHTML=
+    `Over <b>${rng}</b>, <b>${label.toLowerCase()}</b> averaged <b class="num">${fmt(Math.round(avg))}</b> and peaked at <b class="num">${fmt(Math.round(mx))}</b>`+
+    `${peakAt?` on <b>${peakAt.slice(0,10)}</b>`:""}. The trend across the window is ${dir} (first vs latest point). `+
+    `Switch granularity to <b>hourly</b> for the freshest 3-day signal, or change the metric to compare channel supply against viewer demand.`;
+  syncCheck();
 }
 function buildTrendControls(){
-  tType.innerHTML=[["line","Line"],["bar","Bar"]].map(([t,l])=>`<button data-t="${t}" class="${t===trendType?'on':''}">${l}</button>`).join("");
-  tType.querySelectorAll("button").forEach(b=>b.onclick=()=>{trendType=b.dataset.t;buildTrendControls();drawTrends();});
-  ["tMetric","tRange","tGran"].forEach(id=>{const e=document.getElementById(id);if(!e.dataset.b){e.dataset.b=1;e.addEventListener("change",drawTrends);}});
+  document.getElementById("tType").innerHTML=[["line","Line"],["bar","Bar"]].map(([t,l])=>`<button data-t="${t}" class="${t===trendType?'on':''}">${l}</button>`).join("");
+  document.getElementById("tType").querySelectorAll("button").forEach(b=>b.onclick=()=>{trendType=b.dataset.t;buildTrendControls();drawTrends();});
+  ["tMetric","tRange","tGran","tMa"].forEach(id=>{const e=document.getElementById(id);if(!e.dataset.b){e.dataset.b=1;e.addEventListener("change",drawTrends);}});
 }
-function drawLangs(){if(charted.langs)return;charted.langs=true;
-  const ent=Object.entries(D.languages).filter(([l])=>l).sort((a,b)=>b[1]-a[1]),top=ent.slice(0,10);
-  const pal=["#7c3aed","#f43f5e","#22c55e","#fbbf24","#58a6ff","#a78bfa","#39c5cf","#db61a2","#ff9b50","#7ee787"];
-  new Chart(document.getElementById("cLang"),{type:"doughnut",data:{labels:top.map(e=>e[0]),datasets:[{data:top.map(e=>e[1]),backgroundColor:pal,borderWidth:0}]},
-    options:{maintainAspectRatio:false,plugins:{legend:{position:"right",labels:{color:"#e7e9f5",boxWidth:12}}}}});
-  const max=ent[0][1];langlist.innerHTML=ent.map(([l,v])=>`<div class="lang"><span>${l}</span><span>${fmt(v)}</span></div><div class="bar" style="width:${(v/max*100).toFixed(1)}%"></div>`).join("");}
 
+/* ---------- regions ---------- */
+const REGIONS=[
+  ["North America & Global EN",["English"],"#f5c451"],
+  ["Latin America",["Spanish","Portuguese"],"#f0573c"],
+  ["Europe (Western)",["French","German","Italian","Dutch","Catalan"],"#8b5cf6"],
+  ["Europe (Eastern) & CIS",["Russian","Ukrainian","Polish","Czech","Hungarian","Bulgarian","Slovak","Romanian"],"#5fb0ef"],
+  ["Asia",["Thai","Chinese","Japanese","Korean","Vietnamese","Indonesian","Filipino","Hindi"],"#34d399"],
+  ["MENA & Türkiye",["Arabic","Turkish"],"#db61a2"],
+  ["Nordics",["Swedish","Danish","Norwegian","Finnish"],"#39c5cf"],
+];
+function drawRegions(){
+  if(charted.regions)return;charted.regions=true;
+  const langHours=D.languages||{};
+  const chanByLang={};D.channels.forEach(c=>{if(c.language)chanByLang[c.language]=(chanByLang[c.language]||0)+1;});
+  const total=Object.values(langHours).reduce((a,b)=>a+b,0)||1;
+  const regs=REGIONS.map(([name,langs,color])=>{
+    const hours=langs.reduce((a,l)=>a+(langHours[l]||0),0);
+    const chans=langs.reduce((a,l)=>a+(chanByLang[l]||0),0);
+    const top=langs.filter(l=>langHours[l]).sort((a,b)=>langHours[b]-langHours[a])[0]||"—";
+    return{name,color,hours,chans,top,share:hours/total*100};
+  }).filter(r=>r.hours>0).sort((a,b)=>b.hours-a.hours);
+  const mx=Math.max(...regs.map(r=>r.share));
+  document.getElementById("regcards").innerHTML=regs.map(r=>`
+    <div class="regcard">
+      <div class="rh"><span class="rn">${r.name}</span><span class="rdot" style="background:${r.color}"></span></div>
+      <div class="rshare num" style="color:${r.color}">${r.share.toFixed(1)}%</div>
+      <div class="rbar"><i style="width:${(r.share/mx*100).toFixed(1)}%;background:${r.color}"></i></div>
+      <div class="rmeta"><span>${fmt(Math.round(r.hours))} watch-hrs</span><span>${fmt(r.chans)} channels</span></div>
+      <div class="rtop">Top language: <b style="color:var(--text)">${r.top}</b></div>
+    </div>`).join("");
+
+  new Chart(document.getElementById("cRegion"),{type:"doughnut",
+    data:{labels:regs.map(r=>r.name),datasets:[{data:regs.map(r=>Math.round(r.hours)),backgroundColor:regs.map(r=>r.color),borderWidth:0,hoverOffset:6}]},
+    options:{maintainAspectRatio:false,cutout:"58%",plugins:{legend:{position:"bottom",labels:{color:"#c8c4dd",boxWidth:11,padding:10,font:{size:11.5}}},
+      tooltip:{callbacks:{label:c=>` ${c.label}: ${fmt(c.parsed)} hrs (${(c.parsed/total*100).toFixed(1)}%)`}}}}});
+
+  const ent=Object.entries(langHours).filter(([l])=>l).sort((a,b)=>b[1]-a[1]);
+  const lmx=ent[0][1];
+  document.getElementById("langlist").innerHTML=ent.map(([l,v])=>
+    `<div class="lang"><span class="lname">${l}</span><div class="lbarwrap"><div class="lbar" style="width:${(v/lmx*100).toFixed(1)}%"></div></div><span class="lval num">${fmt(Math.round(v))}</span></div>`).join("");
+}
+
+/* keep custom checkbox chips visually in sync */
+function syncCheck(){document.querySelectorAll(".check input[type=checkbox]").forEach(c=>c.closest(".check").classList.toggle("on",c.checked));}
+document.addEventListener("change",e=>{if(e.target.matches(".check input[type=checkbox]"))syncCheck();});
+
+/* ---------- boot ---------- */
 fetch("data.json").then(r=>r.json()).then(d=>{
   D=d;d.channels.forEach(c=>langMap[c.displayname]=c.language);buildNav();
-  meta.textContent=`updated ${(d.generated_at||"").replace("T"," ").slice(0,16)} UTC · SullyGnome + Twitch Helix`;
-  foot.innerHTML=`<b>Sources:</b> SullyGnome (Twitch history & aggregates) + Twitch Helix (live streams & real VOD links/views/thumbnails). `+
-    `${fmt(d.channels.length)} channels · ${fmt(d.streams.length)} recent streams · ${fmt(d.streams.filter(x=>x.vod_url).length)} with live VOD. `+
-    `SullyGnome stream list lags ~a day (records after a stream ends); <b>Live now</b> is real-time. VODs expire on Twitch — captured metrics persist here.`;
-  overview();drawOverviewCharts();buildTopFilters();topGrid();buildFilters();allGrid();buildStreamFilters();streams();
-}).catch(e=>{meta.textContent="failed to load data.json: "+e;});
+  const src=(d.streams||[]).reduce((m,s)=>{m[s.source]=(m[s.source]||0)+1;return m;},{});
+  document.getElementById("strHint").textContent=`Twitch-first · ${fmt((src.twitch||0)+(src.both||0))} live from Twitch + ${fmt(src.sullygnome||0)} from SullyGnome`;
+  document.getElementById("foot").innerHTML=`<b>Sources:</b> Twitch Helix (live streams + recently-ended VODs: links, views, thumbnails, in real time) and SullyGnome (historical aggregates & viewer depth). `+
+    `${fmt(d.channels.length)} channels tracked · ${fmt((d.streams||[]).length)} recent streams · ${fmt((d.streams||[]).filter(x=>x.vod_url).length)} with a live VOD. `+
+    `New streams now appear straight from Twitch the moment a broadcast ends; SullyGnome backfills viewer stats. VODs expire on Twitch — captured metrics persist here.`;
+  // boot only the default (Overview) tab; other tabs render on first open via go()
+  overview();drawOverviewCharts();
+  buildTopFilters();buildFilters();buildStreamFilters();
+}).catch(e=>{document.getElementById("ovMeta").textContent="failed to load data.json: "+e;});
 </script>
 </body>
 </html>

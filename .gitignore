@@ -19,6 +19,10 @@ ms-playwright/
 # Dev artifacts (screenshots from verify scripts)
 site_*.png
 *.png
+_shots/
+# …but DO ship the game-branded web assets
+!site/public/assets/
+!site/public/assets/*.png
 
 # Local tool config
 .claude/

@@ -37,12 +37,16 @@ match Sasha's existing Python dashboard.)
 ```
 collectors (Python, plain `requests`, NO browser at runtime)
   ├─ sullygnome_collector.py  → channel table (1076 ch) + daily charts + headline metrics
-  ├─ collect_streams.py       → recent per-stream feed (scans recent game window)
+  ├─ collect_streams.py       → SullyGnome per-stream feed (scans recent game window; lags ~1d)
   ├─ collect_recent.py        → hourly (3-day) charts + streamer counts per window
-  └─ enrich_helix.py          → adds real Twitch VOD url/views/thumbnail/duration to streams
-        ↓ writes data/sullygnome/*.csv|json
-build_site_data.py            → consolidates everything → site/public/data.json
+  ├─ collect_videos.py        → TWITCH-FIRST recent streams: Helix /videos?game_id&type=archive
+  │                             (recently-ended VODs, fresh to minutes; title/views/dur/thumb/lang)
+  └─ enrich_helix.py          → adds Twitch VOD data to the SullyGnome feed (matched by time)
+        ↓ writes data/sullygnome/*.csv|json  +  data/twitch/videos_latest.json
+build_site_data.py            → consolidates + MERGES streams (Twitch-first spine, SullyGnome
+                                grafts viewer depth) → site/public/data.json
 site/public/index.html        → the dashboard (vanilla JS + Chart.js CDN, reads data.json)
+site/public/assets/           → game-branded web assets (logo, favicon, pirates) via make_assets.py
 api/live.py                   → Vercel serverless fn: real-time live Twitch streams (Helix)
 ```
 
@@ -147,16 +151,22 @@ data comes from `/api/live` anyway.)
 
 ## 10. Current dashboard features (what's built)
 
-Tabs: **Overview** (momentum streamers 3d/7d/30d/all, all-time KPI tiles, hourly viewers+
-channels dual chart, channels-streaming bar Day/Week/Month, top channels), **🔴 Live now**
-(real-time via /api/live, thumbnails, auto-refresh 60s), **Top channels** (card grid + sort/
-count/language/partner filters), **All channels** (1076, card grid + search/language/size/
-sort/direction/partner), **Newest streams** (thumbnails + real VOD links/views/duration +
-search/language/sort/with-VOD filters), **Trends** (customizable: metric × range × granularity
-× line/bar + stat tiles), **Languages** (doughnut + bars). Theme: dark gaming/Twitch palette
-(violet #7c3aed / rose #f43f5e), Inter font. Design guided by the `ui-ux-pro-max-skill`
-(downloaded, gitignored, local reference only — it's an npm-installable design-intelligence
-skill: `npm i -g uipro-cli`).
+Tab order (v4): **Overview** (clickable KPI hero w/ sparklines incl. real-time Live count,
+momentum windows, all-time tiles, hourly dual chart, channels-streaming bar, top channels),
+**Trends & Analytics** (2nd now; metric × range × granularity × line/bar + 7-pt moving-avg
+overlay + stat tiles incl. % change + auto "Read-out" insight), **Live now** (real-time
+/api/live), **Top channels**, **All channels** (1076), **Newest streams** (Twitch-first
+mini-cards: source badge, thumbnail+duration, prominent name, title, chip row, peak-or-VOD-views
+headline, Watch VOD btn), **Regions** (was Languages: 7 region cards w/ share/watch-hrs/channels/
+top-lang + doughnut by region + language bars).
+
+v4 design (2026-06-25): game-branded "treasure-dark" theme — gold #f5c451 (primary/signature),
+pirate purple #8b5cf6, ember #f0573c; warm-dark surfaces. Real LAST PIRATES logo wordmark +
+favicon (captain face) + faint pirates art in header. ALL emoji replaced with inline Lucide SVG
+icons. Tabs lazy-render (only Overview at boot) for fast load. Fixed the old `.filters input
+{min-width}` bug that detached checkboxes. prefers-reduced-motion respected. Design guided by the
+`ui-ux-pro-max-skill` (gitignored local reference; run its search.py for design-system recs).
+NOTE: `.gitignore` has `*.png` — assets under site/public/assets/ are force-unignored; keep that.
 
 ## 11. Where we are / next steps
 

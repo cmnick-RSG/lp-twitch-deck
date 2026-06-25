@@ -40,7 +40,13 @@ jobs:
       - name: Collect short-window (hourly) + momentum
         run: python collect_recent.py
 
-      - name: Enrich streams with Twitch VOD data (links/views/thumbnails)
+      - name: Collect Twitch-first recent streams (Helix videos by game)
+        env:
+          TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
+          TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
+        run: python collect_videos.py
+
+      - name: Enrich SullyGnome streams with Twitch VOD data (links/views/thumbnails)
         env:
           TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
           TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
