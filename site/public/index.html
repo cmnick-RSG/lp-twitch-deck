@@ -798,10 +798,13 @@ async function overlayLive(){
       viewer_count:v.viewer_count,peak_viewers:Math.max(v.viewer_count||0,h?(h.peak_viewers||0):0),
       followers:h?h.followers:null,partner:!!(h&&h.broadcaster_type==="partner"),vod_thumb:v.thumbnail});
     seen.add(sid);seen.add("l:"+login);});
-  // 2) streams we captured that have since ENDED (persisted), unless live right now
-  hist.forEach(h=>{if(h.is_live)return;const login=(h.user_login||"").toLowerCase();
+  // 2) ENDED = anything in the captured history that is NOT live in /api/live right now.
+  // (Derive ended from /api/live absence, not the stored is_live flag — so a stream that
+  // just ended still shows immediately, before the next 30-min snapshot marks it ended.)
+  hist.forEach(h=>{const login=(h.user_login||"").toLowerCase();
     if(seen.has("l:"+login)||(h.stream_id&&seen.has(h.stream_id)))return;
-    const ns=histToStream(h);ns._ov=true;out.push(ns);if(h.stream_id)seen.add(h.stream_id);});
+    const ns=histToStream(h);ns.is_live=false;ns.source="ended";ns.viewer_count=null;
+    ns._ov=true;out.push(ns);if(h.stream_id)seen.add(h.stream_id);});
   // 3) the 2h baseline, minus anything already shown fresher above
   base.forEach(s=>{const login=(s.channelurl||"").toLowerCase();
     if(s.stream_id&&seen.has(s.stream_id))return;
