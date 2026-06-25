@@ -4,7 +4,7 @@ name: Update dashboard data
 # Vercel site shows fresh stats. Runtime is plain `requests` (no browser).
 on:
   schedule:
-    - cron: "0 * * * *"     # hourly (UTC)
+    - cron: "0 */6 * * *"   # every 6 hours (UTC) — reliable on free-tier; aggregates barely move hourly, live data comes from /api/live in real time
   workflow_dispatch: {}       # manual "Run workflow" button
 
 env:
