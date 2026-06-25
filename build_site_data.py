@@ -4,13 +4,17 @@ static dashboard reads: site/public/data.json. Run after the collectors.
 """
 import csv
 import json
+import re
 from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).parent
 SRC = ROOT / "data" / "sullygnome"
 TWITCH = ROOT / "data" / "twitch"
+STATE = ROOT / "state" / "live_history.json"
 OUT = ROOT / "site" / "public" / "data.json"
+
+_DUR = re.compile(r"(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?")
 
 # Twitch BCP-47 language codes -> readable names (LP's actual audience + common)
 LANG_NAME = {
@@ -74,60 +78,139 @@ def _parse(ts):
         return None
 
 
+def _dur_min(s):
+    m = _DUR.fullmatch((s or "").strip())
+    if not m:
+        return None
+    h, mi, se = (int(x) if x else 0 for x in m.groups())
+    return round(h * 60 + mi + se / 60) or None
+
+
+def _langname(code_or_name):
+    if not code_or_name:
+        return None
+    return LANG_NAME.get(code_or_name.lower(), code_or_name if len(code_or_name) > 3 else code_or_name.upper())
+
+
 def merge_streams(lang_by_login):
-    """Twitch-FIRST merged feed: archived VODs from Twitch (fresh, real-time) are
-    the spine; SullyGnome streams graft on viewer depth (peak/avg/watch-time) when
-    they match by channel + start time (±90 min). SullyGnome-only streams (VOD
-    gone / archive disabled) are appended so nothing recent is lost."""
+    """Gameplainer-style merged feed from THREE sources, all keyed by channel+time:
+      1) live_history (our own Twitch live snapshots) — the spine. Streams appear the
+         moment they're live and STAY after ending, carrying captured peak viewers +
+         followers. No SullyGnome wait.
+      2) Twitch /videos — attaches real VOD url/views/duration/thumbnail.
+      3) SullyGnome — grafts deeper stats (avg, watch-minutes, follower gain) once it
+         has processed the stream.
+    Records not seen live still appear from (2)/(3) so nothing recent is lost."""
+    history = []
+    if STATE.exists():
+        try:
+            history = json.loads(STATE.read_text(encoding="utf-8"))
+        except Exception:
+            history = []
     twitch = read_json("../twitch/videos_latest.json", [])
     sully = json.loads((SRC / "streams_latest.json").read_text(encoding="utf-8")) \
         if (SRC / "streams_latest.json").exists() else []
 
-    # index SullyGnome streams by login for time-tolerant matching
-    by_login = {}
-    for s in sully:
-        by_login.setdefault((s.get("channelurl") or "").lower(), []).append(s)
+    recs = []                       # unified records
+    index = {}                      # login -> list of (rec, parsed_start)
 
-    merged, used = [], set()
+    def add(rec):
+        recs.append(rec)
+        index.setdefault(rec["channelurl"], []).append((rec, _parse(rec.get("startDateTime"))))
+
+    def match(login, iso, used_key):
+        t = _parse(iso)
+        best, bestdiff = None, 90 * 60 + 1
+        for rec, rt in index.get(login, []):
+            if rec.get(used_key):
+                continue
+            if t and rt:
+                d = abs((rt - t).total_seconds())
+                if d < bestdiff:
+                    best, bestdiff = rec, d
+        return best
+
+    # 1) spine: our captured live/ended streams
+    for h in history:
+        login = (h.get("user_login") or "").lower()
+        ended_len = None
+        st, en = _parse(h.get("started_at")), _parse(h.get("ended_at"))
+        if st and en:
+            ended_len = max(1, round((en - st).total_seconds() / 60))
+        add({
+            "source": "live" if h.get("is_live") else "ended",
+            "is_live": bool(h.get("is_live")),
+            "channeldisplayname": h.get("user_name"),
+            "channelurl": login,
+            "channellogo": h.get("logo"),
+            "title": h.get("title"),
+            "language": _langname(h.get("language")),
+            "startDateTime": h.get("started_at"),
+            "peak_viewers": h.get("peak_viewers"),
+            "viewer_count": h.get("last_viewers") if h.get("is_live") else None,
+            "followers": h.get("followers"),
+            "partner": (h.get("broadcaster_type") == "partner"),
+            "length": ended_len,
+            "vod_thumb": h.get("thumb"),
+        })
+
+    # 2) Twitch VODs — attach to a matching record, else add as VOD-only
     for v in twitch:
         login = (v.get("channelurl") or "").lower()
-        tv = _parse(v.get("startDateTime"))
-        best, bestdiff = None, 90 * 60 + 1
-        for i, s in enumerate(by_login.get(login, [])):
-            if (login, i) in used:
-                continue
-            sv = _parse(s.get("startDateTime"))
-            if tv and sv:
-                d = abs((sv - tv).total_seconds())
-                if d < bestdiff:
-                    best, bestdiff, besti = s, d, i
-        row = dict(v)
-        row["language"] = LANG_NAME.get((v.get("language") or "").lower(),
-                                        (v.get("language") or "").upper() or None)
-        if best is not None:
-            used.add((login, besti))
-            row["source"] = "both"
+        rec = match(login, v.get("startDateTime"), "_vod")
+        if rec is not None:
+            rec["_vod"] = True
+            rec["vod_url"] = v.get("vod_url")
+            rec["vod_views"] = v.get("vod_views")
+            rec["vod_duration"] = v.get("vod_duration")
+            if v.get("vod_thumb"):
+                rec["vod_thumb"] = v["vod_thumb"]
+            if not rec.get("length"):
+                rec["length"] = _dur_min(v.get("vod_duration"))
+            if not rec.get("title"):
+                rec["title"] = v.get("title")
+        else:
+            add({
+                "source": "twitch", "is_live": False,
+                "channeldisplayname": v.get("channeldisplayname"),
+                "channelurl": login, "channellogo": v.get("channellogo"),
+                "title": v.get("title"), "language": _langname(v.get("language")),
+                "startDateTime": v.get("startDateTime"),
+                "length": _dur_min(v.get("vod_duration")),
+                "vod_url": v.get("vod_url"), "vod_views": v.get("vod_views"),
+                "vod_duration": v.get("vod_duration"), "vod_thumb": v.get("vod_thumb"),
+                "_vod": True,
+            })
+
+    # 3) SullyGnome — graft depth onto a match, else add as SullyGnome-only
+    for sst in sully:
+        login = (sst.get("channelurl") or "").lower()
+        rec = match(login, sst.get("startDateTime"), "_sully")
+        if rec is not None:
+            rec["_sully"] = True
             for k in ("avgviewers", "maxviewers", "viewminutes", "followergain"):
-                if best.get(k) is not None:
-                    row[k] = best[k]
-            row.setdefault("starttime", best.get("starttime"))
-            if not row.get("channellogo"):
-                row["channellogo"] = best.get("channellogo")
-        merged.append(row)
+                if sst.get(k) is not None:
+                    rec[k] = sst[k]
+            if not rec.get("length") and sst.get("length"):
+                rec["length"] = sst["length"]
+        else:
+            add({
+                "source": "sullygnome", "is_live": False, "_sully": True,
+                "channeldisplayname": sst.get("channeldisplayname"),
+                "channelurl": login, "channellogo": sst.get("channellogo"),
+                "language": lang_by_login.get(login) or sst.get("language"),
+                "startDateTime": sst.get("startDateTime"),
+                "length": sst.get("length"),
+                "avgviewers": sst.get("avgviewers"), "maxviewers": sst.get("maxviewers"),
+                "viewminutes": sst.get("viewminutes"), "followergain": sst.get("followergain"),
+            })
 
-    # SullyGnome streams that matched no Twitch VOD (older / archive off)
-    for login, lst in by_login.items():
-        for i, s in enumerate(lst):
-            if (login, i) in used:
-                continue
-            row = dict(s)
-            row["source"] = "sullygnome"
-            row["channelurl"] = login
-            row["language"] = lang_by_login.get(login) or s.get("language")
-            merged.append(row)
-
-    merged.sort(key=lambda r: r.get("startDateTime") or "", reverse=True)
-    return merged
+    for r in recs:
+        r.pop("_vod", None)
+        r.pop("_sully", None)
+    # live first, then newest by start time
+    recs.sort(key=lambda r: (r.get("is_live", False), r.get("startDateTime") or ""), reverse=True)
+    return recs
 
 
 def main():

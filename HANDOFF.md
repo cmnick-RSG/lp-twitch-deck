@@ -39,12 +39,18 @@ collectors (Python, plain `requests`, NO browser at runtime)
   ├─ sullygnome_collector.py  → channel table (1076 ch) + daily charts + headline metrics
   ├─ collect_streams.py       → SullyGnome per-stream feed (scans recent game window; lags ~1d)
   ├─ collect_recent.py        → hourly (3-day) charts + streamer counts per window
-  ├─ collect_videos.py        → TWITCH-FIRST recent streams: Helix /videos?game_id&type=archive
-  │                             (recently-ended VODs, fresh to minutes; title/views/dur/thumb/lang)
+  ├─ collect_videos.py        → Helix /videos?game_id&type=archive (recently-ended VODs:
+  │                             url/views/dur/thumb/title/lang) → data/twitch/videos_latest.json
+  ├─ collect_stream_history.py→ GAMEPLAINER-STYLE: snapshots LIVE streams (/streams?game_id =
+  │                             viewer_count/title/lang/thumb + /channels/followers TOTAL +
+  │                             /users logo/type). PERSISTS to state/live_history.json (committed!)
+  │                             so a stream STAYS in the feed after it ends, carrying captured
+  │                             peak viewers + followers. This is the real-time spine.
   └─ enrich_helix.py          → adds Twitch VOD data to the SullyGnome feed (matched by time)
-        ↓ writes data/sullygnome/*.csv|json  +  data/twitch/videos_latest.json
-build_site_data.py            → consolidates + MERGES streams (Twitch-first spine, SullyGnome
-                                grafts viewer depth) → site/public/data.json
+        ↓ writes data/sullygnome/*.csv|json + data/twitch/videos_latest.json + state/live_history.json
+build_site_data.py            → MERGES 3 stream sources by channel+time: live_history (spine,
+                                live/ended + peak/followers) ∪ Twitch /videos (VOD) ∪ SullyGnome
+                                (avg/watch-min/follower-gain) → site/public/data.json
 site/public/index.html        → the dashboard (vanilla JS + Chart.js CDN, reads data.json)
 site/public/assets/           → game-branded web assets (logo, favicon, pirates) via make_assets.py
 api/live.py                   → Vercel serverless fn: real-time live Twitch streams (Helix)
@@ -169,9 +175,15 @@ icons. Tabs lazy-render (only Overview at boot) for fast load. Fixed the old `.f
 {min-width}` bug that detached checkboxes. prefers-reduced-motion respected. Design guided by the
 `ui-ux-pro-max-skill` (gitignored local reference; run its search.py for design-system recs).
 NOTE: `.gitignore` has `*.png` — assets under site/public/assets/ are force-unignored; keep that.
-v4.1: header = game logo + Twitch wordmark + "Analytics"; ALL displayed timestamps are in
-**Kyiv time** (`Europe/Kyiv` via the `kyiv()` helper) — stored data stays UTC. Future modules
-should display Kyiv time too.
+v4.1: header = game logo + Twitch wordmark + "Analytics" / "Live Deck"; ALL displayed timestamps
+are in **Kyiv time** (`Europe/Kyiv` via the `kyiv()` helper) — stored data stays UTC. Future
+modules should display Kyiv time too.
+v4.2 (Gameplainer parity): Newest feed now shows LIVE streams at the top (red badge, "watching
+now", followers) and keeps them after they end with our captured peak — no SullyGnome wait.
+VERIFIED Twitch facts: `/helix/channels/followers?broadcaster_id=X` returns `{total}` WITH AN
+APP TOKEN (no user scope needed) — that's how we show follower counts. `/helix/streams?game_id`
+gives viewer_count/title/lang/thumb/started_at. Capture cadence = the 2h cron, so peak is a
+floor (short streams between runs may be missed); could add a faster live-only poll later.
 
 ## 11. Where we are / next steps
 

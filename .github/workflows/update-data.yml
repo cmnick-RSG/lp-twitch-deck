@@ -46,6 +46,12 @@ jobs:
           TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
         run: python collect_videos.py
 
+      - name: Snapshot live streams into persistent history (Gameplainer-style)
+        env:
+          TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
+          TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
+        run: python collect_stream_history.py
+
       - name: Enrich SullyGnome streams with Twitch VOD data (links/views/thumbnails)
         env:
           TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
@@ -59,10 +65,10 @@ jobs:
         run: |
           git config user.name  "lp-deck-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add site/public/data.json
+          git add site/public/data.json state/live_history.json
           if git diff --staged --quiet; then
             echo "No data changes."
           else
-            git commit -m "data: refresh SullyGnome stats [skip ci]"
+            git commit -m "data: refresh streams + live history [skip ci]"
             git push
           fi

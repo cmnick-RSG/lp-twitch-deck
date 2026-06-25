@@ -190,6 +190,8 @@
     padding:2px 7px;border-radius:6px;text-transform:uppercase}
   .src.twitch{background:rgba(139,92,246,.92);color:#fff} .src.both{background:rgba(52,211,153,.92);color:#04231a}
   .src.sully{background:rgba(95,176,239,.9);color:#04203a}
+  .src.live{background:rgba(240,87,60,.95);color:#fff;display:inline-flex;align-items:center;gap:5px}
+  .src.live::before{content:"";width:6px;height:6px;border-radius:50%;background:#fff;animation:pulse 1.8s infinite}
   .scard .body{display:flex;flex-direction:column;min-width:0;padding:3px 0}
   .scard .tl{display:flex;align-items:center;gap:9px;min-width:0}
   .scard .tl img{width:30px;height:30px;border-radius:50%;flex-shrink:0;border:1.5px solid var(--line2);object-fit:cover}
@@ -211,6 +213,7 @@
   .vodbtn:hover{background:var(--purple2);color:#1a1233}
   .vodbtn svg{width:13px;height:13px}
   .vodbtn.dead{background:none;border:1px solid var(--line);color:var(--muted);cursor:default}
+  .vodbtn.live{background:var(--ember)} .vodbtn.live:hover{background:#ff6e54;color:#fff}
 
   /* ---------- regions ---------- */
   .regrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
@@ -253,7 +256,7 @@
     <span class="plus">×</span>
     <img class="tw" src="assets/twitch.png" alt="Twitch">
     <div class="vl"></div>
-    <div class="tag"><b>Analytics</b>Die Together · live deck</div>
+    <div class="tag"><b>Analytics</b>Live Deck</div>
   </div>
   <div class="reflinks">
     <span class="lbl">Network:</span>
@@ -599,33 +602,39 @@ function streams(){
 }
 function streamCard(s){
   const login=s.channelurl||s.channeldisplayname;
-  const srcCls=s.source==="twitch"?"twitch":s.source==="both"?"both":"sully";
-  const srcLbl=s.source==="sullygnome"?"SullyGnome":"Twitch";
-  const hasPeak=s.maxviewers!=null;
-  const headline=hasPeak
-    ?`<div class="headline hl-peak num">${fmt(s.maxviewers)}<span>peak viewers</span></div>`
-    :`<div class="headline hl-views num">${fmt(s.vod_views)}<span>VOD views</span></div>`;
-  const vod=s.vod_url
-    ?`<a class="vodbtn" href="${s.vod_url}" target="_blank" rel="noopener">${svg("play",13)} Watch VOD</a>`
-    :`<span class="vodbtn dead">VOD expired</span>`;
+  const peak=s.peak_viewers!=null?s.peak_viewers:s.maxviewers;
+  const srcCls=s.is_live?"live":(s.source==="sullygnome"?"sully":"twitch");
+  const srcLbl=s.is_live?"LIVE":(s.source==="sullygnome"?"SullyGnome":"Twitch");
+  let headline;
+  if(s.is_live) headline=`<div class="headline hl-peak num">${fmt(s.viewer_count)}<span>watching now</span></div>`;
+  else if(peak!=null) headline=`<div class="headline hl-peak num">${fmt(peak)}<span>peak viewers</span></div>`;
+  else if(s.vod_views!=null) headline=`<div class="headline hl-views num">${fmt(s.vod_views)}<span>VOD views</span></div>`;
+  else headline=`<div class="headline num" style="color:var(--muted)">—<span>no stats yet</span></div>`;
+  const btn=s.is_live
+    ?`<a class="vodbtn live" href="https://www.twitch.tv/${login}" target="_blank" rel="noopener">${svg("play",13)} Watch live</a>`
+    :s.vod_url?`<a class="vodbtn" href="${s.vod_url}" target="_blank" rel="noopener">${svg("play",13)} Watch VOD</a>`
+    :`<span class="vodbtn dead">no VOD</span>`;
   const chips=[];
-  if(hasPeak&&s.avgviewers!=null)chips.push(`<span class="chip">${svg("eye",13)} ${fmt(s.avgviewers)} avg</span>`);
-  if(hasPeak&&s.vod_url&&s.vod_views!=null)chips.push(`<span class="chip">${svg("play",13)} ${fmt(s.vod_views)} VOD views</span>`);
-  chips.push(`<span class="chip">${svg("clock",13)} ${dur(s.length)}</span>`);
+  if(s.followers!=null)chips.push(`<span class="chip">${svg("users",13)} ${fmt(s.followers)} followers</span>`);
+  if(s.avgviewers!=null)chips.push(`<span class="chip">${svg("eye",13)} ${fmt(s.avgviewers)} avg</span>`);
+  if(!s.is_live&&peak!=null&&s.vod_url&&s.vod_views!=null)chips.push(`<span class="chip">${svg("play",13)} ${fmt(s.vod_views)} VOD views</span>`);
+  if(s.length)chips.push(`<span class="chip">${svg("clock",13)} ${dur(s.length)}</span>`);
   if(s.language)chips.push(`<span class="chip lang">${s.language}</span>`);
   if(s.viewminutes)chips.push(`<span class="chip">${svg("hours",13)} ${hrs(s.viewminutes)} watch-hrs</span>`);
+  const durBadge=s.is_live?`<span class="dur" style="background:rgba(240,87,60,.9)">● LIVE ${uptime(s.startDateTime)}</span>`
+    :s.vod_duration?`<span class="dur">${s.vod_duration}</span>`:(s.length?`<span class="dur">${dur(s.length)}</span>`:"");
   return `<div class="scard">
     <div class="thumb-wrap">
       <img class="thumb" loading="lazy" src="${s.vod_thumb||TH}" onerror="this.src='${TH}'">
       <span class="src ${srcCls}">${srcLbl}</span>
-      ${s.vod_duration?`<span class="dur">${s.vod_duration}</span>`:""}
+      ${durBadge}
     </div>
     <div class="body">
-      <div class="tl"><img src="${s.channellogo||AV}" onerror="this.src='${AV}'"><a href="https://www.twitch.tv/${login}" target="_blank" rel="noopener">${esc(s.channeldisplayname)}</a></div>
-      ${s.title?`<div class="title">${esc(s.title)}</div>`:`<div class="title" style="color:var(--muted)">${esc(s.game||"Last Pirates: Die Together")}</div>`}
-      <div class="chips"><span class="chip">${svg("cal",13)} ${timeAgo(s.startDateTime)} · ${kyiv(s.startDateTime)}</span>${chips.join("")}</div>
+      <div class="tl"><img src="${s.channellogo||AV}" onerror="this.src='${AV}'"><a href="https://www.twitch.tv/${login}" target="_blank" rel="noopener">${esc(s.channeldisplayname)}</a>${s.partner?`<span class="tag p" style="margin-left:2px">partner</span>`:""}</div>
+      ${s.title?`<div class="title">${esc(s.title)}</div>`:`<div class="title" style="color:var(--muted)">Last Pirates: Die Together</div>`}
+      <div class="chips"><span class="chip">${svg("cal",13)} ${s.is_live?"started":timeAgo(s.startDateTime)+" ·"} ${kyiv(s.startDateTime)}</span>${chips.join("")}</div>
     </div>
-    <div class="side">${headline}${vod}</div>
+    <div class="side">${headline}${btn}</div>
   </div>`;
 }
 
