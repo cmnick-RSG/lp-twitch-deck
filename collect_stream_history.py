@@ -23,7 +23,8 @@ from datetime import datetime, timezone, timedelta
 import requests
 
 GAME_ID = "350287257"
-STATE = pathlib.Path(__file__).parent / "state" / "live_history.json"
+# served by Vercel + committed, so the frontend can overlay it fresh between full builds
+STATE = pathlib.Path(__file__).parent / "site" / "public" / "live_history.json"
 KEEP_DAYS = 14
 
 

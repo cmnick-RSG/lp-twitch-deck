@@ -43,11 +43,11 @@ collectors (Python, plain `requests`, NO browser at runtime)
   │                             url/views/dur/thumb/title/lang) → data/twitch/videos_latest.json
   ├─ collect_stream_history.py→ GAMEPLAINER-STYLE: snapshots LIVE streams (/streams?game_id =
   │                             viewer_count/title/lang/thumb + /channels/followers TOTAL +
-  │                             /users logo/type). PERSISTS to state/live_history.json (committed!)
+  │                             /users logo/type). PERSISTS to site/public/live_history.json (committed!)
   │                             so a stream STAYS in the feed after it ends, carrying captured
   │                             peak viewers + followers. This is the real-time spine.
   └─ enrich_helix.py          → adds Twitch VOD data to the SullyGnome feed (matched by time)
-        ↓ writes data/sullygnome/*.csv|json + data/twitch/videos_latest.json + state/live_history.json
+        ↓ writes data/sullygnome/*.csv|json + data/twitch/videos_latest.json + site/public/live_history.json
 build_site_data.py            → MERGES 3 stream sources by channel+time: live_history (spine,
                                 live/ended + peak/followers) ∪ Twitch /videos (VOD) ∪ SullyGnome
                                 (avg/watch-min/follower-gain) → site/public/data.json
@@ -182,8 +182,15 @@ v4.2 (Gameplainer parity): Newest feed now shows LIVE streams at the top (red ba
 now", followers) and keeps them after they end with our captured peak — no SullyGnome wait.
 VERIFIED Twitch facts: `/helix/channels/followers?broadcaster_id=X` returns `{total}` WITH AN
 APP TOKEN (no user scope needed) — that's how we show follower counts. `/helix/streams?game_id`
-gives viewer_count/title/lang/thumb/started_at. Capture cadence = the 2h cron, so peak is a
-floor (short streams between runs may be missed); could add a faster live-only poll later.
+gives viewer_count/title/lang/thumb/started_at. Capture cadence: see v4.3.
+v4.3: TWO workflows now (shared `concurrency: site-refresh` group so pushes never race):
+(a) `live-snapshot.yml` — every 30 min, runs ONLY collect_stream_history (Twitch live, cheap)
+and commits `site/public/live_history.json`; (b) `update-data.yml` — every 2h, full pipeline
+incl. SullyGnome, commits `data.json` (reads but doesn't own live_history). The frontend fetches
+`live_history.json` and OVERLAYS it onto data.json client-side every 2 min (overlayLive(),
+matched by stream_id) — so live/just-ended streams stay fresh between 2h builds without a full
+rebuild. peak is still a floor (max over 30-min snapshots). live_history.json is committed +
+served (NOT the gitignored live.json). The Live-now tab is still truly real-time via /api/live.
 
 ## 11. Where we are / next steps
 

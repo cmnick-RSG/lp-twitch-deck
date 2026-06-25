@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).parent
 SRC = ROOT / "data" / "sullygnome"
 TWITCH = ROOT / "data" / "twitch"
-STATE = ROOT / "state" / "live_history.json"
+STATE = ROOT / "site" / "public" / "live_history.json"
 OUT = ROOT / "site" / "public" / "data.json"
 
 _DUR = re.compile(r"(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?")
@@ -140,6 +140,7 @@ def merge_streams(lang_by_login):
         add({
             "source": "live" if h.get("is_live") else "ended",
             "is_live": bool(h.get("is_live")),
+            "stream_id": h.get("stream_id"),
             "channeldisplayname": h.get("user_name"),
             "channelurl": login,
             "channellogo": h.get("logo"),

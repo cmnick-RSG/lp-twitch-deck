@@ -760,6 +760,30 @@ function drawRegions(){
 function syncCheck(){document.querySelectorAll(".check input[type=checkbox]").forEach(c=>c.closest(".check").classList.toggle("on",c.checked));}
 document.addEventListener("change",e=>{if(e.target.matches(".check input[type=checkbox]"))syncCheck();});
 
+/* ---------- live overlay (fresh live_history.json on top of the 2h baseline) ---------- */
+const LANGN={en:"English",es:"Spanish",pt:"Portuguese",ru:"Russian",fr:"French",de:"German",it:"Italian",pl:"Polish",tr:"Turkish",th:"Thai",zh:"Chinese",ja:"Japanese",ko:"Korean",ar:"Arabic",uk:"Ukrainian",nl:"Dutch",cs:"Czech",hu:"Hungarian",fi:"Finnish",el:"Greek",sv:"Swedish",id:"Indonesian",vi:"Vietnamese",fil:"Filipino",tl:"Filipino"};
+function histToStream(h){
+  const login=(h.user_login||"").toLowerCase();
+  const len=(!h.is_live&&h.started_at&&h.ended_at)?Math.max(1,Math.round((new Date(h.ended_at)-new Date(h.started_at))/6e4)):null;
+  return {source:h.is_live?"live":"ended",is_live:!!h.is_live,stream_id:h.stream_id,
+    channeldisplayname:h.user_name,channelurl:login,channellogo:h.logo,title:h.title,
+    language:LANGN[h.language]||((h.language||"").toUpperCase()||null),startDateTime:h.started_at,
+    peak_viewers:h.peak_viewers,viewer_count:h.is_live?h.last_viewers:null,followers:h.followers,
+    partner:h.broadcaster_type==="partner",vod_thumb:h.thumb,length:len};
+}
+async function overlayLive(){
+  let hist=null;try{hist=await(await fetch("live_history.json",{cache:"no-store"})).json();}catch(e){return;}
+  if(!Array.isArray(hist)||!D)return;
+  const byId={};D.streams.forEach(s=>{if(s.stream_id)byId[s.stream_id]=s;});
+  hist.forEach(h=>{const r=byId[h.stream_id];
+    if(r){r.is_live=!!h.is_live;r.peak_viewers=Math.max(r.peak_viewers||0,h.peak_viewers||0);
+      r.viewer_count=h.is_live?h.last_viewers:null;if(h.followers!=null)r.followers=h.followers;
+      r.source=h.is_live?"live":(r.source==="sullygnome"?"sullygnome":"ended");if(h.title)r.title=h.title;}
+    else{const ns=histToStream(h);D.streams.unshift(ns);byId[h.stream_id]=ns;}});
+  D.streams.sort((a,b)=>{const d=(b.is_live?1:0)-(a.is_live?1:0);return d||(b.startDateTime||"").localeCompare(a.startDateTime||"");});
+  if(rendered.streams)streams();
+}
+
 /* ---------- boot ---------- */
 fetch("data.json").then(r=>r.json()).then(d=>{
   D=d;d.channels.forEach(c=>langMap[c.displayname]=c.language);buildNav();
@@ -771,6 +795,7 @@ fetch("data.json").then(r=>r.json()).then(d=>{
   // boot only the default (Overview) tab; other tabs render on first open via go()
   overview();drawOverviewCharts();
   buildTopFilters();buildFilters();buildStreamFilters();
+  overlayLive();setInterval(overlayLive,120000);   // refresh live history every 2 min
 }).catch(e=>{document.getElementById("ovMeta").textContent="failed to load data.json: "+e;});
 </script>
 </body>
