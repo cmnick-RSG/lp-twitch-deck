@@ -203,7 +203,8 @@
   .chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--text2);
     background:var(--panel3);border:1px solid var(--line);border-radius:8px;padding:4px 9px}
   .chip svg{width:13px;height:13px;color:var(--muted)}
-  .chip.lang{color:var(--purple2)}
+  .chip.langtag{color:var(--purple2);font-weight:700}
+  .flag{font-size:14px;line-height:1}
   .scard .side{display:flex;flex-direction:column;align-items:flex-end;justify-content:space-between;gap:10px;text-align:right}
   .scard .headline{font-size:26px;font-weight:900;letter-spacing:-.5px}
   .scard .headline span{display:block;color:var(--muted);font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-top:2px}
@@ -432,7 +433,7 @@ Chart.defaults.plugins.tooltip.titleFont={weight:"700",size:13};Chart.defaults.p
 Chart.defaults.interaction={mode:"index",intersect:false};Chart.defaults.maintainAspectRatio=false;
 
 function tier(f){f=f||0;return f>=1e6?["mega","1M+"]:f>=1e5?["large","100k+"]:f>=1e4?["mid","10k+"]:["small","<10k"];}
-function tags(c){let h=`<span class="tag t">${tier(c.followers)[1]}</span>`;if(c.partner)h+=`<span class="tag p">partner</span>`;if(c.language)h+=`<span class="tag">${c.language}</span>`;return h;}
+function tags(c){let h=`<span class="tag t">${tier(c.followers)[1]}</span>`;if(c.partner)h+=`<span class="tag p">partner</span>`;if(c.language)h+=`<span class="tag">${flag(c.language)?flag(c.language)+" ":""}${c.language}</span>`;return h;}
 
 /* sparkline -> inline svg path */
 function spark(vals,color){
@@ -619,7 +620,7 @@ function streamCard(s){
   if(s.avgviewers!=null)chips.push(`<span class="chip">${svg("eye",13)} ${fmt(s.avgviewers)} avg</span>`);
   if(!s.is_live&&peak!=null&&s.vod_url&&s.vod_views!=null)chips.push(`<span class="chip">${svg("play",13)} ${fmt(s.vod_views)} VOD views</span>`);
   if(s.length)chips.push(`<span class="chip">${svg("clock",13)} ${dur(s.length)}</span>`);
-  if(s.language)chips.push(`<span class="chip lang">${s.language}</span>`);
+  if(s.language)chips.push(langTag(s.language));
   if(s.viewminutes)chips.push(`<span class="chip">${svg("hours",13)} ${hrs(s.viewminutes)} watch-hrs</span>`);
   const durBadge=s.is_live?`<span class="dur" style="background:rgba(240,87,60,.9)">● LIVE ${uptime(s.startDateTime)}</span>`
     :s.vod_duration?`<span class="dur">${s.vod_duration}</span>`:(s.length?`<span class="dur">${dur(s.length)}</span>`:"");
@@ -652,7 +653,7 @@ async function drawLive(){
       <span class="src twitch">● LIVE</span></div>
     <div class="body"><div class="tl"><a href="https://www.twitch.tv/${s.user_login}" target="_blank" rel="noopener">${esc(s.user_name)}</a></div>
       <div class="title">${esc((s.title||"").slice(0,140))}</div>
-      <div class="chips"><span class="chip">${svg("clock",13)} ${uptime(s.started_at)} uptime</span>${s.language?`<span class="chip lang">${s.language}</span>`:""}</div></div>
+      <div class="chips"><span class="chip">${svg("clock",13)} ${uptime(s.started_at)} uptime</span>${langTag(LANGN[s.language]||s.language)}</div></div>
     <div class="side"><div class="headline hl-peak num">${fmt(s.viewer_count)}<span>viewers now</span></div>
       <a class="vodbtn" href="https://www.twitch.tv/${s.user_login}" target="_blank" rel="noopener">${svg("play",13)} Watch live</a></div></div>`).join("")
     :`<div class="empty">No one is streaming Last Pirates right now.<br>This updates in real time — check back soon.</div>`;
@@ -742,7 +743,7 @@ function drawRegions(){
       <div class="rshare num" style="color:${r.color}">${r.share.toFixed(1)}%</div>
       <div class="rbar"><i style="width:${(r.share/mx*100).toFixed(1)}%;background:${r.color}"></i></div>
       <div class="rmeta"><span>${fmt(Math.round(r.hours))} watch-hrs</span><span>${fmt(r.chans)} channels</span></div>
-      <div class="rtop">Top language: <b style="color:var(--text)">${r.top}</b></div>
+      <div class="rtop">Top language: <b style="color:var(--text)">${flag(r.top)} ${r.top}</b></div>
     </div>`).join("");
 
   new Chart(document.getElementById("cRegion"),{type:"doughnut",
@@ -753,7 +754,7 @@ function drawRegions(){
   const ent=Object.entries(langHours).filter(([l])=>l).sort((a,b)=>b[1]-a[1]);
   const lmx=ent[0][1];
   document.getElementById("langlist").innerHTML=ent.map(([l,v])=>
-    `<div class="lang"><span class="lname">${l}</span><div class="lbarwrap"><div class="lbar" style="width:${(v/lmx*100).toFixed(1)}%"></div></div><span class="lval num">${fmt(Math.round(v))}</span></div>`).join("");
+    `<div class="lang"><span class="lname">${flag(l)} ${l}</span><div class="lbarwrap"><div class="lbar" style="width:${(v/lmx*100).toFixed(1)}%"></div></div><span class="lval num">${fmt(Math.round(v))}</span></div>`).join("");
 }
 
 /* keep custom checkbox chips visually in sync */
@@ -762,6 +763,10 @@ document.addEventListener("change",e=>{if(e.target.matches(".check input[type=ch
 
 /* ---------- live overlay (fresh live_history.json on top of the 2h baseline) ---------- */
 const LANGN={en:"English",es:"Spanish",pt:"Portuguese",ru:"Russian",fr:"French",de:"German",it:"Italian",pl:"Polish",tr:"Turkish",th:"Thai",zh:"Chinese",ja:"Japanese",ko:"Korean",ar:"Arabic",uk:"Ukrainian",nl:"Dutch",cs:"Czech",hu:"Hungarian",fi:"Finnish",el:"Greek",sv:"Swedish",id:"Indonesian",vi:"Vietnamese",fil:"Filipino",tl:"Filipino"};
+// flag per broadcast language (representative country). Russian = neutral white flag (no RU flag).
+const FLAG={English:"🇬🇧",Spanish:"🇪🇸",Portuguese:"🇧🇷",Russian:"🏳️",French:"🇫🇷",German:"🇩🇪",Italian:"🇮🇹",Polish:"🇵🇱",Turkish:"🇹🇷",Thai:"🇹🇭",Chinese:"🇨🇳","Chinese (Hong Kong SAR)":"🇭🇰",Japanese:"🇯🇵",Korean:"🇰🇷",Arabic:"🇸🇦",Ukrainian:"🇺🇦",Dutch:"🇳🇱",Czech:"🇨🇿",Hungarian:"🇭🇺",Finnish:"🇫🇮",Greek:"🇬🇷",Swedish:"🇸🇪",Danish:"🇩🇰",Norwegian:"🇳🇴",Romanian:"🇷🇴",Indonesian:"🇮🇩",Vietnamese:"🇻🇳",Filipino:"🇵🇭",Hindi:"🇮🇳",Bulgarian:"🇧🇬",Slovak:"🇸🇰",Catalan:"🇪🇸"};
+const flag=l=>FLAG[l]||"";
+const langTag=l=>l?`<span class="chip langtag">${flag(l)?`<span class="flag">${flag(l)}</span> `:""}${l}</span>`:"";
 function histToStream(h){
   const login=(h.user_login||"").toLowerCase();
   const len=(!h.is_live&&h.started_at&&h.ended_at)?Math.max(1,Math.round((new Date(h.ended_at)-new Date(h.started_at))/6e4)):null;
@@ -772,21 +777,42 @@ function histToStream(h){
     partner:h.broadcaster_type==="partner",vod_thumb:h.thumb,length:len};
 }
 async function overlayLive(){
-  let hist=null;try{hist=await(await fetch("live_history.json",{cache:"no-store"})).json();}catch(e){return;}
-  if(!Array.isArray(hist)||!D)return;
-  const byId={};D.streams.forEach(s=>{if(s.stream_id)byId[s.stream_id]=s;});
-  hist.forEach(h=>{const r=byId[h.stream_id];
-    if(r){r.is_live=!!h.is_live;r.peak_viewers=Math.max(r.peak_viewers||0,h.peak_viewers||0);
-      r.viewer_count=h.is_live?h.last_viewers:null;if(h.followers!=null)r.followers=h.followers;
-      r.source=h.is_live?"live":(r.source==="sullygnome"?"sullygnome":"ended");if(h.title)r.title=h.title;}
-    else{const ns=histToStream(h);D.streams.unshift(ns);byId[h.stream_id]=ns;}});
-  D.streams.sort((a,b)=>{const d=(b.is_live?1:0)-(a.is_live?1:0);return d||(b.startDateTime||"").localeCompare(a.startDateTime||"");});
+  if(!D)return;
+  let hist=[],apiLive=[];
+  try{const j=await(await fetch("live_history.json",{cache:"no-store"})).json();if(Array.isArray(j))hist=j;}catch(e){}
+  try{apiLive=((await(await fetch("/api/live",{cache:"no-store"})).json()).live)||[];}
+  catch(e){try{apiLive=((await(await fetch("live.json",{cache:"no-store"})).json()).live)||[];}catch(_){}}
+  const base=D._base||[];
+  const hByLogin={};hist.forEach(h=>{hByLogin[(h.user_login||"").toLowerCase()]=h;});
+  const out=[],seen=new Set();
+  // 1) LIVE NOW — straight from /api/live (instant), enriched with captured followers/peak/logo
+  apiLive.forEach(v=>{const login=(v.user_login||"").toLowerCase();const h=hByLogin[login];
+    const sid=h&&h.stream_id?h.stream_id:"live:"+login;
+    out.push({_ov:true,source:"live",is_live:true,stream_id:sid,
+      channeldisplayname:v.user_name,channelurl:login,channellogo:h?h.logo:null,title:v.title,
+      language:LANGN[v.language]||((v.language||"").toUpperCase()||null),startDateTime:v.started_at,
+      viewer_count:v.viewer_count,peak_viewers:Math.max(v.viewer_count||0,h?(h.peak_viewers||0):0),
+      followers:h?h.followers:null,partner:!!(h&&h.broadcaster_type==="partner"),vod_thumb:v.thumbnail});
+    seen.add(sid);seen.add("l:"+login);});
+  // 2) streams we captured that have since ENDED (persisted), unless live right now
+  hist.forEach(h=>{if(h.is_live)return;const login=(h.user_login||"").toLowerCase();
+    if(seen.has("l:"+login)||(h.stream_id&&seen.has(h.stream_id)))return;
+    const ns=histToStream(h);ns._ov=true;out.push(ns);if(h.stream_id)seen.add(h.stream_id);});
+  // 3) the 2h baseline, minus anything already shown fresher above
+  base.forEach(s=>{const login=(s.channelurl||"").toLowerCase();
+    if(s.stream_id&&seen.has(s.stream_id))return;
+    if(s.is_live&&seen.has("l:"+login))return;
+    out.push(s);});
+  out.sort((a,b)=>{const d=(b.is_live?1:0)-(a.is_live?1:0);return d||(b.startDateTime||"").localeCompare(a.startDateTime||"");});
+  D.streams=out;
   if(rendered.streams)streams();
+  liveCount=apiLive.length;const kl=document.getElementById("kpiLive");if(kl)kl.textContent=liveCount;
+  const nd=document.getElementById("navdot");if(nd)nd.style.display=apiLive.length>0?"inline-block":"none";
 }
 
 /* ---------- boot ---------- */
 fetch("data.json").then(r=>r.json()).then(d=>{
-  D=d;d.channels.forEach(c=>langMap[c.displayname]=c.language);buildNav();
+  D=d;D._base=(d.streams||[]).slice();d.channels.forEach(c=>langMap[c.displayname]=c.language);buildNav();
   const src=(d.streams||[]).reduce((m,s)=>{m[s.source]=(m[s.source]||0)+1;return m;},{});
   document.getElementById("strHint").textContent=`Twitch-first · ${fmt((src.twitch||0)+(src.both||0))} from Twitch + ${fmt(src.sullygnome||0)} from SullyGnome · times in Kyiv`;
   document.getElementById("foot").innerHTML=`<b>Sources:</b> Twitch Helix (live streams + recently-ended VODs: links, views, thumbnails, in real time) and SullyGnome (historical aggregates & viewer depth). `+
@@ -795,7 +821,7 @@ fetch("data.json").then(r=>r.json()).then(d=>{
   // boot only the default (Overview) tab; other tabs render on first open via go()
   overview();drawOverviewCharts();
   buildTopFilters();buildFilters();buildStreamFilters();
-  overlayLive();setInterval(overlayLive,120000);   // refresh live history every 2 min
+  overlayLive();setInterval(overlayLive,60000);   // refresh live overlay every 60s
 }).catch(e=>{document.getElementById("ovMeta").textContent="failed to load data.json: "+e;});
 </script>
 </body>
