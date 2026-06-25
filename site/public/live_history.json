@@ -1,5 +1,24 @@
 [
   {
+    "stream_id": "317791477350",
+    "user_id": "1516108102",
+    "user_login": "reallgrim",
+    "user_name": "reallgrim",
+    "logo": "https://static-cdn.jtvnw.net/jtv_user_pictures/61435781-68f3-44c5-a052-fa3dbc5bf4cd-profile_image-300x300.png",
+    "broadcaster_type": "",
+    "title": ")",
+    "language": "ru",
+    "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_reallgrim-320x180.jpg",
+    "started_at": "2026-06-25T17:35:12Z",
+    "peak_viewers": 6,
+    "last_viewers": 6,
+    "followers": 4,
+    "is_live": true,
+    "first_seen": "2026-06-25T17:51:08Z",
+    "last_seen": "2026-06-25T17:51:08Z",
+    "ended_at": null
+  },
+  {
     "stream_id": "319129233758",
     "user_id": "1440396452",
     "user_login": "sahnjee",
@@ -13,10 +32,10 @@
     "peak_viewers": 12,
     "last_viewers": 12,
     "followers": 136,
-    "is_live": true,
+    "is_live": false,
     "first_seen": "2026-06-25T17:31:11Z",
     "last_seen": "2026-06-25T17:35:20Z",
-    "ended_at": null
+    "ended_at": "2026-06-25T17:35:20Z"
   },
   {
     "stream_id": "317100109539",
@@ -49,11 +68,11 @@
     "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_poppymidnight-320x180.jpg",
     "started_at": "2026-06-25T09:55:33Z",
     "peak_viewers": 4,
-    "last_viewers": 4,
+    "last_viewers": 3,
     "followers": 258,
     "is_live": true,
     "first_seen": "2026-06-25T17:25:23Z",
-    "last_seen": "2026-06-25T17:35:20Z",
+    "last_seen": "2026-06-25T17:51:08Z",
     "ended_at": null
   },
   {
@@ -91,7 +110,7 @@
     "followers": 312,
     "is_live": true,
     "first_seen": "2026-06-25T17:20:39Z",
-    "last_seen": "2026-06-25T17:35:20Z",
+    "last_seen": "2026-06-25T17:51:08Z",
     "ended_at": null
   }
 ]
