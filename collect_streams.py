@@ -15,6 +15,7 @@ Throttled (DELAY). Heavier than the channel table (~RECENT_WINDOW size requests)
 from __future__ import annotations
 
 import json
+import os
 import time
 from pathlib import Path
 
@@ -22,9 +23,11 @@ import requests
 
 GAME_ID = 219113
 GAME_NAME_ENC = "Last%20Pirates%3A%20Die%20Together"
-RECENT_WINDOW = 7      # days: scan EVERY channel active in this window
-STREAM_WINDOW = 7      # days of each channel's stream history to scan
-DELAY = 1.0
+# Window is env-tunable so the hourly CI job can scan a lighter (shorter) window
+# while local/full runs use a wider one.
+RECENT_WINDOW = int(os.environ.get("LP_RECENT_WINDOW", "7"))   # which channels to scan
+STREAM_WINDOW = int(os.environ.get("LP_STREAM_WINDOW", "7"))   # each channel's history
+DELAY = float(os.environ.get("LP_DELAY", "1.0"))
 GAME_MATCH = "last pirates"
 GAME_LABEL = "Last Pirates: Die Together"
 DATA = Path(__file__).parent / "data" / "sullygnome"

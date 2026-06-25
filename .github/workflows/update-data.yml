@@ -4,8 +4,12 @@ name: Update dashboard data
 # Vercel site shows fresh stats. Runtime is plain `requests` (no browser).
 on:
   schedule:
-    - cron: "0 */6 * * *"   # every 6 hours (UTC)
+    - cron: "0 * * * *"     # hourly (UTC)
   workflow_dispatch: {}       # manual "Run workflow" button
+
+env:
+  LP_RECENT_WINDOW: "3"      # hourly job scans the recent (3-day) window — lighter & fresh
+  LP_STREAM_WINDOW: "7"
 
 permissions:
   contents: write             # allow committing data back to the repo

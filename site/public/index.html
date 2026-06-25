@@ -46,8 +46,8 @@
     border-radius:var(--radius);padding:17px;position:relative;overflow:hidden}
   .tile::after{content:"";position:absolute;inset:0 0 auto auto;width:60px;height:60px;
     background:radial-gradient(circle,rgba(124,58,237,.25),transparent 70%);border-radius:50%}
-  .tile .v{font-size:29px;font-weight:800;line-height:1;letter-spacing:-.5px}
-  .tile .l{color:var(--muted);font-size:12px;margin-top:7px;font-weight:500}
+  .tile .v{font-size:36px;font-weight:900;line-height:1;letter-spacing:-1px}
+  .tile .l{color:var(--muted);font-size:12.5px;margin-top:9px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
   .v.p{color:var(--primary2)} .v.a{color:var(--accent)} .v.g{color:var(--green)} .v.b{color:var(--blue)} .v.gold{color:var(--gold)}
   /* momentum strip */
   .momentum{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}
@@ -79,7 +79,7 @@
   .row:hover{border-color:var(--primary)}
   .row .av{width:42px;height:42px;margin:0;border-width:2px}
   .row .name{font-weight:700} .row .meta{color:var(--muted);font-size:12.5px;margin-top:3px}
-  .row .big{font-size:18px;font-weight:800;text-align:right} .row .big span{display:block;color:var(--muted);font-size:11px;font-weight:500}
+  .big{font-size:23px;font-weight:900;text-align:right;letter-spacing:-.5px} .big span{display:block;color:var(--muted);font-size:11px;font-weight:600;margin-top:3px;letter-spacing:0}
   /* stream cards w/ thumbnail */
   .scard{display:grid;grid-template-columns:168px 1fr auto;gap:15px;align-items:center;background:var(--panel);
     border:1px solid var(--line);border-radius:14px;padding:11px;margin-bottom:10px;transition:.15s}
@@ -122,9 +122,9 @@
     <div class="momentum" id="momentum"></div>
     <div class="sec-h"><h2>All-time totals</h2><div class="ln"></div></div>
     <div class="tiles" id="tiles"></div>
-    <div class="sec-h"><h2>Last 3 days — viewers (hourly)</h2><div class="ln"></div></div>
+    <div class="sec-h"><h2>Last 3 days — viewers &amp; channels (hourly)</h2><div class="ln"></div></div>
     <div class="chartwrap"><canvas id="cHourly"></canvas></div>
-    <div class="sec-h"><h2>Streaming activity</h2><span class="toggle" id="actToggle"></span></div>
+    <div class="sec-h"><h2>Channels streaming over time</h2><span class="toggle" id="actToggle"></span></div>
     <div class="chartwrap"><canvas id="cActivity"></canvas></div>
     <div class="sec-h"><h2>Top channels by hours watched</h2><div class="ln"></div></div>
     <div id="top8"></div>
@@ -136,7 +136,16 @@
   </section>
 
   <section class="tab" data-tab="top">
-    <div class="sec-h"><h2>Top channels</h2><div class="ln"></div></div>
+    <div class="sec-h"><h2>Top channels <span class="count" id="topCount"></span></h2><div class="ln"></div></div>
+    <div class="filters">
+      <select id="tcSort">
+        <option value="viewminutes">Hours watched</option><option value="maxviewers">Peak viewers</option>
+        <option value="avgviewers">Avg viewers</option><option value="streamedminutes">Hours streamed</option><option value="followers">Followers</option>
+      </select>
+      <select id="tcN"><option value="12">Top 12</option><option value="24" selected>Top 24</option><option value="48">Top 48</option><option value="96">Top 96</option></select>
+      <select id="tcLang"></select>
+      <label><input type="checkbox" id="tcPartner"> Partners only</label>
+    </div>
     <div class="grid" id="topgrid"></div>
   </section>
 
@@ -153,6 +162,7 @@
         <option value="viewminutes">Hours watched</option><option value="maxviewers">Peak viewers</option>
         <option value="avgviewers">Avg viewers</option><option value="streamedminutes">Hours streamed</option><option value="followers">Followers</option>
       </select>
+      <select id="fDir"><option value="desc">High → Low</option><option value="asc">Low → High</option></select>
       <label><input type="checkbox" id="fPartner"> Partners only</label>
     </div>
     <div class="grid" id="allgrid"></div>
@@ -173,10 +183,22 @@
   </section>
 
   <section class="tab" data-tab="trends">
-    <div class="sec-h"><h2>Channels per day</h2><div class="ln"></div></div>
-    <div class="chartwrap tall"><canvas id="cChannels"></canvas></div>
-    <div class="sec-h"><h2>Viewers per day</h2><div class="ln"></div></div>
-    <div class="chartwrap tall"><canvas id="cViewers"></canvas></div>
+    <div class="sec-h"><h2>Trends — customizable</h2><div class="ln"></div></div>
+    <div class="filters">
+      <select id="tMetric">
+        <option value="viewers">Average viewers</option>
+        <option value="channels">Channels streaming</option>
+        <option value="viewerratio">Viewer ratio</option>
+      </select>
+      <select id="tRange">
+        <option value="7">Last 7 days</option><option value="30">Last 30 days</option>
+        <option value="90">Last 90 days</option><option value="all" selected>All time</option>
+      </select>
+      <select id="tGran"><option value="day">Daily</option><option value="hour">Hourly (last 3 days)</option></select>
+      <span class="toggle" id="tType"></span>
+    </div>
+    <div class="tiles" id="tStats" style="margin-bottom:16px"></div>
+    <div class="chartwrap tall"><canvas id="cTrend"></canvas></div>
   </section>
 
   <section class="tab" data-tab="langs">
@@ -197,6 +219,14 @@ const AV="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64
 const TH="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='168' height='94'%3E%3Crect width='168' height='94' fill='%23211f3b'/%3E%3C/svg%3E";
 const img=u=>`<img class="av" loading="lazy" src="${u||AV}" onerror="this.src='${AV}'">`;
 let D=null,charted={},liveTimer=null,langMap={};
+// global Chart.js styling: readable tooltips + index hover that actually works
+Chart.defaults.font.family="Inter";Chart.defaults.font.weight="500";Chart.defaults.color="#9aa0c4";
+Chart.defaults.plugins.tooltip.backgroundColor="rgba(20,18,40,.97)";
+Chart.defaults.plugins.tooltip.borderColor="#7c3aed";Chart.defaults.plugins.tooltip.borderWidth=1;
+Chart.defaults.plugins.tooltip.padding=11;Chart.defaults.plugins.tooltip.cornerRadius=9;
+Chart.defaults.plugins.tooltip.titleColor="#fff";Chart.defaults.plugins.tooltip.bodyColor="#e7e9f5";
+Chart.defaults.plugins.tooltip.titleFont={weight:"700",size:13};Chart.defaults.plugins.tooltip.bodyFont={size:13};
+Chart.defaults.interaction={mode:"index",intersect:false};Chart.defaults.maintainAspectRatio=false;
 
 function tier(f){f=f||0;return f>=1e6?["mega","1M+"]:f>=1e5?["large","100k+"]:f>=1e4?["mid","10k+"]:["small","<10k"];}
 function tags(c){let h=`<span class="tag t">${tier(c.followers)[1]}</span>`;if(c.partner)h+=`<span class="tag p">partner</span>`;if(c.language)h+=`<span class="tag">${c.language}</span>`;return h;}
@@ -214,8 +244,8 @@ function buildNav(){
 /* ---------- overview ---------- */
 function overview(){
   const s=D.summary,w=D.windows||{};
-  const mom=[["Today (3d)",w["3"],"live now-ish"],["Last 7 days",w["7"],"weekly reach"],
-    ["Last 30 days",w["30"],"monthly reach"],["All-time",w["365"]||s.total_streamers,"365-day window"]];
+  const mom=[["Last 3 days",w["3"],"recently active"],["Last 7 days",w["7"],"this week"],
+    ["Last 30 days",w["30"],"this month"],["All-time",w["365"]||s.total_streamers,"365-day total"]];
   document.getElementById("momentum").innerHTML=mom.map(([w_,n,sub])=>
     `<div class="mom"><div class="w">${w_}</div><div class="n">${fmt(n)}</div><div class="sub">${sub}</div></div>`).join("");
   const tiles=[
@@ -237,32 +267,41 @@ function rowCard(c){return `<div class="row">${img(c.logo)}
 
 let hourlyChart=null,actChart=null,actMode="week";
 function drawOverviewCharts(){drawHourly();drawActivity();}
-const AXIS={x:{ticks:{color:"#9aa0c4",maxTicksLimit:11},grid:{display:false}},y:{ticks:{color:"#9aa0c4"},grid:{color:"#211f3b"}}};
-const OPTS=()=>({maintainAspectRatio:false,plugins:{legend:{display:false}},scales:JSON.parse(JSON.stringify(AXIS))});
+function axes(extra){return Object.assign({x:{ticks:{color:"#9aa0c4",maxTicksLimit:11},grid:{display:false}},
+  y:{beginAtZero:true,ticks:{color:"#9aa0c4"},grid:{color:"#211f3b"}}},extra||{});}
+function OPTS(legend){return{plugins:{legend:{display:!!legend,labels:{usePointStyle:true,color:"#e7e9f5",padding:16}}},
+  scales:axes(),elements:{point:{hoverRadius:5}}};}
 function drawHourly(){
   if(hourlyChart)return;
-  const v=(D.hourly&&D.hourly.viewers)||[];
+  const v=(D.hourly&&D.hourly.viewers)||[],c=(D.hourly&&D.hourly.channels)||[];
   hourlyChart=new Chart(document.getElementById("cHourly"),{
-    type:"line",
-    data:{labels:v.map(p=>p.t.slice(5,16)),datasets:[{label:"Viewers",data:v.map(p=>p.v),borderColor:"#f43f5e",backgroundColor:"rgba(244,63,94,.15)",fill:true,tension:.3,pointRadius:0,borderWidth:2}]},
-    options:OPTS()
+    data:{labels:v.map(p=>p.t.slice(5,16)),datasets:[
+      {type:"line",label:"Viewers",data:v.map(p=>p.v),yAxisID:"y",borderColor:"#f43f5e",backgroundColor:"rgba(244,63,94,.15)",fill:true,tension:.3,pointRadius:0,pointHoverRadius:5,borderWidth:2},
+      {type:"line",label:"Channels live",data:c.map(p=>p.v),yAxisID:"y1",borderColor:"#7c3aed",fill:false,tension:.3,pointRadius:0,pointHoverRadius:5,borderWidth:2,borderDash:[5,4]}]},
+    options:{plugins:{legend:{display:true,labels:{usePointStyle:true,color:"#e7e9f5",padding:16}}},
+      scales:{x:{ticks:{color:"#9aa0c4",maxTicksLimit:10},grid:{display:false}},
+        y:{position:"left",beginAtZero:true,title:{display:true,text:"Viewers",color:"#f43f5e"},ticks:{color:"#9aa0c4"},grid:{color:"#211f3b"}},
+        y1:{position:"right",beginAtZero:true,title:{display:true,text:"Channels",color:"#a78bfa"},ticks:{color:"#9aa0c4"},grid:{display:false}}}}
   });
 }
 function bucket(series,mode){
-  if(mode==="day")return series.map(p=>({k:p.date.slice(5,10),v:p.value}));
+  if(mode==="day")return series.map(p=>({k:p.date.slice(5,10),v:Math.round(p.value)}));
   const m=new Map();series.forEach(p=>{const d=new Date(p.date);let k;
     if(mode==="month")k=p.date.slice(0,7);else{const j=new Date(d.getFullYear(),0,1);k=`W${String(Math.ceil((((d-j)/864e5)+j.getDay()+1)/7)).padStart(2,"0")}`;}
-    m.set(k,(m.get(k)||0)+p.value);});return[...m.entries()].map(([k,v])=>({k,v}));
+    const o=m.get(k)||{s:0,n:0};o.s+=p.value;o.n++;m.set(k,o);});
+  // week/month show AVERAGE channels per day (clearer than a running sum)
+  return[...m.entries()].map(([k,o])=>({k,v:Math.round(o.s/o.n)}));
 }
 function activeSlice(s){let i=s.findIndex(p=>p.value>0);if(i<0)i=0;return s.slice(Math.max(0,i-2));}
 function buildActToggle(){const t=document.getElementById("actToggle");
   t.innerHTML=["day","week","month"].map(m=>`<button data-m="${m}" class="${m===actMode?'on':''}">${m[0].toUpperCase()+m.slice(1)}</button>`).join("");
   t.querySelectorAll("button").forEach(b=>b.onclick=()=>{actMode=b.dataset.m;buildActToggle();if(actChart){actChart.destroy();actChart=null;}drawActivity();});}
 function drawActivity(){const data=bucket(activeSlice(D.timeseries.channels),actMode);if(actChart)return;
+  const lbl=actMode==="day"?"Channels streaming that day":"Avg channels streaming / day";
   actChart=new Chart(document.getElementById("cActivity"),{
     type:"bar",
-    data:{labels:data.map(d=>d.k),datasets:[{label:"Channel-days",data:data.map(d=>d.v),backgroundColor:"#7c3aed",borderRadius:5}]},
-    options:OPTS()
+    data:{labels:data.map(d=>d.k),datasets:[{label:lbl,data:data.map(d=>d.v),backgroundColor:"#7c3aed",borderRadius:5,maxBarThickness:34}]},
+    options:OPTS(false)
   });
 }
 
@@ -272,17 +311,28 @@ function card(c){return `<div class="card"><div class="rk">#${c.rownum}</div>${i
   <div class="tags">${tags(c)}</div>
   <div class="stats"><div><b>${hrs(c.viewminutes)}</b><span>watch hrs</span></div><div><b>${fmt(c.maxviewers)}</b><span>peak</span></div>
   <div><b>${fmt(c.avgviewers)}</b><span>avg</span></div><div><b>${fmt(c.followers)}</b><span>followers</span></div></div></div>`;}
-function topGrid(){document.getElementById("topgrid").innerHTML=D.channels.slice(0,24).map(card).join("");}
+function buildTopFilters(){
+  const langs=[...new Set(D.channels.map(c=>c.language).filter(Boolean))].sort();
+  tcLang.innerHTML=`<option value="">All languages</option>`+langs.map(l=>`<option>${l}</option>`).join("");
+  ["tcSort","tcN","tcLang","tcPartner"].forEach(id=>document.getElementById(id).addEventListener("input",topGrid));
+}
+function topGrid(){
+  const sort=tcSort.value,n=parseInt(tcN.value),lang=tcLang.value,partner=tcPartner.checked;
+  let r=D.channels.filter(c=>(!lang||c.language===lang)&&(!partner||c.partner));
+  r.sort((a,b)=>(b[sort]||0)-(a[sort]||0));r=r.slice(0,n);
+  topCount.textContent=`showing ${r.length}`;
+  document.getElementById("topgrid").innerHTML=r.map(card).join("");
+}
 
 function buildFilters(){
   const langs=[...new Set(D.channels.map(c=>c.language).filter(Boolean))].sort();
   document.getElementById("fLang").innerHTML=`<option value="">All languages</option>`+langs.map(l=>`<option>${l}</option>`).join("");
-  ["fSearch","fLang","fTier","fSort","fPartner"].forEach(id=>document.getElementById(id).addEventListener("input",allGrid));
+  ["fSearch","fLang","fTier","fSort","fDir","fPartner"].forEach(id=>document.getElementById(id).addEventListener("input",allGrid));
 }
 function allGrid(){
-  const q=fSearch.value.toLowerCase(),lang=fLang.value,tk=fTier.value,sort=fSort.value,partner=fPartner.checked;
+  const q=fSearch.value.toLowerCase(),lang=fLang.value,tk=fTier.value,sort=fSort.value,partner=fPartner.checked,dir=fDir.value==="asc"?-1:1;
   let r=D.channels.filter(c=>c.displayname.toLowerCase().includes(q)&&(!lang||c.language===lang)&&(!partner||c.partner)&&(!tk||tier(c.followers)[0]===tk));
-  r.sort((a,b)=>(b[sort]||0)-(a[sort]||0));
+  r.sort((a,b)=>((b[sort]||0)-(a[sort]||0))*dir);
   allCount.textContent=`${r.length} of ${D.channels.length}`;
   allgrid.innerHTML=r.length?r.slice(0,300).map(card).join(""):`<div class="empty">No channels match.</div>`;
 }
@@ -336,13 +386,40 @@ async function drawLive(){
   if(document.querySelector(".tab[data-tab=live]").classList.contains("active"))liveTimer=setTimeout(drawLive,60000);
 }
 
-function drawTrends(){if(charted.trends)return;charted.trends=true;
-  const mk=(id,s,label,c)=>{const data=activeSlice(s);new Chart(document.getElementById(id),{
-    type:"line",
-    data:{labels:data.map(p=>p.date.slice(5,10)),datasets:[{label,data:data.map(p=>p.value),borderColor:c,backgroundColor:c+"22",fill:true,tension:.25,pointRadius:0,borderWidth:2}]},
-    options:OPTS()
-  });};
-  mk("cChannels",D.timeseries.channels,"Channels","#22c55e");mk("cViewers",D.timeseries.viewers,"Viewers","#58a6ff");}
+let trendChart=null,trendType="line";
+const TMETA={viewers:["Average viewers","#58a6ff"],channels:["Channels streaming","#22c55e"],viewerratio:["Viewer ratio","#fbbf24"]};
+function trendSeries(){
+  const metric=tMetric.value,gran=tGran.value,range=tRange.value;
+  let s;
+  if(gran==="hour"&&D.hourly&&D.hourly[metric]&&D.hourly[metric].length)
+    s=D.hourly[metric].map(p=>({x:p.t,v:p.v,h:true}));
+  else s=(D.timeseries[metric]||[]).map(p=>({x:p.date,v:p.value,h:false}));
+  let i=s.findIndex(p=>p.v>0);if(i<0)i=0;s=s.slice(Math.max(0,i-2));      // trim leading zeros
+  if(s[0]&&!s[0].h&&range!=="all")s=s.slice(-parseInt(range));            // range (daily only)
+  return s;
+}
+function drawTrends(){
+  if(!charted.trends){charted.trends=true;buildTrendControls();}
+  const metric=tMetric.value,[label,c]=TMETA[metric];
+  if(tGran.value==="hour"&&!(D.hourly&&D.hourly[metric]&&D.hourly[metric].length)){tGran.value="day";}
+  const s=trendSeries(),vals=s.map(p=>p.v);
+  const mx=vals.length?Math.max(...vals):0,avg=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;
+  const peakAt=s.length?s[vals.indexOf(mx)].x:"";
+  tStats.innerHTML=[["Peak",fmt(Math.round(mx)),"gold"],["Average",fmt(Math.round(avg)),"b"],
+    ["Peak on",(peakAt||"").slice(0,10),"p"],["Data points",fmt(s.length),""]]
+    .map(([l,v,cl])=>`<div class="tile"><div class="v ${cl}" style="font-size:26px">${v}</div><div class="l">${l}</div></div>`).join("");
+  if(trendChart)trendChart.destroy();
+  const fmtX=x=>s[0]&&s[0].h?x.slice(5,16):x.slice(5,10);
+  trendChart=new Chart(document.getElementById("cTrend"),{type:trendType,
+    data:{labels:s.map(p=>fmtX(p.x)),datasets:[{label,data:vals,borderColor:c,backgroundColor:trendType==="bar"?c:c+"33",
+      fill:trendType==="line",tension:.25,pointRadius:0,pointHoverRadius:5,borderWidth:2,borderRadius:4,maxBarThickness:26}]},
+    options:OPTS(false)});
+}
+function buildTrendControls(){
+  tType.innerHTML=[["line","Line"],["bar","Bar"]].map(([t,l])=>`<button data-t="${t}" class="${t===trendType?'on':''}">${l}</button>`).join("");
+  tType.querySelectorAll("button").forEach(b=>b.onclick=()=>{trendType=b.dataset.t;buildTrendControls();drawTrends();});
+  ["tMetric","tRange","tGran"].forEach(id=>{const e=document.getElementById(id);if(!e.dataset.b){e.dataset.b=1;e.addEventListener("change",drawTrends);}});
+}
 function drawLangs(){if(charted.langs)return;charted.langs=true;
   const ent=Object.entries(D.languages).filter(([l])=>l).sort((a,b)=>b[1]-a[1]),top=ent.slice(0,10);
   const pal=["#7c3aed","#f43f5e","#22c55e","#fbbf24","#58a6ff","#a78bfa","#39c5cf","#db61a2","#ff9b50","#7ee787"];
@@ -356,7 +433,7 @@ fetch("data.json").then(r=>r.json()).then(d=>{
   foot.innerHTML=`<b>Sources:</b> SullyGnome (Twitch history & aggregates) + Twitch Helix (live streams & real VOD links/views/thumbnails). `+
     `${fmt(d.channels.length)} channels · ${fmt(d.streams.length)} recent streams · ${fmt(d.streams.filter(x=>x.vod_url).length)} with live VOD. `+
     `SullyGnome stream list lags ~a day (records after a stream ends); <b>Live now</b> is real-time. VODs expire on Twitch — captured metrics persist here.`;
-  overview();drawOverviewCharts();topGrid();buildFilters();allGrid();buildStreamFilters();streams();
+  overview();drawOverviewCharts();buildTopFilters();topGrid();buildFilters();allGrid();buildStreamFilters();streams();
 }).catch(e=>{meta.textContent="failed to load data.json: "+e;});
 </script>
 </body>
