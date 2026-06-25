@@ -1,5 +1,24 @@
 [
   {
+    "stream_id": "319976283865",
+    "user_id": "647958353",
+    "user_login": "southpaw_nubz",
+    "user_name": "SouthPaw_Nubz",
+    "logo": "https://static-cdn.jtvnw.net/jtv_user_pictures/89a5e80f-51e2-4db1-8ff5-af8892ad9d17-profile_image-300x300.png",
+    "broadcaster_type": "affiliate",
+    "title": "Pirate Booty!",
+    "language": "en",
+    "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_southpaw_nubz-320x180.jpg",
+    "started_at": "2026-06-25T22:17:41Z",
+    "peak_viewers": 2,
+    "last_viewers": 2,
+    "followers": 123,
+    "is_live": true,
+    "first_seen": "2026-06-25T22:20:25Z",
+    "last_seen": "2026-06-25T22:20:25Z",
+    "ended_at": null
+  },
+  {
     "stream_id": "318250232791",
     "user_id": "919489540",
     "user_login": "venomskiss2001",
@@ -10,12 +29,12 @@
     "language": "en",
     "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_venomskiss2001-320x180.jpg",
     "started_at": "2026-06-25T22:13:20Z",
-    "peak_viewers": 3,
-    "last_viewers": 3,
+    "peak_viewers": 7,
+    "last_viewers": 7,
     "followers": 414,
     "is_live": true,
     "first_seen": "2026-06-25T22:15:29Z",
-    "last_seen": "2026-06-25T22:15:29Z",
+    "last_seen": "2026-06-25T22:20:25Z",
     "ended_at": null
   },
   {
@@ -53,7 +72,7 @@
     "followers": 2666,
     "is_live": true,
     "first_seen": "2026-06-25T22:10:25Z",
-    "last_seen": "2026-06-25T22:15:29Z",
+    "last_seen": "2026-06-25T22:20:25Z",
     "ended_at": null
   },
   {
