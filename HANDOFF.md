@@ -120,11 +120,13 @@ To verify UI changes headless, load the page with Playwright and check `pageerro
 
 ## 8. CI / auto-refresh
 
-`.github/workflows/update-data.yml` runs **every 6h** (cron `0 */6 * * *`, and on manual
-dispatch): runs the four collectors + enrich + build, commits `site/public/data.json` →
-Vercel redeploys. (Was hourly; switched 2026-06-25 because free-tier scheduled Actions drop
-hourly runs under load and the 365-day aggregates barely move within an hour — real-time
-data comes from `/api/live` anyway.)
+`.github/workflows/update-data.yml` runs **every 2h** (cron `0 */2 * * *`, and on manual
+dispatch): runs all collectors (incl. collect_videos) + enrich + build, commits
+`site/public/data.json` → Vercel redeploys. (History: hourly → 6h on 2026-06-25 for free-tier
+reliability, then → 2h same day so the Newest feed + per-stream viewer stats stay fresh through
+the day. Per-stream peak/avg are SullyGnome-only and only exist once SullyGnome processes a
+stream, so freshness there is also bounded by SullyGnome's own lag — Twitch /videos gives the
+stream + VOD views instantly regardless.)
 - Repo Settings → Actions → Workflow permissions must be **Read and write** (it is — the
   Action has successfully committed).
 - Uses `LP_RECENT_WINDOW=3` so the hourly stream scan is light (polite to SullyGnome).
@@ -167,6 +169,9 @@ icons. Tabs lazy-render (only Overview at boot) for fast load. Fixed the old `.f
 {min-width}` bug that detached checkboxes. prefers-reduced-motion respected. Design guided by the
 `ui-ux-pro-max-skill` (gitignored local reference; run its search.py for design-system recs).
 NOTE: `.gitignore` has `*.png` — assets under site/public/assets/ are force-unignored; keep that.
+v4.1: header = game logo + Twitch wordmark + "Analytics"; ALL displayed timestamps are in
+**Kyiv time** (`Europe/Kyiv` via the `kyiv()` helper) — stored data stays UTC. Future modules
+should display Kyiv time too.
 
 ## 11. Where we are / next steps
 
