@@ -6,7 +6,10 @@ name: Live snapshot
 # The frontend overlays this file fresh between the heavier 2h full builds.
 on:
   schedule:
-    - cron: "*/30 * * * *"   # every 30 min (UTC)
+    - cron: "*/10 * * * *"   # every 10 min (UTC) — BACKUP trigger. GitHub free-tier schedules
+                              # are unreliable, so the primary trigger is cron-job.org hitting
+                              # workflow_dispatch. Public repo => unlimited Actions minutes; the
+                              # concurrency group serialises duplicates and [skip ci] avoids deploys.
   workflow_dispatch: {}
 
 permissions:
