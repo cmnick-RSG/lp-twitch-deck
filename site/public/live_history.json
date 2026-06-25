@@ -1,5 +1,24 @@
 [
   {
+    "stream_id": "318250232791",
+    "user_id": "919489540",
+    "user_login": "venomskiss2001",
+    "user_name": "venomskiss2001",
+    "logo": "https://static-cdn.jtvnw.net/jtv_user_pictures/6d10391c-4804-440d-84ca-3df516cae007-profile_image-300x300.png",
+    "broadcaster_type": "affiliate",
+    "title": "PIVOT Last Pirates with @simplyswig and @prison_wallet // +18 // !discord // !charity // !YT",
+    "language": "en",
+    "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_venomskiss2001-320x180.jpg",
+    "started_at": "2026-06-25T22:13:20Z",
+    "peak_viewers": 3,
+    "last_viewers": 3,
+    "followers": 414,
+    "is_live": true,
+    "first_seen": "2026-06-25T22:15:29Z",
+    "last_seen": "2026-06-25T22:15:29Z",
+    "ended_at": null
+  },
+  {
     "stream_id": "316866482039",
     "user_id": "919489540",
     "user_login": "venomskiss2001",
@@ -13,10 +32,10 @@
     "peak_viewers": 8,
     "last_viewers": 8,
     "followers": 414,
-    "is_live": true,
+    "is_live": false,
     "first_seen": "2026-06-25T22:10:25Z",
     "last_seen": "2026-06-25T22:10:25Z",
-    "ended_at": null
+    "ended_at": "2026-06-25T22:10:25Z"
   },
   {
     "stream_id": "319974211289",
@@ -29,12 +48,12 @@
     "language": "en",
     "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_simplyswig-320x180.jpg",
     "started_at": "2026-06-25T20:03:00Z",
-    "peak_viewers": 18,
-    "last_viewers": 18,
+    "peak_viewers": 20,
+    "last_viewers": 20,
     "followers": 2666,
     "is_live": true,
     "first_seen": "2026-06-25T22:10:25Z",
-    "last_seen": "2026-06-25T22:10:25Z",
+    "last_seen": "2026-06-25T22:15:29Z",
     "ended_at": null
   },
   {
