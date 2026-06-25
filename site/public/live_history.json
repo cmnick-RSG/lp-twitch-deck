@@ -19,6 +19,25 @@
     "ended_at": "2026-06-25T15:01:03Z"
   },
   {
+    "stream_id": "316295258837",
+    "user_id": "858291288",
+    "user_login": "poppymidnight",
+    "user_name": "PoppyMidnight",
+    "logo": "https://static-cdn.jtvnw.net/jtv_user_pictures/7c17a106-e7bd-4e75-8ca9-9a6f2dba2081-profile_image-300x300.png",
+    "broadcaster_type": "",
+    "title": "Девушка играет в Last Pirates Die Together  Заходите, будет интересно и весело!",
+    "language": "ru",
+    "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_poppymidnight-320x180.jpg",
+    "started_at": "2026-06-25T09:55:33Z",
+    "peak_viewers": 4,
+    "last_viewers": 4,
+    "followers": 258,
+    "is_live": true,
+    "first_seen": "2026-06-25T17:25:23Z",
+    "last_seen": "2026-06-25T17:25:23Z",
+    "ended_at": null
+  },
+  {
     "stream_id": "317787362150",
     "user_id": "1127950823",
     "user_login": "belarusian_beast",
@@ -30,11 +49,11 @@
     "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_belarusian_beast-320x180.jpg",
     "started_at": "2026-06-25T09:46:05Z",
     "peak_viewers": 16,
-    "last_viewers": 16,
+    "last_viewers": 15,
     "followers": 614,
     "is_live": true,
     "first_seen": "2026-06-25T17:20:39Z",
-    "last_seen": "2026-06-25T17:20:39Z",
+    "last_seen": "2026-06-25T17:25:23Z",
     "ended_at": null
   },
   {
@@ -49,11 +68,11 @@
     "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_desertcat-320x180.jpg",
     "started_at": "2026-06-25T09:41:47Z",
     "peak_viewers": 15,
-    "last_viewers": 15,
+    "last_viewers": 13,
     "followers": 312,
     "is_live": true,
     "first_seen": "2026-06-25T17:20:39Z",
-    "last_seen": "2026-06-25T17:20:39Z",
+    "last_seen": "2026-06-25T17:25:23Z",
     "ended_at": null
   }
 ]
