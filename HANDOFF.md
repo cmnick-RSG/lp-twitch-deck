@@ -191,6 +191,16 @@ incl. SullyGnome, commits `data.json` (reads but doesn't own live_history). The 
 matched by stream_id) — so live/just-ended streams stay fresh between 2h builds without a full
 rebuild. peak is still a floor (max over 30-min snapshots). live_history.json is committed +
 served (NOT the gitignored live.json). The Live-now tab is still truly real-time via /api/live.
+RELIABILITY (important): GitHub free-tier scheduled Actions are UNRELIABLE for this repo — both
+workflows show state "active" but the scheduler often doesn't fire (verified: zero scheduled runs
+for ~21h despite `*/30` and `0 */2` crons; manual workflow_dispatch works fine). So an EXTERNAL
+cron (cron-job.org) triggers them via the GitHub API workflow_dispatch endpoint using a
+fine-grained PAT (Actions: read/write on this repo only) that Nikita holds:
+  POST https://api.github.com/repos/cmnick-RSG/lp-twitch-deck/actions/workflows/<file>/dispatches
+  headers: Authorization: Bearer <PAT>, Accept: application/vnd.github+json, X-GitHub-Api-Version: 2022-11-28
+  body: {"ref":"main"}   (success = HTTP 204)
+Two cron-job.org jobs: live-snapshot.yml every 30 min, update-data.yml every 2h. The GitHub
+`schedule:` triggers are kept as a (flaky) backup; concurrency group `site-refresh` serializes all.
 
 ## 11. Where we are / next steps
 
