@@ -211,6 +211,15 @@ NEVER deployed to the live site (data only refreshed on a human non-skip push). 
  - Newest feed = /api/live (instant live, serverless, no deploy) ∪ raw live_history (persisted
    ended, no deploy) ∪ data.json baseline (deployed every 2h). No push-triggered workflow exists,
    so dropping `[skip ci]` causes no CI loop.
+v4.6 fixes (streams vanishing on end):
+ - overlay now derives ENDED from "in captured history AND not currently in /api/live" instead
+   of the stored is_live flag — so a stream stays the instant it ends (no 30-min-snapshot wait).
+ - both bots' commit step hardened: commit-then-retry-push-with-rebase (no `--autostash`), which
+   was clobbering the store under concurrent pushes. (A stream was lost this way during a dev
+   session of rapid manual pushes; autonomous operation is now safe.)
+ - KNOWN LIMIT: a stream that both starts AND ends inside a single 30-min snapshot gap and has no
+   VOD is never captured → can't persist. Tighten by lowering the cron-job.org interval (free, no
+   deploy, since live_history is read from GitHub raw).
 
 ## 11. Where we are / next steps
 
