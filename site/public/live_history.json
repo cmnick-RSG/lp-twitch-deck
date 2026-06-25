@@ -10,12 +10,12 @@
     "language": "en",
     "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_sahnjee-320x180.jpg",
     "started_at": "2026-06-25T15:01:17Z",
-    "peak_viewers": 11,
-    "last_viewers": 11,
+    "peak_viewers": 12,
+    "last_viewers": 12,
     "followers": 136,
     "is_live": true,
     "first_seen": "2026-06-25T17:31:11Z",
-    "last_seen": "2026-06-25T17:31:11Z",
+    "last_seen": "2026-06-25T17:35:20Z",
     "ended_at": null
   },
   {
@@ -49,11 +49,11 @@
     "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_poppymidnight-320x180.jpg",
     "started_at": "2026-06-25T09:55:33Z",
     "peak_viewers": 4,
-    "last_viewers": 2,
+    "last_viewers": 4,
     "followers": 258,
     "is_live": true,
     "first_seen": "2026-06-25T17:25:23Z",
-    "last_seen": "2026-06-25T17:31:11Z",
+    "last_seen": "2026-06-25T17:35:20Z",
     "ended_at": null
   },
   {
@@ -87,11 +87,11 @@
     "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_desertcat-320x180.jpg",
     "started_at": "2026-06-25T09:41:47Z",
     "peak_viewers": 15,
-    "last_viewers": 9,
+    "last_viewers": 8,
     "followers": 312,
     "is_live": true,
     "first_seen": "2026-06-25T17:20:39Z",
-    "last_seen": "2026-06-25T17:31:11Z",
+    "last_seen": "2026-06-25T17:35:20Z",
     "ended_at": null
   }
 ]
