@@ -11,11 +11,11 @@
     "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_d_soul0-320x180.jpg",
     "started_at": "2026-06-25T18:05:03Z",
     "peak_viewers": 5,
-    "last_viewers": 5,
+    "last_viewers": 2,
     "followers": 8,
     "is_live": true,
     "first_seen": "2026-06-25T20:40:26Z",
-    "last_seen": "2026-06-25T21:00:58Z",
+    "last_seen": "2026-06-25T21:05:23Z",
     "ended_at": null
   },
   {
@@ -32,10 +32,10 @@
     "peak_viewers": 87,
     "last_viewers": 78,
     "followers": 5095,
-    "is_live": true,
+    "is_live": false,
     "first_seen": "2026-06-25T20:03:32Z",
     "last_seen": "2026-06-25T21:00:58Z",
-    "ended_at": null
+    "ended_at": "2026-06-25T21:00:58Z"
   },
   {
     "stream_id": "316365210580",
