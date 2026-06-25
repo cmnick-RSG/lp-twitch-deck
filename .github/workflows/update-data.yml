@@ -63,10 +63,12 @@ jobs:
           if git diff --staged --quiet; then
             echo "No data changes."
           else
-            git pull --rebase --autostash origin main || true
             # NOTE: no "[skip ci]" — Vercel honours that tag and would SKIP the deploy,
             # leaving the live site's data.json stale. We WANT this commit to deploy.
             # (No GitHub workflow triggers on push — only schedule/dispatch — so no CI loop.)
             git commit -m "data: refresh streams"
-            git push
+            # retry push with rebase — survives a race with a concurrent human/bot push
+            for i in 1 2 3 4 5; do
+              git push && break || { echo "push race, rebasing…"; git pull --rebase --autostash origin main; }
+            done
           fi
