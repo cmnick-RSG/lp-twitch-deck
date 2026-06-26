@@ -1,5 +1,24 @@
 [
   {
+    "stream_id": "320038810458",
+    "user_id": "1511641649",
+    "user_login": "paceplsettv",
+    "user_name": "paceplsettv",
+    "logo": "https://static-cdn.jtvnw.net/jtv_user_pictures/df5ca2ea-15cf-44bf-b2e0-3dcbb065e6dd-profile_image-300x300.png",
+    "broadcaster_type": "",
+    "title": "Last pirates Demo",
+    "language": "en",
+    "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_paceplsettv-320x180.jpg",
+    "started_at": "2026-06-26T01:15:57Z",
+    "peak_viewers": 1,
+    "last_viewers": 1,
+    "followers": 2,
+    "is_live": true,
+    "first_seen": "2026-06-26T01:20:27Z",
+    "last_seen": "2026-06-26T01:20:27Z",
+    "ended_at": null
+  },
+  {
     "stream_id": "320038791514",
     "user_id": "1511641649",
     "user_login": "paceplsettv",
@@ -13,10 +32,10 @@
     "peak_viewers": 0,
     "last_viewers": 0,
     "followers": 2,
-    "is_live": true,
+    "is_live": false,
     "first_seen": "2026-06-26T01:15:26Z",
     "last_seen": "2026-06-26T01:15:26Z",
-    "ended_at": null
+    "ended_at": "2026-06-26T01:15:26Z"
   },
   {
     "stream_id": "320150094939",
@@ -34,7 +53,7 @@
     "followers": 64,
     "is_live": true,
     "first_seen": "2026-06-26T01:15:26Z",
-    "last_seen": "2026-06-26T01:15:26Z",
+    "last_seen": "2026-06-26T01:20:27Z",
     "ended_at": null
   },
   {
@@ -53,7 +72,7 @@
     "followers": 17,
     "is_live": true,
     "first_seen": "2026-06-26T01:15:26Z",
-    "last_seen": "2026-06-26T01:15:26Z",
+    "last_seen": "2026-06-26T01:20:27Z",
     "ended_at": null
   },
   {
@@ -91,7 +110,7 @@
     "followers": 26,
     "is_live": true,
     "first_seen": "2026-06-26T00:10:26Z",
-    "last_seen": "2026-06-26T01:15:26Z",
+    "last_seen": "2026-06-26T01:20:27Z",
     "ended_at": null
   },
   {
@@ -224,7 +243,7 @@
     "followers": 123,
     "is_live": true,
     "first_seen": "2026-06-25T22:20:25Z",
-    "last_seen": "2026-06-26T01:15:26Z",
+    "last_seen": "2026-06-26T01:20:27Z",
     "ended_at": null
   },
   {
