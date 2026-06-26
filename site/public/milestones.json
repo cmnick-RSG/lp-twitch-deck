@@ -1,4 +1,5 @@
 [
+  { "date": "2026-02-23", "label": "Steam page launch", "type": "launch", "major": true, "note": "wishlist campaign begins" },
   { "date": "2026-03-30", "end": "2026-04-07", "label": "Closed playtest (Discord)", "type": "playtest" },
   { "date": "2026-04-10", "end": "2026-04-17", "label": "Soft pre-open access (Steam requests)", "type": "playtest" },
   { "date": "2026-04-13", "label": "BGM Game Expo 2026", "type": "festival" },
