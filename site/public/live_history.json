@@ -10,13 +10,13 @@
     "language": "en",
     "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_blasterlaughter-320x180.jpg",
     "started_at": "2026-06-26T04:04:40Z",
-    "peak_viewers": 0,
-    "last_viewers": 0,
+    "peak_viewers": 3,
+    "last_viewers": 3,
     "followers": 83,
-    "is_live": false,
+    "is_live": true,
     "first_seen": "2026-06-26T04:05:18Z",
-    "last_seen": "2026-06-26T04:05:18Z",
-    "ended_at": "2026-06-26T04:05:18Z"
+    "last_seen": "2026-06-26T04:15:26Z",
+    "ended_at": null
   },
   {
     "stream_id": "320151901147",
