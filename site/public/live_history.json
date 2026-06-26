@@ -13,10 +13,10 @@
     "peak_viewers": 3,
     "last_viewers": 3,
     "followers": 83,
-    "is_live": true,
+    "is_live": false,
     "first_seen": "2026-06-26T04:05:18Z",
     "last_seen": "2026-06-26T04:15:26Z",
-    "ended_at": null
+    "ended_at": "2026-06-26T04:15:26Z"
   },
   {
     "stream_id": "320151901147",
