@@ -13,10 +13,10 @@
     "peak_viewers": 3,
     "last_viewers": 3,
     "followers": 232,
-    "is_live": true,
+    "is_live": false,
     "first_seen": "2026-06-26T05:25:17Z",
     "last_seen": "2026-06-26T05:25:17Z",
-    "ended_at": null
+    "ended_at": "2026-06-26T05:25:17Z"
   },
   {
     "stream_id": "319139249502",
@@ -74,6 +74,25 @@
     "first_seen": "2026-06-26T02:40:25Z",
     "last_seen": "2026-06-26T03:55:18Z",
     "ended_at": "2026-06-26T03:55:18Z"
+  },
+  {
+    "stream_id": "319980993497",
+    "user_id": "258301426",
+    "user_login": "backtothetellie",
+    "user_name": "BackToTheTellie",
+    "logo": "https://static-cdn.jtvnw.net/jtv_user_pictures/4ecd724c-3e7d-4a85-830c-023b73b88854-profile_image-300x300.png",
+    "broadcaster_type": "affiliate",
+    "title": "(15/100) Back With The 1s!! 💀| Love Y'all!",
+    "language": "en",
+    "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_backtothetellie-320x180.jpg",
+    "started_at": "2026-06-26T01:58:27Z",
+    "peak_viewers": 2,
+    "last_viewers": 2,
+    "followers": 126,
+    "is_live": true,
+    "first_seen": "2026-06-26T05:30:43Z",
+    "last_seen": "2026-06-26T05:30:43Z",
+    "ended_at": null
   },
   {
     "stream_id": "320039368666",
