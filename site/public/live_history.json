@@ -15,7 +15,26 @@
     "followers": 104,
     "is_live": true,
     "first_seen": "2026-06-26T09:25:21Z",
-    "last_seen": "2026-06-26T09:25:21Z",
+    "last_seen": "2026-06-26T09:30:40Z",
+    "ended_at": null
+  },
+  {
+    "stream_id": "316085743089",
+    "user_id": "809589552",
+    "user_login": "apollo_play_",
+    "user_name": "APOLLO_PLAY_",
+    "logo": "https://static-cdn.jtvnw.net/jtv_user_pictures/901ca22e-2002-427b-858b-66b56375f8b7-profile_image-300x300.png",
+    "broadcaster_type": "affiliate",
+    "title": "ДЖУМАНДЖИ, УБИЙЦА РЕПО И ПИРАТЫ-ПОХИТИТЕЛИ ЗАДНИЦ | INVOKYR, GRAIN ROT, LAST PIRATES",
+    "language": "ru",
+    "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_apollo_play_-320x180.jpg",
+    "started_at": "2026-06-26T07:35:28Z",
+    "peak_viewers": 19,
+    "last_viewers": 19,
+    "followers": 1300,
+    "is_live": true,
+    "first_seen": "2026-06-26T09:30:40Z",
+    "last_seen": "2026-06-26T09:30:40Z",
     "ended_at": null
   },
   {
