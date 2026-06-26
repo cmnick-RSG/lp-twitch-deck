@@ -1,0 +1,23 @@
+[
+  { "date": "2026-03-30", "end": "2026-04-07", "label": "Closed playtest (Discord)", "type": "playtest" },
+  { "date": "2026-04-10", "end": "2026-04-17", "label": "Soft pre-open access (Steam requests)", "type": "playtest" },
+  { "date": "2026-04-13", "label": "BGM Game Expo 2026", "type": "festival" },
+  { "date": "2026-04-17", "end": "2026-04-21", "label": "Open Steam playtest", "type": "playtest", "major": true, "note": "first stream spike" },
+  { "date": "2026-04-25", "label": "Indie Live Expo 2026", "type": "festival" },
+  { "date": "2026-04-26", "label": "UGDAP", "type": "festival" },
+  { "date": "2026-05-15", "label": "Creator pre-demo invites", "type": "marketing" },
+  { "date": "2026-05-18", "end": "2026-05-21", "label": "Pre-demo closed playtest (Discord)", "type": "playtest" },
+  { "date": "2026-05-22", "end": "2026-05-25", "label": "Pre-demo open Steam playtest", "type": "playtest" },
+  { "date": "2026-05-25", "label": "Chaos Fest 2026", "type": "festival" },
+  { "date": "2026-05-28", "label": "Public Demo launch", "type": "launch", "major": true },
+  { "date": "2026-06-02", "label": "BIG Summer Showcase", "type": "festival" },
+  { "date": "2026-06-05", "label": "PitchYaGame", "type": "festival" },
+  { "date": "2026-06-15", "end": "2026-06-22", "label": "Steam Next Fest", "type": "festival", "major": true },
+  { "date": "2026-06-22", "label": "The Gamer Section: Summer Indie Showcase", "type": "festival" },
+  { "date": "2026-06-23", "label": "TooManyGames 2026", "type": "festival" },
+  { "date": "2026-07-20", "label": "Demo closes", "type": "launch" },
+  { "date": "2026-08-01", "label": "Release build ready · key distribution (embargo)", "type": "release" },
+  { "date": "2026-08-14", "label": "Embargo lifts · video flood", "type": "release" },
+  { "date": "2026-08-17", "label": "Release trailer premiere (Ukrainian Games Festival Direct)", "type": "release" },
+  { "date": "2026-08-18", "label": "Early Access release", "type": "release", "major": true }
+]
