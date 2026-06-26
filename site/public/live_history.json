@@ -1,5 +1,24 @@
 [
   {
+    "stream_id": "318298425205",
+    "user_id": "218217909",
+    "user_login": "elviinhoo",
+    "user_name": "elviinhoo",
+    "logo": "https://static-cdn.jtvnw.net/jtv_user_pictures/20612af3-097f-48e9-9488-4be5bc738ca3-profile_image-300x300.png",
+    "broadcaster_type": "affiliate",
+    "title": "JOGANDO ALGUMAS COISAS",
+    "language": "pt",
+    "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_elviinhoo-320x180.jpg",
+    "started_at": "2026-06-25T23:56:21Z",
+    "peak_viewers": 3,
+    "last_viewers": 3,
+    "followers": 73,
+    "is_live": true,
+    "first_seen": "2026-06-26T00:01:00Z",
+    "last_seen": "2026-06-26T00:01:00Z",
+    "ended_at": null
+  },
+  {
     "stream_id": "320147530203",
     "user_id": "935426950",
     "user_login": "jagu_351",
@@ -15,7 +34,7 @@
     "followers": 13,
     "is_live": true,
     "first_seen": "2026-06-25T23:20:27Z",
-    "last_seen": "2026-06-25T23:55:20Z",
+    "last_seen": "2026-06-26T00:01:00Z",
     "ended_at": null
   },
   {
@@ -34,7 +53,7 @@
     "followers": 63,
     "is_live": true,
     "first_seen": "2026-06-25T23:15:27Z",
-    "last_seen": "2026-06-25T23:55:20Z",
+    "last_seen": "2026-06-26T00:01:00Z",
     "ended_at": null
   },
   {
@@ -49,11 +68,11 @@
     "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_chrisondattime-320x180.jpg",
     "started_at": "2026-06-25T22:53:01Z",
     "peak_viewers": 5,
-    "last_viewers": 3,
+    "last_viewers": 2,
     "followers": 53,
     "is_live": true,
     "first_seen": "2026-06-25T22:55:20Z",
-    "last_seen": "2026-06-25T23:55:20Z",
+    "last_seen": "2026-06-26T00:01:00Z",
     "ended_at": null
   },
   {
@@ -68,11 +87,11 @@
     "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_mini3me-320x180.jpg",
     "started_at": "2026-06-25T22:50:42Z",
     "peak_viewers": 3,
-    "last_viewers": 3,
+    "last_viewers": 2,
     "followers": 77,
     "is_live": true,
     "first_seen": "2026-06-25T23:50:26Z",
-    "last_seen": "2026-06-25T23:55:20Z",
+    "last_seen": "2026-06-26T00:01:00Z",
     "ended_at": null
   },
   {
@@ -110,7 +129,7 @@
     "followers": 123,
     "is_live": true,
     "first_seen": "2026-06-25T22:20:25Z",
-    "last_seen": "2026-06-25T23:55:20Z",
+    "last_seen": "2026-06-26T00:01:00Z",
     "ended_at": null
   },
   {
@@ -129,7 +148,7 @@
     "followers": 415,
     "is_live": true,
     "first_seen": "2026-06-25T22:15:29Z",
-    "last_seen": "2026-06-25T23:55:20Z",
+    "last_seen": "2026-06-26T00:01:00Z",
     "ended_at": null
   },
   {
@@ -163,11 +182,11 @@
     "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_solangelissett-320x180.jpg",
     "started_at": "2026-06-25T21:43:44Z",
     "peak_viewers": 9,
-    "last_viewers": 9,
+    "last_viewers": 8,
     "followers": 246,
     "is_live": true,
     "first_seen": "2026-06-25T23:15:27Z",
-    "last_seen": "2026-06-25T23:55:20Z",
+    "last_seen": "2026-06-26T00:01:00Z",
     "ended_at": null
   },
   {
@@ -186,7 +205,7 @@
     "followers": 557,
     "is_live": true,
     "first_seen": "2026-06-25T23:15:27Z",
-    "last_seen": "2026-06-25T23:55:20Z",
+    "last_seen": "2026-06-26T00:01:00Z",
     "ended_at": null
   },
   {
@@ -203,10 +222,10 @@
     "peak_viewers": 5,
     "last_viewers": 3,
     "followers": 73,
-    "is_live": true,
+    "is_live": false,
     "first_seen": "2026-06-25T23:35:22Z",
     "last_seen": "2026-06-25T23:55:20Z",
-    "ended_at": null
+    "ended_at": "2026-06-25T23:55:20Z"
   },
   {
     "stream_id": "319258625888",
@@ -239,11 +258,11 @@
     "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_simplyswig-320x180.jpg",
     "started_at": "2026-06-25T20:03:00Z",
     "peak_viewers": 22,
-    "last_viewers": 17,
+    "last_viewers": 20,
     "followers": 2666,
     "is_live": true,
     "first_seen": "2026-06-25T22:10:25Z",
-    "last_seen": "2026-06-25T23:55:20Z",
+    "last_seen": "2026-06-26T00:01:00Z",
     "ended_at": null
   },
   {
