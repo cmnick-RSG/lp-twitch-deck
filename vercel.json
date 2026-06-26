@@ -5,5 +5,10 @@
   "installCommand": null,
   "outputDirectory": "site/public",
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "git": {
+    "deploymentEnabled": {
+      "data": false
+    }
+  }
 }
