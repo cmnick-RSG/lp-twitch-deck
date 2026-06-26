@@ -8,8 +8,8 @@ on:
   schedule:
     - cron: "*/10 * * * *"   # every 10 min (UTC) — BACKUP trigger. GitHub free-tier schedules
                               # are unreliable, so the primary trigger is cron-job.org hitting
-                              # workflow_dispatch. Public repo => unlimited Actions minutes; the
-                              # concurrency group serialises duplicates and [skip ci] avoids deploys.
+                              # workflow_dispatch every 5 min. Public repo => unlimited Actions
+                              # minutes. Commits go to the 'data' branch (Vercel doesn't watch it).
   workflow_dispatch: {}
 
 permissions:
@@ -35,20 +35,19 @@ jobs:
           TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
           TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
         run: python collect_stream_history.py
-      - name: Commit live history
+      - name: Publish live history to the 'data' branch (NOT main)
         run: |
           git config user.name  "lp-deck-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add site/public/live_history.json
-          if git diff --staged --quiet; then
+          # Push snapshots to a dedicated 'data' branch that Vercel does NOT watch. This keeps the
+          # high-frequency commits off main, so they neither trigger deploy churn NOR suppress the
+          # deploy of real main commits (a "[skip ci]" snapshot landing on top used to block it).
+          # The frontend reads live_history.json from this branch via GitHub raw. force-push: ok.
+          git checkout -B data
+          git add -f site/public/live_history.json
+          if git diff --cached --quiet; then
             echo "No live changes."
           else
-            # "[skip ci]" is DELIBERATE: Vercel honours it and skips the deploy, so the 30-min
-            # snapshots don't churn Vercel. The frontend reads live_history.json directly from
-            # GitHub raw, so it sees this commit within ~5 min without a deploy.
-            git commit -m "live: snapshot [skip ci]"
-            # retry push with rebase — survives a race with a concurrent human/bot push
-            for i in 1 2 3 4 5; do
-              git push && break || { echo "push race, rebasing…"; git pull --rebase --autostash origin main; }
-            done
+            git commit -m "live: snapshot"
+            git push -f origin data
           fi

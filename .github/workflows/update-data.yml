@@ -53,6 +53,11 @@ jobs:
           TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
         run: python enrich_helix.py
 
+      - name: Pull latest live history from the 'data' branch (snapshots live there now)
+        run: |
+          curl -sfL "https://raw.githubusercontent.com/cmnick-RSG/lp-twitch-deck/data/site/public/live_history.json" \
+            -o site/public/live_history.json || echo "[]" > site/public/live_history.json
+
       - name: Build site data.json
         run: python build_site_data.py
 
