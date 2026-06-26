@@ -1,5 +1,24 @@
 [
   {
+    "stream_id": "320043293146",
+    "user_id": "731575115",
+    "user_login": "adn4n252",
+    "user_name": "ADN4N252",
+    "logo": "https://static-cdn.jtvnw.net/jtv_user_pictures/6a480950-92e3-46de-a332-7156bd401f21-profile_image-300x300.png",
+    "broadcaster_type": "affiliate",
+    "title": "borra la kuenta || quiero havlar. ||",
+    "language": "es",
+    "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_adn4n252-320x180.jpg",
+    "started_at": "2026-06-26T05:22:17Z",
+    "peak_viewers": 3,
+    "last_viewers": 3,
+    "followers": 232,
+    "is_live": true,
+    "first_seen": "2026-06-26T05:25:17Z",
+    "last_seen": "2026-06-26T05:25:17Z",
+    "ended_at": null
+  },
+  {
     "stream_id": "319139249502",
     "user_id": "247762653",
     "user_login": "blasterlaughter",
@@ -32,10 +51,10 @@
     "peak_viewers": 4,
     "last_viewers": 2,
     "followers": 232,
-    "is_live": true,
+    "is_live": false,
     "first_seen": "2026-06-26T05:00:54Z",
     "last_seen": "2026-06-26T05:20:27Z",
-    "ended_at": null
+    "ended_at": "2026-06-26T05:20:27Z"
   },
   {
     "stream_id": "320151901147",
