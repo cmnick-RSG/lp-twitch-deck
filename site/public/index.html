@@ -247,19 +247,18 @@
   .src.ended{background:rgba(52,211,153,.92);color:#04231a}
   .src.vod{background:rgba(139,92,246,.92);color:#fff}
   /* ---------- calendar heatmap ---------- */
-  .calwrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
-  .calgrid{display:flex;gap:10px;align-items:flex-start;overflow-x:auto;padding-bottom:6px}
-  .calwd{display:flex;flex-direction:column;gap:4px;padding-top:23px;flex-shrink:0}
-  .calwd span{height:19px;font-size:10.5px;line-height:19px;color:var(--muted);font-weight:600;text-align:right}
-  .calcols{display:inline-block}
-  .calmonths{display:flex;gap:4px;height:17px;margin-bottom:4px}
-  .calmonths .m{width:19px;font-size:11px;color:var(--text2);font-weight:700;white-space:nowrap;flex-shrink:0}
-  .cal{display:flex;gap:4px}
-  .cal .wk{display:flex;flex-direction:column;gap:4px}
-  .cal .cell{width:19px;height:19px;border-radius:4px;background:var(--panel3);transition:.1s;cursor:default}
+  .calwrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;width:fit-content;max-width:100%}
+  .calgrid{display:flex;gap:12px;align-items:flex-start;overflow-x:auto;padding-bottom:6px}
+  .calwd{display:grid;grid-template-rows:repeat(7,22px);gap:4px;padding-top:26px;flex-shrink:0}
+  .calwd span{font-size:10.5px;line-height:22px;color:var(--muted);font-weight:600;text-align:right}
+  .calcols{display:flex;flex-direction:column}
+  .calmonths{display:flex;gap:4px;height:18px;margin-bottom:4px}
+  .calmonths .m{width:22px;font-size:11.5px;color:var(--text2);font-weight:700;white-space:nowrap;flex-shrink:0}
+  .cal{display:grid;grid-template-rows:repeat(7,22px);grid-auto-flow:column;grid-auto-columns:22px;gap:4px}
+  .cal .cell{border-radius:4px;background:var(--panel3);transition:.1s;cursor:default}
   .cal .cell:hover{outline:2px solid var(--gold2);outline-offset:1px}
   .cal .cell.empty{background:transparent;outline:none}
-  .callegend{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);margin-top:13px}
+  .callegend{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);margin-top:14px;flex-wrap:wrap}
   .callegend i{width:16px;height:16px;border-radius:4px;display:inline-block}
   /* ---------- returning streamers ---------- */
   .ret{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:11px}
@@ -378,7 +377,7 @@
 
     <div class="sec-h"><h2>Streams vs key events</h2><span class="hint">milestones over the campaign · hover the curve for events · filter by type below</span><div class="ln"></div></div>
     <div class="chartwrap tall"><canvas id="cMilestone"></canvas></div>
-    <div id="msLegend" style="display:flex;flex-wrap:wrap;gap:7px;margin:-6px 0 4px"></div>
+    <div id="msLegend" style="margin:2px 0 4px"></div>
 
     <div class="sec-h"><h2>Streaming calendar</h2><span class="hint">channels streaming each day · since the Steam page launch</span><div class="ln"></div></div>
     <div class="calwrap">
@@ -872,10 +871,10 @@ function drawCalendar(){
     let lbl="";if(mo!==-1&&mo!==lastMon){lbl=MON[mo];lastMon=mo;}
     return `<div class="m">${lbl}</div>`;}).join("");
   document.getElementById("calWd").innerHTML=["Mon","","Wed","","Fri","","Sun"].map(d=>`<span>${d}</span>`).join("");
-  document.getElementById("cal").innerHTML=weeks.map(wk=>`<div class="wk">${
-    Array.from({length:7},(_,r)=>{const c=wk[r];return c
-      ?`<div class="cell" style="background:${col(c.v)}" title="${c.date} · ${c.v} channel${c.v===1?'':'s'} streaming"></div>`
-      :`<div class="cell empty"></div>`;}).join("")}</div>`).join("");
+  // flat cell list — CSS grid (grid-auto-flow:column, 7 rows) lays them out by week column
+  document.getElementById("cal").innerHTML=grid.map(c=>c
+    ?`<div class="cell" style="background:${col(c.v)}" title="${c.date} · ${c.v} channel${c.v===1?'':'s'} streaming"></div>`
+    :`<div class="cell empty"></div>`).join("");
 }
 
 /* ---------- returning streamers (>1 stream in the feed) ---------- */
