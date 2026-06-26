@@ -362,41 +362,26 @@
     <div class="slist" id="live"></div>
   </section>
 
-  <!-- TOP -->
-  <section class="tab" data-tab="top">
-    <div class="sec-h"><h2>Top channels</h2><span class="count" id="topCount"></span><div class="ln"></div></div>
-    <div class="toolbar">
-      <label class="fld"><span>Sort by</span>
-        <select id="tcSort" class="ctl">
-          <option value="viewminutes">Hours watched</option><option value="maxviewers">Peak viewers</option>
-          <option value="avgviewers">Avg viewers</option><option value="streamedminutes">Hours streamed</option><option value="followers">Followers</option>
-        </select></label>
-      <label class="fld"><span>Show</span>
-        <select id="tcN" class="ctl"><option value="12">Top 12</option><option value="24" selected>Top 24</option><option value="48">Top 48</option><option value="96">Top 96</option></select></label>
-      <label class="fld"><span>Language</span><select id="tcLang" class="ctl"></select></label>
-      <label class="check"><input type="checkbox" id="tcPartner"> Partners only</label>
-    </div>
-    <div class="grid" id="topgrid"></div>
-  </section>
-
-  <!-- ALL -->
-  <section class="tab" data-tab="all">
-    <div class="sec-h"><h2>All channels</h2><span class="count" id="allCount"></span><div class="ln"></div></div>
+  <!-- CHANNELS (merged Top + All) -->
+  <section class="tab" data-tab="channels">
+    <div class="sec-h"><h2>Channels</h2><span class="count" id="allCount"></span><div class="ln"></div></div>
     <div class="toolbar">
       <label class="fld"><span>Search</span>
         <span class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="fSearch" class="ctl" placeholder="channel name…"></span></label>
-      <label class="fld"><span>Language</span><select id="fLang" class="ctl"></select></label>
-      <label class="fld"><span>Size</span>
-        <select id="fTier" class="ctl">
-          <option value="">All sizes</option><option value="t4">1M+ followers</option>
-          <option value="t3">100k+</option><option value="t2">10k+</option><option value="t1">1k+</option><option value="t0">Under 1k</option>
-        </select></label>
       <label class="fld"><span>Sort by</span>
         <select id="fSort" class="ctl">
           <option value="viewminutes">Hours watched</option><option value="maxviewers">Peak viewers</option>
           <option value="avgviewers">Avg viewers</option><option value="streamedminutes">Hours streamed</option><option value="followers">Followers</option>
         </select></label>
       <label class="fld"><span>Order</span><select id="fDir" class="ctl"><option value="desc">High → Low</option><option value="asc">Low → High</option></select></label>
+      <label class="fld"><span>Language</span><select id="fLang" class="ctl"></select></label>
+      <label class="fld"><span>Size</span>
+        <select id="fTier" class="ctl">
+          <option value="">All sizes</option><option value="t4">1M+ followers</option>
+          <option value="t3">100k+</option><option value="t2">10k+</option><option value="t1">1k+</option><option value="t0">Under 1k</option>
+        </select></label>
+      <label class="fld"><span>Show</span>
+        <select id="fN" class="ctl"><option value="24">Top 24</option><option value="48" selected>Top 48</option><option value="96">Top 96</option><option value="300">Top 300</option><option value="0">All</option></select></label>
       <label class="check"><input type="checkbox" id="fPartner"> Partners only</label>
     </div>
     <div class="grid" id="allgrid"></div>
@@ -429,12 +414,12 @@
   <section class="tab" data-tab="regions">
     <div class="sec-h"><h2>Regions</h2><span class="hint">by broadcast language · share of hours watched</span><div class="ln"></div></div>
     <div class="regrid" id="regcards" style="margin-bottom:8px"></div>
+    <div id="regDetail"></div>
     <div class="sec-h"><h2>Distribution</h2><div class="ln"></div></div>
     <div style="display:grid;grid-template-columns:minmax(0,360px) 1fr;gap:20px;align-items:start" id="regSplit">
       <div class="chartwrap" style="height:330px"><canvas id="cRegion"></canvas></div>
       <div><div class="sec-h" style="margin-top:0"><h2>By language</h2><div class="ln"></div></div><div class="langtable" id="langlist"></div></div>
     </div>
-    <div id="regDetail"></div>
   </section>
 
   <div class="foot" id="foot"></div>
@@ -461,8 +446,8 @@ const I={
 const svg=(n,w=18)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="${w}" height="${w}">${I[n]}</svg>`;
 
 const TABS=[["overview","Overview","overview"],["trends","Trends & Analytics","trends"],
-  ["live","Live now","live"],["top","Top channels","top"],["all","All channels","users"],
-  ["streams","Newest streams","streams"],["regions","Regions","regions"]];
+  ["live","Live now","live"],["streams","Newest streams","streams"],
+  ["channels","Channels","users"],["regions","Regions","regions"]];
 
 const fmt=n=>n==null||n===""?"—":Number(n).toLocaleString("en-US");
 const hrs=m=>fmt(Math.round((m||0)/60));
@@ -505,8 +490,7 @@ function go(id){
   document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x.dataset.tab===id));
   window.scrollTo({top:0,behavior:"smooth"});
   // lazy-render heavy tabs only the first time they're opened (fewer images up front)
-  if(id==="top"&&!rendered.top){rendered.top=1;topGrid();}
-  if(id==="all"&&!rendered.all){rendered.all=1;allGrid();}
+  if(id==="channels"&&!rendered.channels){rendered.channels=1;allGrid();}
   if(id==="streams"&&!rendered.streams){rendered.streams=1;streams();}
   if(id==="overview")drawOverviewCharts();
   if(id==="trends")drawTrends();if(id==="regions")drawRegions();if(id==="live")drawLive();
@@ -528,7 +512,7 @@ function overview(){
   const last=a=>a.slice(-30);
   const kpis=[
     {ic:"live",cls:"em",v:`<span id="kpiLive">…</span>`,l:"Live right now",go:"live",badge:true},
-    {ic:"users",cls:"pu",v:fmt(w["30"]),l:"Streamers · 30 days",go:"all",spark:spark(last(chSeries),"#b29bff")},
+    {ic:"users",cls:"pu",v:fmt(w["30"]),l:"Streamers · 30 days",go:"channels",spark:spark(last(chSeries),"#b29bff")},
     {ic:"eye",cls:"",v:fmt(s.total_hours_watched),l:"Hours watched · all-time",go:"trends",gold:true,spark:spark(last(vwSeries),"#f5c451")},
     {ic:"flame",cls:"em",v:fmt(s.peak_concurrent_viewers),l:"Peak viewers · all-time",go:"trends"},
     {ic:"streams",cls:"bl",v:fmt((D.streams||[]).length),l:"Recent streams tracked",go:"streams"},
@@ -541,9 +525,9 @@ function overview(){
     </div>`).join("");
 
   const mom=[["Last 3 days",w["3"],"recently active"],["Last 7 days",w["7"],"this week"],
-    ["Last 30 days",w["30"],"this month"],["All-time",w["365"]||s.total_streamers,"365-day total"]];
+    ["Last 30 days",w["30"],"this month"],["All-time",s.total_streamers||w["365"],"unique streamers ever"]];
   document.getElementById("momentum").innerHTML=mom.map(([w_,n,sub])=>
-    `<div class="mom" onclick="go('all')"><div class="w">${w_}</div><div class="n num">${fmt(n)}</div><div class="sub">${sub}</div></div>`).join("");
+    `<div class="mom" onclick="go('channels')"><div class="w">${w_}</div><div class="n num">${fmt(n)}</div><div class="sub">${sub}</div></div>`).join("");
 
   const tiles=[
     [hrs(s.total_hours_streamed*60),"Hours streamed","b"],[fmt(s.partner_channels),"Twitch partners","p"],
@@ -608,34 +592,25 @@ function drawActivity(){const data=bucket(activeSlice(D.timeseries.channels),act
 }
 
 /* ---------- channel cards ---------- */
-function card(c){return `<div class="card"><div class="rk">#${c.rownum}</div>${img(c.logo)}
+function card(c,rk){return `<div class="card"><div class="rk">#${rk||c.rownum}</div>${img(c.logo)}
   <div class="nm"><a href="${c.twitchurl}" target="_blank" rel="noopener">${esc(c.displayname)}</a></div>
   <div class="tags">${tags(c)}</div>
   <div class="stats"><div><b class="num" style="color:var(--gold)">${hrs(c.viewminutes)}</b><span>watch hrs</span></div><div><b class="num" style="color:${vColor(c.maxviewers)}">${fmt(c.maxviewers)}</b><span>peak</span></div>
   <div><b class="num" style="color:var(--purple2)">${fmt(c.avgviewers)}</b><span>avg</span></div><div><b class="num">${fmt(c.followers)}</b><span>followers</span></div></div></div>`;}
 function langOptions(vals){return `<option value="">All languages</option>`+[...new Set(vals.filter(Boolean))].sort().map(l=>`<option>${l}</option>`).join("");}
-function buildTopFilters(){
-  document.getElementById("tcLang").innerHTML=langOptions(D.channels.map(c=>c.language));
-  ["tcSort","tcN","tcLang","tcPartner"].forEach(id=>document.getElementById(id).addEventListener("input",topGrid));
-}
-function topGrid(){
-  const sort=tcSort.value,n=parseInt(tcN.value),lang=tcLang.value,partner=tcPartner.checked;
-  let r=D.channels.filter(c=>(!lang||c.language===lang)&&(!partner||c.partner));
-  r.sort((a,b)=>(b[sort]||0)-(a[sort]||0));r=r.slice(0,n);
-  document.getElementById("topCount").textContent=`showing ${r.length}`;
-  document.getElementById("topgrid").innerHTML=r.map(card).join("");
-  syncCheck();
-}
 function buildFilters(){
   document.getElementById("fLang").innerHTML=langOptions(D.channels.map(c=>c.language));
-  ["fSearch","fLang","fTier","fSort","fDir","fPartner"].forEach(id=>document.getElementById(id).addEventListener("input",allGrid));
+  ["fSearch","fLang","fTier","fSort","fDir","fN","fPartner"].forEach(id=>document.getElementById(id).addEventListener("input",allGrid));
 }
 function allGrid(){
-  const q=fSearch.value.toLowerCase(),lang=fLang.value,tk=fTier.value,sort=fSort.value,partner=fPartner.checked,dir=fDir.value==="asc"?-1:1;
+  const q=fSearch.value.toLowerCase(),lang=fLang.value,tk=fTier.value,sort=fSort.value,
+        partner=fPartner.checked,dir=fDir.value==="asc"?-1:1,n=parseInt(fN.value)||0;
   let r=D.channels.filter(c=>c.displayname.toLowerCase().includes(q)&&(!lang||c.language===lang)&&(!partner||c.partner)&&(!tk||tier(c.followers)[0]===tk));
   r.sort((a,b)=>((b[sort]||0)-(a[sort]||0))*dir);
-  document.getElementById("allCount").textContent=`${fmt(r.length)} of ${fmt(D.channels.length)}`;
-  document.getElementById("allgrid").innerHTML=r.length?r.slice(0,300).map(card).join(""):`<div class="empty">No channels match your filters.</div>`;
+  const total=r.length;
+  if(n>0)r=r.slice(0,n);else r=r.slice(0,500);     // hard cap 500 for DOM sanity
+  document.getElementById("allCount").textContent=`showing ${fmt(r.length)} of ${fmt(total)} (${fmt(D.channels.length)} tracked)`;
+  document.getElementById("allgrid").innerHTML=r.length?r.map((c,i)=>card(c,i+1)).join(""):`<div class="empty">No channels match your filters.</div>`;
   syncCheck();
 }
 
@@ -659,6 +634,33 @@ function streams(){
   el.innerHTML=r.slice(0,140).map(streamCard).join("");
   syncCheck();
 }
+// A Twitch crash/restart produces several stream ids for the same channel minutes
+// apart. Collapse consecutive same-channel sessions (gap ≤ 45 min) into ONE card so
+// the feed isn't spammed with fragments. Live streams are never merged.
+function collapseRestarts(list){
+  const GAP=45*60*1000;
+  const groups=new Map();
+  list.forEach(s=>{const k=(s.channelurl||"").toLowerCase();if(!groups.has(k))groups.set(k,[]);groups.get(k).push(s);});
+  const out=[];
+  groups.forEach(arr=>{
+    arr.sort((a,b)=>(a.startDateTime||"").localeCompare(b.startDateTime||""));
+    let cur=null,curEnd=0;
+    arr.forEach(s=>{
+      const st=new Date(s.startDateTime||0).getTime();
+      const end=st+(s.length||0)*60000;
+      if(cur&&!s.is_live&&!cur.is_live&&st-curEnd<=GAP){
+        cur._parts=(cur._parts||1)+1;
+        cur.length=(cur.length||0)+(s.length||0);
+        cur.peak_viewers=Math.max(cur.peak_viewers||0,s.peak_viewers||0);
+        cur.maxviewers=Math.max(cur.maxviewers||0,s.maxviewers||0);
+        if(s.vod_views!=null)cur.vod_views=(cur.vod_views||0)+s.vod_views;
+        if(s.vod_url&&!cur.vod_url){cur.vod_url=s.vod_url;cur.vod_duration=s.vod_duration;cur.vod_thumb=cur.vod_thumb||s.vod_thumb;}
+        curEnd=Math.max(curEnd,end);
+      }else{cur={...s};out.push(cur);curEnd=end;}
+    });
+  });
+  return out;
+}
 function streamCard(s){
   const login=s.channelurl||s.channeldisplayname;
   const peak=s.peak_viewers!=null?s.peak_viewers:s.maxviewers;
@@ -677,6 +679,7 @@ function streamCard(s){
     :s.vod_url?`<a class="vodbtn" href="${s.vod_url}" target="_blank" rel="noopener">${svg("play",13)} Watch VOD</a>`
     :`<span class="vodbtn dead">no VOD</span>`;
   const chips=[];
+  if(s._parts>1)chips.push(`<span class="chip" style="color:var(--gold);border-color:var(--gold)">↻ ${s._parts} sessions merged</span>`);
   if(s.followers!=null)chips.push(`<span class="chip">${svg("users",13)} ${fmt(s.followers)} followers</span>`);
   if(s.avgviewers!=null)chips.push(`<span class="chip">${svg("eye",13)} ${fmt(s.avgviewers)} avg</span>`);
   if(!s.is_live&&peak!=null&&s.vod_url&&s.vod_views!=null)chips.push(`<span class="chip">${svg("play",13)} ${fmt(s.vod_views)} VOD views</span>`);
@@ -961,8 +964,9 @@ async function overlayLive(){
     if(s.stream_id&&seen.has(s.stream_id))return;
     if(s.is_live&&seen.has("l:"+login))return;
     out.push(s);});
-  out.sort((a,b)=>{const d=(b.is_live?1:0)-(a.is_live?1:0);return d||(b.startDateTime||"").localeCompare(a.startDateTime||"");});
-  D.streams=out;
+  const merged=collapseRestarts(out);
+  merged.sort((a,b)=>{const d=(b.is_live?1:0)-(a.is_live?1:0);return d||(b.startDateTime||"").localeCompare(a.startDateTime||"");});
+  D.streams=merged;
   if(rendered.streams)streams();
   ovLatest();
   liveCount=apiLive.length;const kl=document.getElementById("kpiLive");if(kl)kl.textContent=liveCount;
@@ -979,7 +983,7 @@ fetch("data.json").then(r=>r.json()).then(d=>{
     `New streams now appear straight from Twitch the moment a broadcast ends; SullyGnome backfills viewer stats. VODs expire on Twitch — captured metrics persist here.`;
   // boot only the default (Overview) tab; other tabs render on first open via go()
   overview();drawOverviewCharts();
-  buildTopFilters();buildFilters();buildStreamFilters();
+  buildFilters();buildStreamFilters();
   overlayLive();setInterval(overlayLive,60000);   // refresh live overlay every 60s
 }).catch(e=>{document.getElementById("ovMeta").textContent="failed to load data.json: "+e;});
 </script>
