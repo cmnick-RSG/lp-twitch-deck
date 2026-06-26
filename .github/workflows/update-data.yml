@@ -8,8 +8,9 @@ on:
   workflow_dispatch: {}       # manual "Run workflow" button
 
 env:
-  LP_RECENT_WINDOW: "3"      # hourly job scans the recent (3-day) window — lighter & fresh
-  LP_STREAM_WINDOW: "7"
+  # SullyGnome only accepts specific day windows (3/7/30/365) — others return empty!
+  LP_RECENT_WINDOW: "7"      # scan channels active in the last 7 days (fills recent gaps)
+  LP_STREAM_WINDOW: "30"     # pull each channel's last 30 days of streams (backfill depth)
 
 permissions:
   contents: write             # allow committing data back to the repo

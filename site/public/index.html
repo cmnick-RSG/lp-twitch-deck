@@ -235,6 +235,41 @@
   .lang .lbar{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--gold),var(--ember))}
   .lang .lval{text-align:right;font-size:13px;font-weight:700;color:var(--text2)}
 
+  /* ---------- follower tier badges (colorized) ---------- */
+  .tag.t0{background:var(--panel3);border-color:var(--line);color:var(--muted)}
+  .tag.t1{background:rgba(95,176,239,.15);border-color:rgba(95,176,239,.55);color:var(--blue)}
+  .tag.t2{background:rgba(139,92,246,.18);border-color:var(--purple);color:var(--purple2)}
+  .tag.t3{background:rgba(245,196,81,.16);border-color:var(--gold);color:var(--gold)}
+  .tag.t4{background:linear-gradient(90deg,rgba(245,196,81,.30),rgba(240,87,60,.30));border-color:var(--gold);color:var(--gold2);box-shadow:0 0 10px rgba(245,196,81,.25)}
+  /* richer channel-card stats: colored values */
+  .card .stats b.s-watch{color:var(--gold)} .card .stats b.s-foll{color:var(--text)}
+  /* ---------- source badges (distinct per origin) ---------- */
+  .src.ended{background:rgba(52,211,153,.92);color:#04231a}
+  .src.vod{background:rgba(139,92,246,.92);color:#fff}
+  /* ---------- calendar heatmap ---------- */
+  .calwrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;overflow:hidden}
+  .cal{display:flex;gap:3px;overflow-x:auto;padding-bottom:4px}
+  .cal .wk{display:flex;flex-direction:column;gap:3px}
+  .cal .cell{width:13px;height:13px;border-radius:3px;background:var(--panel3);transition:.1s}
+  .cal .cell:hover{outline:2px solid var(--gold2)}
+  .callegend{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);margin-top:10px}
+  .callegend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+  .calmonths{display:flex;gap:3px;font-size:10px;color:var(--muted);margin-bottom:5px;padding-left:2px}
+  /* ---------- returning streamers ---------- */
+  .ret{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:11px}
+  .retc{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:11px 14px;transition:.15s}
+  .retc:hover{border-color:var(--gold)}
+  .retc img{width:42px;height:42px;border-radius:50%;border:2px solid var(--gold);object-fit:cover;background:var(--panel3);flex-shrink:0}
+  .retc .rn{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .retc .rn a{color:var(--text)} .retc .rn a:hover{color:var(--gold)}
+  .retc .rm{color:var(--muted);font-size:11.5px;margin-top:2px}
+  .retc .cnt{margin-left:auto;text-align:right;flex-shrink:0}
+  .retc .cnt b{font-size:21px;font-weight:900;color:var(--gold);display:block;line-height:1}
+  .retc .cnt span{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+  /* ---------- regions drill-down ---------- */
+  .regcard{cursor:pointer}
+  .regcard.sel{border-color:var(--gold);box-shadow:var(--shadow)}
+  #regDetail .lang .lname{display:flex;align-items:center}
   .empty{color:var(--muted);padding:40px;text-align:center;border:1px dashed var(--line);border-radius:14px;font-size:14px}
   .foot{color:var(--muted);font-size:12px;margin-top:40px;border-top:1px solid var(--line);padding-top:18px;line-height:1.8}
   .foot b{color:var(--text2)}
@@ -271,6 +306,8 @@
   <section class="tab active" data-tab="overview">
     <div class="sec-h"><h2>At a glance</h2><span class="hint" id="ovMeta"></span><div class="ln"></div></div>
     <div class="kpis" id="kpis"></div>
+    <div class="sec-h"><h2>Live &amp; latest streams</h2><span class="hint">newest activity · full list in “Newest streams”</span><div class="ln"></div></div>
+    <div class="slist" id="ovLatest"></div>
     <div class="sec-h"><h2>Unique streamers by window</h2><span class="hint">click to open the channel list</span><div class="ln"></div></div>
     <div class="momentum" id="momentum"></div>
     <div class="sec-h"><h2>All-time totals</h2><div class="ln"></div></div>
@@ -305,8 +342,18 @@
     </div>
     <div class="tiles" id="tStats" style="margin-bottom:16px"></div>
     <div class="chartwrap tall"><canvas id="cTrend"></canvas></div>
-    <div class="sec-h"><h2>Read-out</h2><div class="ln"></div></div>
-    <div id="tInsight" class="tile" style="line-height:1.7"></div>
+    <div id="tInsight" class="tile" style="line-height:1.7;margin-bottom:6px"></div>
+
+    <div class="sec-h"><h2>Streams vs key events</h2><span class="hint">project milestones on the daily channels curve · hover a point for events</span><div class="ln"></div></div>
+    <div class="chartwrap tall"><canvas id="cMilestone"></canvas></div>
+    <div id="msLegend" style="display:flex;flex-wrap:wrap;gap:7px;margin:-6px 0 4px"></div>
+
+    <div class="sec-h"><h2>Streaming calendar</h2><span class="hint">channels streaming each day (last 26 weeks)</span><div class="ln"></div></div>
+    <div class="calwrap"><div class="calmonths" id="calMonths"></div><div class="cal" id="cal"></div>
+      <div class="callegend">Less <i style="background:var(--panel3)"></i><i style="background:rgba(245,196,81,.35)"></i><i style="background:rgba(245,196,81,.65)"></i><i style="background:var(--gold)"></i><i style="background:var(--ember)"></i> More</div></div>
+
+    <div class="sec-h"><h2>Returning streamers</h2><span class="hint" id="retHint">channels who streamed Last Pirates more than once</span><div class="ln"></div></div>
+    <div class="ret" id="ret"></div>
   </section>
 
   <!-- LIVE -->
@@ -341,8 +388,8 @@
       <label class="fld"><span>Language</span><select id="fLang" class="ctl"></select></label>
       <label class="fld"><span>Size</span>
         <select id="fTier" class="ctl">
-          <option value="">All sizes</option><option value="mega">Mega (1M+)</option>
-          <option value="large">Large (100k+)</option><option value="mid">Mid (10k+)</option><option value="small">Small (&lt;10k)</option>
+          <option value="">All sizes</option><option value="t4">1M+ followers</option>
+          <option value="t3">100k+</option><option value="t2">10k+</option><option value="t1">1k+</option><option value="t0">Under 1k</option>
         </select></label>
       <label class="fld"><span>Sort by</span>
         <select id="fSort" class="ctl">
@@ -367,6 +414,11 @@
           <option value="date">Newest first</option><option value="maxviewers">Peak viewers</option>
           <option value="vod_views">VOD views</option><option value="length">Duration</option>
         </select></label>
+      <label class="fld"><span>Source</span>
+        <select id="sSrc" class="ctl">
+          <option value="">All sources</option><option value="live">Live now</option>
+          <option value="ended">Captured (live)</option><option value="twitch">Twitch VOD</option><option value="sullygnome">SullyGnome</option>
+        </select></label>
       <label class="check"><input type="checkbox" id="sVod"> With VOD only</label>
       <span class="count" id="strCount" style="align-self:center"></span>
     </div>
@@ -382,6 +434,7 @@
       <div class="chartwrap" style="height:330px"><canvas id="cRegion"></canvas></div>
       <div><div class="sec-h" style="margin-top:0"><h2>By language</h2><div class="ln"></div></div><div class="langtable" id="langlist"></div></div>
     </div>
+    <div id="regDetail"></div>
   </section>
 
   <div class="foot" id="foot"></div>
@@ -432,8 +485,10 @@ Chart.defaults.plugins.tooltip.titleColor="#fff";Chart.defaults.plugins.tooltip.
 Chart.defaults.plugins.tooltip.titleFont={weight:"700",size:13};Chart.defaults.plugins.tooltip.bodyFont={size:13};
 Chart.defaults.interaction={mode:"index",intersect:false};Chart.defaults.maintainAspectRatio=false;
 
-function tier(f){f=f||0;return f>=1e6?["mega","1M+"]:f>=1e5?["large","100k+"]:f>=1e4?["mid","10k+"]:["small","<10k"];}
-function tags(c){let h=`<span class="tag t">${tier(c.followers)[1]}</span>`;if(c.partner)h+=`<span class="tag p">partner</span>`;if(c.language)h+=`<span class="tag">${flag(c.language)?flag(c.language)+" ":""}${c.language}</span>`;return h;}
+function tier(f){f=f||0;return f>=1e6?["t4","1M+"]:f>=1e5?["t3","100k+"]:f>=1e4?["t2","10k+"]:f>=1e3?["t1","1k+"]:["t0","<1k"];}
+function tags(c){let h=`<span class="tag ${tier(c.followers)[0]}">${tier(c.followers)[1]}</span>`;if(c.partner)h+=`<span class="tag p">partner</span>`;if(c.language)h+=`<span class="tag">${flag(c.language)?flag(c.language)+" ":""}${c.language}</span>`;return h;}
+// colour a viewer number by magnitude (so peaks aren't all one colour)
+function vColor(n){n=n||0;return n>=500?"var(--gold)":n>=100?"#ff9b3c":n>=20?"var(--ember)":n>=5?"var(--purple2)":"var(--blue)";}
 
 /* sparkline -> inline svg path */
 function spark(vals,color){
@@ -499,8 +554,11 @@ function overview(){
     `<div class="tile"><div class="v ${c} num">${v}</div><div class="l">${l}</div></div>`).join("");
   document.getElementById("top8").innerHTML=D.channels.slice(0,6).map(rowCard).join("");
   document.getElementById("ovMeta").textContent=`updated ${kyiv(D.generated_at)} Kyiv time`;
-  buildActToggle();fillLiveKpi();
+  buildActToggle();fillLiveKpi();ovLatest();
 }
+function ovLatest(){const el=document.getElementById("ovLatest");if(!el||!D||!D.streams)return;
+  const r=D.streams.slice(0,5);
+  el.innerHTML=r.length?r.map(streamCard).join(""):`<div class="empty">No recent streams.</div>`;}
 async function fillLiveKpi(){
   try{const d=await(await fetch("/api/live",{cache:"no-store"})).json();liveCount=(d.live||[]).length;}
   catch(e){try{const d=await(await fetch("live.json",{cache:"no-store"})).json();liveCount=(d.live||[]).length;}catch(_){liveCount=null;}}
@@ -553,8 +611,8 @@ function drawActivity(){const data=bucket(activeSlice(D.timeseries.channels),act
 function card(c){return `<div class="card"><div class="rk">#${c.rownum}</div>${img(c.logo)}
   <div class="nm"><a href="${c.twitchurl}" target="_blank" rel="noopener">${esc(c.displayname)}</a></div>
   <div class="tags">${tags(c)}</div>
-  <div class="stats"><div><b class="num">${hrs(c.viewminutes)}</b><span>watch hrs</span></div><div><b class="num">${fmt(c.maxviewers)}</b><span>peak</span></div>
-  <div><b class="num">${fmt(c.avgviewers)}</b><span>avg</span></div><div><b class="num">${fmt(c.followers)}</b><span>followers</span></div></div></div>`;}
+  <div class="stats"><div><b class="num" style="color:var(--gold)">${hrs(c.viewminutes)}</b><span>watch hrs</span></div><div><b class="num" style="color:${vColor(c.maxviewers)}">${fmt(c.maxviewers)}</b><span>peak</span></div>
+  <div><b class="num" style="color:var(--purple2)">${fmt(c.avgviewers)}</b><span>avg</span></div><div><b class="num">${fmt(c.followers)}</b><span>followers</span></div></div></div>`;}
 function langOptions(vals){return `<option value="">All languages</option>`+[...new Set(vals.filter(Boolean))].sort().map(l=>`<option>${l}</option>`).join("");}
 function buildTopFilters(){
   document.getElementById("tcLang").innerHTML=langOptions(D.channels.map(c=>c.language));
@@ -587,14 +645,14 @@ function timeAgo(iso){if(!iso)return"";const s=Math.max(0,(Date.now()-new Date(i
 function dur(min){min=Math.round(min||0);const h=Math.floor(min/60),m=min%60;return h?`${h}h ${m}m`:`${m}m`;}
 function buildStreamFilters(){
   document.getElementById("sLang").innerHTML=langOptions(D.streams.map(s=>s.language));
-  ["sSearch","sLang","sSort","sVod"].forEach(id=>document.getElementById(id).addEventListener("input",streams));
+  ["sSearch","sLang","sSort","sVod","sSrc"].forEach(id=>document.getElementById(id).addEventListener("input",streams));
 }
 function streams(){
   const el=document.getElementById("streams");
   if(!D.streams||!D.streams.length){el.innerHTML=`<div class="empty">Feed is empty right now.</div>`;return;}
-  const q=sSearch.value.toLowerCase(),lang=sLang.value,sort=sSort.value,vodOnly=sVod.checked;
+  const q=sSearch.value.toLowerCase(),lang=sLang.value,sort=sSort.value,vodOnly=sVod.checked,src=sSrc.value;
   let r=D.streams.filter(s=>(s.channeldisplayname||"").toLowerCase().includes(q)
-    &&(!lang||s.language===lang)&&(!vodOnly||s.vod_url));
+    &&(!lang||s.language===lang)&&(!vodOnly||s.vod_url)&&(!src||s.source===src));
   if(sort==="date")r.sort((a,b)=>(b.startDateTime||"").localeCompare(a.startDateTime||""));
   else r.sort((a,b)=>(b[sort]||0)-(a[sort]||0));
   document.getElementById("strCount").textContent=`${fmt(r.length)} shown`;
@@ -604,11 +662,14 @@ function streams(){
 function streamCard(s){
   const login=s.channelurl||s.channeldisplayname;
   const peak=s.peak_viewers!=null?s.peak_viewers:s.maxviewers;
-  const srcCls=s.is_live?"live":(s.source==="sullygnome"?"sully":"twitch");
-  const srcLbl=s.is_live?"LIVE":(s.source==="sullygnome"?"SullyGnome":"Twitch");
+  let srcCls,srcLbl;
+  if(s.is_live){srcCls="live";srcLbl="LIVE";}
+  else if(s.source==="sullygnome"){srcCls="sully";srcLbl="SullyGnome";}
+  else if(s.source==="ended"){srcCls="ended";srcLbl="Captured";}   // we caught it live
+  else {srcCls="vod";srcLbl="VOD";}                                 // Twitch archive
   let headline;
   if(s.is_live) headline=`<div class="headline hl-peak num">${fmt(s.viewer_count)}<span>watching now</span></div>`;
-  else if(peak!=null) headline=`<div class="headline hl-peak num">${fmt(peak)}<span>peak viewers</span></div>`;
+  else if(peak!=null) headline=`<div class="headline num" style="color:${vColor(peak)}">${fmt(peak)}<span>peak viewers</span></div>`;
   else if(s.vod_views!=null) headline=`<div class="headline hl-views num">${fmt(s.vod_views)}<span>VOD views</span></div>`;
   else headline=`<div class="headline num" style="color:var(--muted)">—<span>no stats yet</span></div>`;
   const btn=s.is_live
@@ -707,12 +768,76 @@ function drawTrends(){
     `Over <b>${rng}</b>, <b>${label.toLowerCase()}</b> averaged <b class="num">${fmt(Math.round(avg))}</b> and peaked at <b class="num">${fmt(Math.round(mx))}</b>`+
     `${peakAt?` on <b>${peakAt.slice(0,10)}</b>`:""}. The trend across the window is ${dir} (first vs latest point). `+
     `Switch granularity to <b>hourly</b> for the freshest 3-day signal, or change the metric to compare channel supply against viewer demand.`;
-  syncCheck();
+  drawMilestones();drawCalendar();drawReturning();syncCheck();
 }
 function buildTrendControls(){
   document.getElementById("tType").innerHTML=[["line","Line"],["bar","Bar"]].map(([t,l])=>`<button data-t="${t}" class="${t===trendType?'on':''}">${l}</button>`).join("");
   document.getElementById("tType").querySelectorAll("button").forEach(b=>b.onclick=()=>{trendType=b.dataset.t;buildTrendControls();drawTrends();});
   ["tMetric","tRange","tGran","tMa"].forEach(id=>{const e=document.getElementById(id);if(!e.dataset.b){e.dataset.b=1;e.addEventListener("change",drawTrends);}});
+}
+
+/* ---------- calendar heatmap (channels streaming per day) ---------- */
+function drawCalendar(){
+  const series=(D.timeseries.channels||[]).filter(p=>p.date);
+  if(series.length<2){document.getElementById("cal").innerHTML='<div class="empty">No daily data.</div>';return;}
+  const days=series.slice(-182).map(p=>({date:p.date,v:Math.round(p.value),d:new Date(p.date)}));
+  const max=Math.max(...days.map(x=>x.v),1);
+  const col=v=>{if(v<=0)return"var(--panel3)";const r=v/max;return r<.25?"rgba(245,196,81,.35)":r<.5?"rgba(245,196,81,.65)":r<.8?"var(--gold)":"var(--ember)";};
+  let lead=(days[0].d.getDay()+6)%7;                 // Monday-first
+  const grid=[];for(let i=0;i<lead;i++)grid.push(null);days.forEach(x=>grid.push(x));
+  const weeks=[];for(let i=0;i<grid.length;i+=7)weeks.push(grid.slice(i,i+7));
+  document.getElementById("cal").innerHTML=weeks.map(wk=>`<div class="wk">${
+    Array.from({length:7},(_,r)=>{const c=wk[r];return c
+      ?`<div class="cell" style="background:${col(c.v)}" title="${c.date} · ${c.v} channels"></div>`
+      :`<div class="cell" style="background:transparent"></div>`;}).join("")}</div>`).join("");
+  document.getElementById("calMonths").innerHTML=`<span>${days[0].date} → ${days[days.length-1].date} — darker = more channels streaming that day</span>`;
+}
+
+/* ---------- returning streamers (>1 stream in the feed) ---------- */
+function drawReturning(){
+  const cnt={};
+  (D._base||D.streams||[]).forEach(s=>{const k=(s.channelurl||"").toLowerCase();if(!k)return;
+    const o=cnt[k]||(cnt[k]={login:k,name:s.channeldisplayname,logo:s.channellogo,n:0,peak:0,last:""});
+    o.n++;o.peak=Math.max(o.peak,s.peak_viewers||s.maxviewers||0);
+    if((s.startDateTime||"")>o.last){o.last=s.startDateTime;if(s.channeldisplayname)o.name=s.channeldisplayname;if(s.channellogo)o.logo=s.channellogo;}});
+  const list=Object.values(cnt).filter(o=>o.n>=2).sort((a,b)=>b.n-a.n||b.peak-a.peak);
+  document.getElementById("retHint").textContent=`${fmt(list.length)} channels streamed Last Pirates more than once (in the tracked feed)`;
+  document.getElementById("ret").innerHTML=list.length?list.slice(0,60).map(o=>`<div class="retc">
+    <img loading="lazy" src="${o.logo||AV}" onerror="this.src='${AV}'">
+    <div style="min-width:0"><div class="rn"><a href="https://www.twitch.tv/${o.login}" target="_blank" rel="noopener">${esc(o.name)}</a></div>
+      <div class="rm">peak ${fmt(o.peak)}${o.last?` · last ${kyiv(o.last)}`:""}</div></div>
+    <div class="cnt"><b class="num">${o.n}</b><span>streams</span></div></div>`).join(""):`<div class="empty">No repeat streamers tracked yet — they'll appear as the feed grows.</div>`;
+}
+
+/* ---------- milestone timeline (events overlaid on daily channels) ---------- */
+let msChart=null,MS=null;
+const MS_COLOR={playtest:"#5fb0ef",festival:"#b29bff",launch:"#34d399",release:"#f0573c",marketing:"#f5c451"};
+async function drawMilestones(){
+  if(MS===null){try{MS=await(await fetch("milestones.json",{cache:"no-store"})).json();}catch(e){MS=[];}}
+  if(msChart)return;
+  const series=(D.timeseries.channels||[]).filter(p=>p.date);
+  if(series.length<2)return;
+  const labels=series.map(p=>p.date),vals=series.map(p=>Math.round(p.value));
+  const idx={};labels.forEach((d,i)=>idx[d]=i);
+  const nearest=date=>{if(idx[date]!=null)return idx[date];const t=new Date(date).getTime();let bi=-1,bd=1e15;
+    labels.forEach((d,i)=>{const k=Math.abs(new Date(d).getTime()-t);if(k<bd){bd=k;bi=i;}});return bd<6.1e8?bi:-1;};
+  const marks=(MS||[]).map(m=>({...m,i:nearest(m.date),color:MS_COLOR[m.type]||"#938da8"})).filter(m=>m.i>=0);
+  const plugin={id:"ms",afterDatasetsDraw(c){const{ctx,chartArea:{top,bottom},scales:{x}}=c;ctx.save();
+    marks.forEach(m=>{const px=x.getPixelForValue(m.i);ctx.strokeStyle=m.color;ctx.globalAlpha=.85;ctx.lineWidth=1.5;ctx.setLineDash([4,3]);
+      ctx.beginPath();ctx.moveTo(px,top);ctx.lineTo(px,bottom);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
+      ctx.fillStyle=m.color;ctx.beginPath();ctx.arc(px,top+4,3.5,0,Math.PI*2);ctx.fill();});ctx.restore();}};
+  msChart=new Chart(document.getElementById("cMilestone"),{type:"line",
+    data:{labels,datasets:[{label:"Channels streaming",data:vals,borderColor:"#8b5cf6",backgroundColor:"rgba(139,92,246,.12)",fill:true,tension:.3,pointRadius:0,pointHoverRadius:4,borderWidth:2}]},
+    options:{plugins:{legend:{display:false},tooltip:{callbacks:{
+      title:items=>labels[items[0].dataIndex],
+      afterBody:items=>{const i=items[0].dataIndex;const h=marks.filter(m=>m.i===i);return h.length?h.map(m=>"★ "+m.label):[];}}}},
+      scales:{x:{ticks:{color:"#938da8",maxTicksLimit:12,callback:v=>labels[v]?labels[v].slice(0,7):""},grid:{display:false}},
+        y:{beginAtZero:true,ticks:{color:"#938da8"},grid:{color:"#211d36"}}}},
+    plugins:[plugin]});
+  // text legend of the major milestones
+  const major=marks.filter(m=>m.major||["launch","release"].includes(m.type)).sort((a,b)=>a.i-b.i);
+  document.getElementById("msLegend").innerHTML=major.map(m=>
+    `<span class="chip" style="border-color:${m.color}"><span class="flag" style="background:${m.color};width:9px;height:9px;border-radius:50%"></span>${m.date.slice(5)} ${esc(m.label)}</span>`).join("");
 }
 
 /* ---------- regions ---------- */
@@ -725,36 +850,58 @@ const REGIONS=[
   ["MENA & Türkiye",["Arabic","Turkish"],"#db61a2"],
   ["Nordics",["Swedish","Danish","Norwegian","Finnish"],"#39c5cf"],
 ];
+let REGDATA=null,regDoughnut=false;
+function langRegion(l){const i=REGIONS.findIndex(([,ls])=>ls.includes(l));return i<0?-1:i;}
 function drawRegions(){
-  if(charted.regions)return;charted.regions=true;
   const langHours=D.languages||{};
   const chanByLang={};D.channels.forEach(c=>{if(c.language)chanByLang[c.language]=(chanByLang[c.language]||0)+1;});
   const total=Object.values(langHours).reduce((a,b)=>a+b,0)||1;
   const regs=REGIONS.map(([name,langs,color])=>{
-    const hours=langs.reduce((a,l)=>a+(langHours[l]||0),0);
-    const chans=langs.reduce((a,l)=>a+(chanByLang[l]||0),0);
-    const top=langs.filter(l=>langHours[l]).sort((a,b)=>langHours[b]-langHours[a])[0]||"—";
-    return{name,color,hours,chans,top,share:hours/total*100};
+    const ls=langs.filter(l=>langHours[l]||chanByLang[l])
+      .map(l=>({l,hours:langHours[l]||0,chans:chanByLang[l]||0})).sort((a,b)=>b.hours-a.hours);
+    const hours=ls.reduce((a,x)=>a+x.hours,0),chans=ls.reduce((a,x)=>a+x.chans,0);
+    return{name,color,hours,chans,langs:ls,top:ls[0]?ls[0].l:"—",share:hours/total*100};
   }).filter(r=>r.hours>0).sort((a,b)=>b.hours-a.hours);
+  REGDATA={regs,total};
   const mx=Math.max(...regs.map(r=>r.share));
-  document.getElementById("regcards").innerHTML=regs.map(r=>`
-    <div class="regcard">
+  document.getElementById("regcards").innerHTML=regs.map((r,i)=>`
+    <div class="regcard" id="reg${i}" onclick="selectRegion(${i})">
       <div class="rh"><span class="rn">${r.name}</span><span class="rdot" style="background:${r.color}"></span></div>
       <div class="rshare num" style="color:${r.color}">${r.share.toFixed(1)}%</div>
       <div class="rbar"><i style="width:${(r.share/mx*100).toFixed(1)}%;background:${r.color}"></i></div>
       <div class="rmeta"><span>${fmt(Math.round(r.hours))} watch-hrs</span><span>${fmt(r.chans)} channels</span></div>
-      <div class="rtop">Top language: <b style="color:var(--text)">${flag(r.top)} ${r.top}</b></div>
+      <div class="rtop">Top: <b style="color:var(--text)">${flag(r.top)} ${r.top}</b> · tap to drill down</div>
     </div>`).join("");
 
-  new Chart(document.getElementById("cRegion"),{type:"doughnut",
-    data:{labels:regs.map(r=>r.name),datasets:[{data:regs.map(r=>Math.round(r.hours)),backgroundColor:regs.map(r=>r.color),borderWidth:0,hoverOffset:6}]},
-    options:{maintainAspectRatio:false,cutout:"58%",plugins:{legend:{position:"bottom",labels:{color:"#c8c4dd",boxWidth:11,padding:10,font:{size:11.5}}},
-      tooltip:{callbacks:{label:c=>` ${c.label}: ${fmt(c.parsed)} hrs (${(c.parsed/total*100).toFixed(1)}%)`}}}}});
+  if(!regDoughnut){regDoughnut=true;
+    new Chart(document.getElementById("cRegion"),{type:"doughnut",
+      data:{labels:regs.map(r=>r.name),datasets:[{data:regs.map(r=>Math.round(r.hours)),backgroundColor:regs.map(r=>r.color),borderWidth:0,hoverOffset:6}]},
+      options:{maintainAspectRatio:false,cutout:"58%",plugins:{legend:{position:"bottom",labels:{color:"#c8c4dd",boxWidth:11,padding:10,font:{size:11.5}}},
+        tooltip:{callbacks:{label:c=>` ${c.label}: ${fmt(c.parsed)} hrs (${(c.parsed/total*100).toFixed(1)}%)`}}}}});
+  }
 
   const ent=Object.entries(langHours).filter(([l])=>l).sort((a,b)=>b[1]-a[1]);
   const lmx=ent[0][1];
   document.getElementById("langlist").innerHTML=ent.map(([l,v])=>
     `<div class="lang"><span class="lname">${flag(l)} ${l}</span><div class="lbarwrap"><div class="lbar" style="width:${(v/lmx*100).toFixed(1)}%"></div></div><span class="lval num">${fmt(Math.round(v))}</span></div>`).join("");
+  selectRegion(0);
+}
+function selectRegion(i){
+  const r=REGDATA.regs[i];if(!r)return;
+  document.querySelectorAll(".regcard").forEach((c,k)=>c.classList.toggle("sel",k===i));
+  const lmx=Math.max(...r.langs.map(x=>x.hours),1);
+  const langRows=r.langs.map(x=>`<div class="lang"><span class="lname">${flag(x.l)} ${x.l}</span>
+    <div class="lbarwrap"><div class="lbar" style="width:${(x.hours/lmx*100).toFixed(1)}%;background:${r.color}"></div></div>
+    <span class="lval num">${fmt(Math.round(x.hours))}</span></div>`).join("");
+  const langSet=new Set(r.langs.map(x=>x.l));
+  const chans=D.channels.filter(c=>langSet.has(c.language)).sort((a,b)=>(b.viewminutes||0)-(a.viewminutes||0)).slice(0,8);
+  const chanRows=chans.map(c=>rowCard(c)).join("")||`<div class="empty">No channels.</div>`;
+  document.getElementById("regDetail").innerHTML=`
+    <div class="sec-h"><h2>${esc(r.name)}</h2><span class="hint">${fmt(Math.round(r.hours))} watch-hrs · ${fmt(r.chans)} channels · ${r.share.toFixed(1)}% of all</span><div class="ln"></div></div>
+    <div style="display:grid;grid-template-columns:minmax(0,380px) 1fr;gap:20px;align-items:start">
+      <div><div class="sec-h" style="margin-top:0"><h2>Languages in region</h2><div class="ln"></div></div><div class="langtable">${langRows}</div></div>
+      <div><div class="sec-h" style="margin-top:0"><h2>Top channels here</h2><div class="ln"></div></div>${chanRows}</div>
+    </div>`;
 }
 
 /* keep custom checkbox chips visually in sync */
@@ -817,6 +964,7 @@ async function overlayLive(){
   out.sort((a,b)=>{const d=(b.is_live?1:0)-(a.is_live?1:0);return d||(b.startDateTime||"").localeCompare(a.startDateTime||"");});
   D.streams=out;
   if(rendered.streams)streams();
+  ovLatest();
   liveCount=apiLive.length;const kl=document.getElementById("kpiLive");if(kl)kl.textContent=liveCount;
   const nd=document.getElementById("navdot");if(nd)nd.style.display=apiLive.length>0?"inline-block":"none";
 }
