@@ -13,10 +13,10 @@
     "peak_viewers": 1,
     "last_viewers": 1,
     "followers": 2,
-    "is_live": true,
+    "is_live": false,
     "first_seen": "2026-06-26T01:45:25Z",
     "last_seen": "2026-06-26T02:20:26Z",
-    "ended_at": null
+    "ended_at": "2026-06-26T02:20:26Z"
   },
   {
     "stream_id": "320038810458",
@@ -125,11 +125,11 @@
     "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_tattedvxn-320x180.jpg",
     "started_at": "2026-06-26T00:07:56Z",
     "peak_viewers": 7,
-    "last_viewers": 3,
+    "last_viewers": 4,
     "followers": 26,
     "is_live": true,
     "first_seen": "2026-06-26T00:10:26Z",
-    "last_seen": "2026-06-26T02:20:26Z",
+    "last_seen": "2026-06-26T02:25:23Z",
     "ended_at": null
   },
   {
