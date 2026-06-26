@@ -15,7 +15,7 @@
     "followers": 26,
     "is_live": true,
     "first_seen": "2026-06-26T00:10:26Z",
-    "last_seen": "2026-06-26T00:45:32Z",
+    "last_seen": "2026-06-26T00:50:25Z",
     "ended_at": null
   },
   {
@@ -30,11 +30,11 @@
     "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_elviinhoo-320x180.jpg",
     "started_at": "2026-06-25T23:56:21Z",
     "peak_viewers": 3,
-    "last_viewers": 3,
+    "last_viewers": 2,
     "followers": 73,
     "is_live": true,
     "first_seen": "2026-06-26T00:01:00Z",
-    "last_seen": "2026-06-26T00:45:32Z",
+    "last_seen": "2026-06-26T00:50:25Z",
     "ended_at": null
   },
   {
@@ -89,10 +89,10 @@
     "peak_viewers": 7,
     "last_viewers": 5,
     "followers": 54,
-    "is_live": true,
+    "is_live": false,
     "first_seen": "2026-06-25T22:55:20Z",
     "last_seen": "2026-06-26T00:45:32Z",
-    "ended_at": null
+    "ended_at": "2026-06-26T00:45:32Z"
   },
   {
     "stream_id": "318297666549",
@@ -108,10 +108,10 @@
     "peak_viewers": 5,
     "last_viewers": 5,
     "followers": 77,
-    "is_live": true,
+    "is_live": false,
     "first_seen": "2026-06-25T23:50:26Z",
     "last_seen": "2026-06-26T00:45:32Z",
-    "ended_at": null
+    "ended_at": "2026-06-26T00:45:32Z"
   },
   {
     "stream_id": "319189528156",
@@ -144,11 +144,11 @@
     "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_southpaw_nubz-320x180.jpg",
     "started_at": "2026-06-25T22:17:41Z",
     "peak_viewers": 3,
-    "last_viewers": 3,
+    "last_viewers": 2,
     "followers": 123,
     "is_live": true,
     "first_seen": "2026-06-25T22:20:25Z",
-    "last_seen": "2026-06-26T00:45:32Z",
+    "last_seen": "2026-06-26T00:50:25Z",
     "ended_at": null
   },
   {
@@ -205,7 +205,7 @@
     "followers": 246,
     "is_live": true,
     "first_seen": "2026-06-25T23:15:27Z",
-    "last_seen": "2026-06-26T00:45:32Z",
+    "last_seen": "2026-06-26T00:50:25Z",
     "ended_at": null
   },
   {
@@ -224,7 +224,7 @@
     "followers": 557,
     "is_live": true,
     "first_seen": "2026-06-25T23:15:27Z",
-    "last_seen": "2026-06-26T00:45:32Z",
+    "last_seen": "2026-06-26T00:50:25Z",
     "ended_at": null
   },
   {
