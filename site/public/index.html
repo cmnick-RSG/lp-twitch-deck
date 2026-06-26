@@ -1073,6 +1073,12 @@ fetch("data.json").then(r=>r.json()).then(d=>{
   // boot only the default (Overview) tab; other tabs render on first open via go()
   overview();drawOverviewCharts();
   buildFilters();buildStreamFilters();
+  // true all-time count from the cumulative roster — reflects new streamers even before
+  // the 2h build folds the roster into data.json's summary.
+  fetch("roster.json",{cache:"no-store"}).then(r=>r.json()).then(j=>{
+    const n=Object.keys((j&&j.logins)||j||{}).length;
+    if(n>(D.summary.total_streamers||0)){D.summary.total_streamers=n;overview();}
+  }).catch(()=>{});
   overlayLive();setInterval(overlayLive,60000);   // refresh live overlay every 60s
 }).catch(e=>{document.getElementById("ovMeta").textContent="failed to load data.json: "+e;});
 </script>
