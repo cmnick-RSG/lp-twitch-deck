@@ -247,14 +247,20 @@
   .src.ended{background:rgba(52,211,153,.92);color:#04231a}
   .src.vod{background:rgba(139,92,246,.92);color:#fff}
   /* ---------- calendar heatmap ---------- */
-  .calwrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;overflow:hidden}
-  .cal{display:flex;gap:3px;overflow-x:auto;padding-bottom:4px}
-  .cal .wk{display:flex;flex-direction:column;gap:3px}
-  .cal .cell{width:13px;height:13px;border-radius:3px;background:var(--panel3);transition:.1s}
-  .cal .cell:hover{outline:2px solid var(--gold2)}
-  .callegend{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);margin-top:10px}
-  .callegend i{width:12px;height:12px;border-radius:3px;display:inline-block}
-  .calmonths{display:flex;gap:3px;font-size:10px;color:var(--muted);margin-bottom:5px;padding-left:2px}
+  .calwrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+  .calgrid{display:flex;gap:10px;align-items:flex-start;overflow-x:auto;padding-bottom:6px}
+  .calwd{display:flex;flex-direction:column;gap:4px;padding-top:23px;flex-shrink:0}
+  .calwd span{height:19px;font-size:10.5px;line-height:19px;color:var(--muted);font-weight:600;text-align:right}
+  .calcols{display:inline-block}
+  .calmonths{display:flex;gap:4px;height:17px;margin-bottom:4px}
+  .calmonths .m{width:19px;font-size:11px;color:var(--text2);font-weight:700;white-space:nowrap;flex-shrink:0}
+  .cal{display:flex;gap:4px}
+  .cal .wk{display:flex;flex-direction:column;gap:4px}
+  .cal .cell{width:19px;height:19px;border-radius:4px;background:var(--panel3);transition:.1s;cursor:default}
+  .cal .cell:hover{outline:2px solid var(--gold2);outline-offset:1px}
+  .cal .cell.empty{background:transparent;outline:none}
+  .callegend{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);margin-top:13px}
+  .callegend i{width:16px;height:16px;border-radius:4px;display:inline-block}
   /* ---------- returning streamers ---------- */
   .ret{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:11px}
   .retc{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:11px 14px;transition:.15s}
@@ -273,6 +279,9 @@
   .msf i{width:9px;height:9px;border-radius:50%;opacity:.4;transition:.15s}
   .msf.on{color:var(--text);border-color:var(--line2)} .msf.on i{opacity:1}
   .msf:hover{border-color:var(--mc)}
+  .msmonth{margin-top:12px}
+  .msmlabel{font-size:10.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px;display:flex;align-items:center;gap:9px}
+  .msmlabel::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
   .mslist{display:flex;flex-wrap:wrap;gap:7px}
   .mschip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--text2);
     background:var(--panel);border:1px solid var(--line);border-left-width:3px;border-radius:8px;padding:5px 10px}
@@ -336,29 +345,32 @@
   <section class="tab" data-tab="trends">
     <div class="sec-h"><h2>Trends &amp; Analytics</h2><span class="hint">build your own view of the game's Twitch performance</span><div class="ln"></div></div>
     <div class="toolbar">
+      <label class="fld"><span>Range</span>
+        <select id="tRange" class="ctl">
+          <option value="24h">Last 24 hours</option>
+          <option value="3d">Last 3 days</option>
+          <option value="7d">Last 7 days</option>
+          <option value="30d">Last 30 days</option>
+          <option value="90d">Last 90 days</option>
+          <option value="campaign" selected>Whole campaign</option>
+          <option value="all">All time</option>
+        </select></label>
       <label class="fld"><span>Metric</span>
         <select id="tMetric" class="ctl">
-          <option value="viewers">Average viewers</option>
+          <option value="viewers">Peak viewers</option>
           <option value="channels">Channels streaming</option>
           <option value="viewerratio">Viewers per channel</option>
         </select></label>
       <label class="fld"><span>Compare with</span>
         <select id="tCompare" class="ctl">
           <option value="">— none —</option>
-          <option value="viewers">Average viewers</option>
-          <option value="channels">Channels streaming</option>
+          <option value="viewers">Peak viewers</option>
+          <option value="channels" selected>Channels streaming</option>
           <option value="viewerratio">Viewers per channel</option>
         </select></label>
-      <label class="fld"><span>Granularity</span>
-        <select id="tGran" class="ctl">
-          <option value="live">Real-time (5-min · live)</option>
-          <option value="hour">Hourly (3 days)</option>
-          <option value="day" selected>Daily</option>
-        </select></label>
-      <label class="fld"><span>Range</span>
-        <select id="tRange" class="ctl"></select></label>
       <label class="fld"><span>Chart</span><span class="toggle" id="tType"></span></label>
       <label class="check" id="tMaLbl"><input type="checkbox" id="tMa"> Moving avg</label>
+      <span class="count" id="tRes" style="align-self:center"></span>
     </div>
     <div class="tiles" id="tStats" style="margin-bottom:16px"></div>
     <div class="chartwrap tall"><canvas id="cTrend"></canvas></div>
@@ -369,8 +381,12 @@
     <div id="msLegend" style="display:flex;flex-wrap:wrap;gap:7px;margin:-6px 0 4px"></div>
 
     <div class="sec-h"><h2>Streaming calendar</h2><span class="hint">channels streaming each day · since the Steam page launch</span><div class="ln"></div></div>
-    <div class="calwrap"><div class="calmonths" id="calMonths"></div><div class="cal" id="cal"></div>
-      <div class="callegend">Less <i style="background:var(--panel3)"></i><i style="background:rgba(245,196,81,.35)"></i><i style="background:rgba(245,196,81,.65)"></i><i style="background:var(--gold)"></i><i style="background:var(--ember)"></i> More</div></div>
+    <div class="calwrap">
+      <div class="calgrid">
+        <div class="calwd" id="calWd"></div>
+        <div class="calcols"><div class="calmonths" id="calMonths"></div><div class="cal" id="cal"></div></div>
+      </div>
+      <div class="callegend">Fewer <i style="background:var(--panel3)"></i><i style="background:rgba(245,196,81,.35)"></i><i style="background:rgba(245,196,81,.65)"></i><i style="background:var(--gold)"></i><i style="background:var(--ember)"></i> More channels streaming that day · hover a square for the date &amp; count</div></div>
 
     <div class="sec-h"><h2>Returning streamers</h2><span class="hint" id="retHint">channels who streamed Last Pirates more than once</span><div class="ln"></div></div>
     <div class="ret" id="ret"></div>
@@ -747,52 +763,47 @@ async function drawLive(){
 
 /* ---------- trends & analytics ---------- */
 let trendChart=null,trendType="line";
-const TMETA={viewers:["Average viewers","#5fb0ef"],channels:["Channels streaming","#34d399"],viewerratio:["Viewers per channel","#f5c451"]};
-const RANGES={
-  day:[["7","Last 7 days"],["30","Last 30 days"],["90","Last 90 days"],["all","All time"]],
-  hour:[["all","Last 3 days"]],
-  live:[["6","Last 6 hours"],["24","Last 24 hours"],["72","Last 3 days"],["all","All captured"]]};
-// pull the raw [{x,v}] for a metric from the right source for the chosen granularity:
-//  live → our own 5-min sample spine (real-time, no lag) · hour → SullyGnome hourly (3d)
-//  day  → SullyGnome daily aggregates (full history)
-function rawSeriesFor(metric,gran){
-  if(gran==="live"){
-    const sm=D._samples||[];
-    if(metric==="viewerratio")return sm.map(p=>({x:p.t,v:p.channels?+(p.viewers/p.channels).toFixed(2):0}));
-    return sm.map(p=>({x:p.t,v:metric==="channels"?p.channels:p.viewers}));
-  }
-  if(gran==="hour"&&D.hourly&&D.hourly[metric]&&D.hourly[metric].length)
-    return D.hourly[metric].map(p=>({x:p.t,v:p.v}));
-  return (D.timeseries[metric]||[]).map(p=>({x:p.date,v:p.value}));
+const TMETA={viewers:["Peak viewers","#5fb0ef"],channels:["Channels streaming","#34d399"],viewerratio:["Viewers per channel","#f5c451"]};
+const RLABEL={"24h":"the last 24 hours","3d":"the last 3 days","7d":"the last 7 days","30d":"the last 30 days","90d":"the last 90 days","campaign":"the whole campaign","all":"all time"};
+// Range is the PRIMARY control. Resolution (5-min / hourly / daily) and the data
+// source are chosen automatically from the range — no "granularity" jargon:
+//   24h → our own 5-min live samples (fresh to the minute) · 3d → SullyGnome hourly
+//   7d+/campaign/all → SullyGnome daily aggregates.
+function rangeMeta(r){
+  if(r==="24h"){const sm=D._samples||[];const cut=Date.now()-24*36e5;
+    const n=sm.filter(p=>new Date(p.t).getTime()>=cut).length;
+    return n>=3?{src:"samples",res:"5-min · live",hours:24}:{src:"hourly",res:"hourly",pts:24};}
+  if(r==="3d")return{src:"hourly",res:"hourly"};
+  const days={"7d":7,"30d":30,"90d":90}[r];
+  if(days)return{src:"daily",res:"daily",days};
+  if(r==="campaign")return{src:"daily",res:"daily",from:MS_START};
+  return{src:"daily",res:"daily"};
 }
-function trendSeriesFor(metric){
-  const gran=tGran.value,range=tRange.value;
-  let s=rawSeriesFor(metric,gran);
-  if(gran==="live"){
-    if(range==="all"||!range)return s;
-    const cut=Date.now()-(parseInt(range)||24)*3600e3;
-    return s.filter(p=>new Date(p.x).getTime()>=cut);
+function seriesFor(metric,r){
+  const m=rangeMeta(r);let s;
+  const pick=p=>metric==="channels"?p.channels:metric==="viewerratio"?(p.channels?+(p.viewers/p.channels).toFixed(2):0):p.viewers;
+  if(m.src==="samples"){
+    s=(D._samples||[]).map(p=>({x:p.t,v:pick(p)}));
+    const cut=Date.now()-(m.hours||24)*36e5;s=s.filter(p=>new Date(p.x).getTime()>=cut);
+  }else if(m.src==="hourly"){
+    s=((D.hourly&&D.hourly[metric])||[]).map(p=>({x:p.t,v:p.v}));
+    let i=s.findIndex(p=>p.v>0);if(i<0)i=0;s=s.slice(Math.max(0,i-2));
+    if(m.pts)s=s.slice(-m.pts);
+  }else{
+    s=(D.timeseries[metric]||[]).map(p=>({x:p.date,v:p.value}));
+    if(m.from)s=s.filter(p=>p.x.slice(0,10)>=m.from);
+    else{let i=s.findIndex(p=>p.v>0);if(i<0)i=0;s=s.slice(Math.max(0,i-2));}
+    if(m.days)s=s.slice(-m.days);
   }
-  let i=s.findIndex(p=>p.v>0);if(i<0)i=0;s=s.slice(Math.max(0,i-2));
-  if(gran==="day"&&range!=="all")s=s.slice(-parseInt(range));
-  return s;
-}
-function syncRangeOptions(){
-  const gran=tGran.value,opts=RANGES[gran]||RANGES.day,cur=tRange.value;
-  tRange.innerHTML=opts.map(([v,l])=>`<option value="${v}">${l}</option>`).join("");
-  tRange.value=opts.some(o=>o[0]===cur)?cur:(gran==="day"?"all":gran==="live"?"24":"all");
-  tRange.disabled=(gran==="hour");
+  return{series:s,res:m.res,src:m.src};
 }
 function movingAvg(vals,win){return vals.map((_,i)=>{const a=vals.slice(Math.max(0,i-win+1),i+1);return a.reduce((x,y)=>x+y,0)/a.length;});}
 function drawTrends(){
   if(!charted.trends){charted.trends=true;buildTrendControls();}
-  // graceful fallbacks if a fresh source isn't populated yet
-  if(tGran.value==="hour"&&!(D.hourly&&D.hourly.viewers&&D.hourly.viewers.length))tGran.value="day";
-  if(tGran.value==="live"&&!(D._samples&&D._samples.length))tGran.value="hour";
-  syncRangeOptions();
-  const gran=tGran.value,metric=tMetric.value,[label,c]=TMETA[metric];
+  const r=tRange.value,metric=tMetric.value,[label,c]=TMETA[metric];
   const compare=tCompare.value&&tCompare.value!==metric?tCompare.value:"";
-  const s=trendSeriesFor(metric),vals=s.map(p=>p.v);
+  const {series:s,res,src}=seriesFor(metric,r),vals=s.map(p=>p.v);
+  document.getElementById("tRes").textContent=`${fmt(s.length)} points · ${res}`;
   const mx=vals.length?Math.max(...vals):0,avg=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;
   const latest=vals.length?vals[vals.length-1]:0,first=vals.length?vals[0]:0;
   const chg=first?((latest-first)/first*100):0;
@@ -805,7 +816,8 @@ function drawTrends(){
   ].map(([l,v,cl])=>`<div class="tile"><div class="v ${cl} num" style="font-size:24px">${v}</div><div class="l">${l}</div></div>`).join("");
 
   if(trendChart)trendChart.destroy();
-  const fmtX=x=>gran==="live"?kyiv(x,false):gran==="hour"?x.slice(5,16):x.slice(5,10);
+  const intraday=src!=="daily";
+  const fmtX=x=>src==="samples"?kyiv(x,false):intraday?x.slice(5,16):x.slice(5,10);
   const ds=[{label,data:vals,borderColor:c,backgroundColor:trendType==="bar"?c:c+"30",
     fill:trendType==="line",tension:.25,pointRadius:0,pointHoverRadius:5,borderWidth:2,borderRadius:4,maxBarThickness:26,order:2,yAxisID:"y"}];
   if(tMa.checked&&vals.length>6)ds.push({type:"line",label:"moving avg",data:movingAvg(vals,7),
@@ -814,7 +826,7 @@ function drawTrends(){
     y:{beginAtZero:true,ticks:{color:"#938da8"},grid:{color:"#211d36"},
        title:compare?{display:true,text:label,color:c}:{display:false}}};
   if(compare){
-    const s2=trendSeriesFor(compare),[l2,c2]=TMETA[compare];
+    const s2=seriesFor(compare,r).series,[l2,c2]=TMETA[compare];
     ds.push({type:"line",label:l2,data:s2.map(p=>p.v),borderColor:c2,backgroundColor:c2+"20",
       fill:false,tension:.25,pointRadius:0,pointHoverRadius:5,borderWidth:2,borderDash:[5,4],order:1,yAxisID:"y2"});
     scales.y2={position:"right",beginAtZero:true,ticks:{color:"#938da8"},grid:{display:false},
@@ -825,37 +837,45 @@ function drawTrends(){
     options:{plugins:{legend:{display:(tMa.checked||!!compare),labels:{usePointStyle:true,color:"#eceaf6",padding:14}}},
       scales,elements:{point:{hoverRadius:5}}}});
 
-  const rlabel=(RANGES[gran].find(o=>o[0]===tRange.value)||["","this range"])[1].toLowerCase().replace("last ","the last ");
   const dir=chg>1?`<b style="color:var(--green)">up ${chg.toFixed(1)}%</b>`:chg<-1?`<b style="color:var(--ember)">down ${Math.abs(chg).toFixed(1)}%</b>`:`<b>roughly flat</b>`;
-  const freshNote=gran==="live"?` This view is built from our own live snapshots (every ~5 min) — fresh to the minute, no SullyGnome lag.`
-    :gran==="day"?` Daily aggregates run a day behind; switch to <b>Real-time</b> for the freshest signal.`:"";
+  const freshNote=src==="samples"?` Built from our own live snapshots every ~5 min — fresh to the minute.`
+    :src==="daily"?` Daily figures run about a day behind; pick <b>Last 24 hours</b> for the freshest, minute-level signal.`:` Hourly resolution from SullyGnome.`;
   const cmpNote=compare?` Overlaid against <b>${TMETA[compare][0].toLowerCase()}</b> on the right axis.`:"";
   document.getElementById("tInsight").innerHTML=
-    `Over <b>${rlabel}</b>, <b>${label.toLowerCase()}</b> averaged <b class="num">${fmt(Math.round(avg))}</b> and peaked at <b class="num">${fmt(Math.round(mx))}</b>`+
-    `${peakAt?` on <b>${gran==="day"?peakAt.slice(0,10):kyiv(peakAt)}</b>`:""}. The trend is ${dir} (first vs latest point).${cmpNote}${freshNote}`;
+    `Over <b>${RLABEL[r]||"this range"}</b>, <b>${label.toLowerCase()}</b> averaged <b class="num">${fmt(Math.round(avg))}</b> and peaked at <b class="num">${fmt(Math.round(mx))}</b>`+
+    `${peakAt?` on <b>${src==="daily"?peakAt.slice(0,10):kyiv(peakAt)}</b>`:""}. The trend is ${dir} (first vs latest point).${cmpNote}${freshNote}`;
   drawMilestones();drawCalendar();drawReturning();syncCheck();
 }
 function buildTrendControls(){
   document.getElementById("tType").innerHTML=[["line","Line"],["bar","Bar"]].map(([t,l])=>`<button data-t="${t}" class="${t===trendType?'on':''}">${l}</button>`).join("");
   document.getElementById("tType").querySelectorAll("button").forEach(b=>b.onclick=()=>{trendType=b.dataset.t;buildTrendControls();drawTrends();});
-  ["tMetric","tCompare","tRange","tGran","tMa"].forEach(id=>{const e=document.getElementById(id);if(!e.dataset.b){e.dataset.b=1;e.addEventListener("change",drawTrends);}});
+  ["tMetric","tCompare","tRange","tMa"].forEach(id=>{const e=document.getElementById(id);if(!e.dataset.b){e.dataset.b=1;e.addEventListener("change",drawTrends);}});
 }
 
 /* ---------- calendar heatmap (channels streaming per day) ---------- */
+let calDrawn=false;
 function drawCalendar(){
+  if(calDrawn)return;                                 // build once (data is static within a load)
   const series=(D.timeseries.channels||[]).filter(p=>p.date&&p.date.slice(0,10)>=MS_START);
   if(series.length<2){document.getElementById("cal").innerHTML='<div class="empty">No daily data.</div>';return;}
-  const days=series.map(p=>({date:p.date,v:Math.round(p.value),d:new Date(p.date)}));
+  calDrawn=true;
+  const days=series.map(p=>({date:p.date.slice(0,10),v:Math.round(p.value),d:new Date(p.date.slice(0,10))}));
   const max=Math.max(...days.map(x=>x.v),1);
   const col=v=>{if(v<=0)return"var(--panel3)";const r=v/max;return r<.25?"rgba(245,196,81,.35)":r<.5?"rgba(245,196,81,.65)":r<.8?"var(--gold)":"var(--ember)";};
-  let lead=(days[0].d.getDay()+6)%7;                 // Monday-first
+  let lead=(days[0].d.getDay()+6)%7;                  // Monday-first
   const grid=[];for(let i=0;i<lead;i++)grid.push(null);days.forEach(x=>grid.push(x));
   const weeks=[];for(let i=0;i<grid.length;i+=7)weeks.push(grid.slice(i,i+7));
+  const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  let lastMon=-1;
+  document.getElementById("calMonths").innerHTML=weeks.map(wk=>{
+    const first=wk.find(c=>c);const mo=first?first.d.getMonth():-1;
+    let lbl="";if(mo!==-1&&mo!==lastMon){lbl=MON[mo];lastMon=mo;}
+    return `<div class="m">${lbl}</div>`;}).join("");
+  document.getElementById("calWd").innerHTML=["Mon","","Wed","","Fri","","Sun"].map(d=>`<span>${d}</span>`).join("");
   document.getElementById("cal").innerHTML=weeks.map(wk=>`<div class="wk">${
     Array.from({length:7},(_,r)=>{const c=wk[r];return c
-      ?`<div class="cell" style="background:${col(c.v)}" title="${c.date} · ${c.v} channels"></div>`
-      :`<div class="cell" style="background:transparent"></div>`;}).join("")}</div>`).join("");
-  document.getElementById("calMonths").innerHTML=`<span>${days[0].date} → ${days[days.length-1].date} — darker = more channels streaming that day</span>`;
+      ?`<div class="cell" style="background:${col(c.v)}" title="${c.date} · ${c.v} channel${c.v===1?'':'s'} streaming"></div>`
+      :`<div class="cell empty"></div>`;}).join("")}</div>`).join("");
 }
 
 /* ---------- returning streamers (>1 stream in the feed) ---------- */
@@ -895,11 +915,16 @@ async function drawMilestones(){
   MS_ALL=(MS||[]).filter(m=>m.date>=MS_START).map(m=>({...m,i:nearest(m.date),color:MS_COLOR[m.type]||"#938da8"}));
   MS_TYPES=MS_TYPES||new Set(MS_ALL.map(m=>m.type));
   MS_MARKS=MS_ALL.filter(m=>MS_TYPES.has(m.type));
-  const plugin={id:"ms",afterDatasetsDraw(c){const{ctx,chartArea:{top,bottom},scales:{x}}=c;ctx.save();
-    MS_MARKS.forEach(m=>{if(m.i<0)return;const px=x.getPixelForValue(m.i);ctx.strokeStyle=m.color;ctx.globalAlpha=.8;ctx.lineWidth=1.5;ctx.setLineDash([4,3]);
-      ctx.beginPath();ctx.moveTo(px,top);ctx.lineTo(px,bottom);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
-      ctx.fillStyle=m.color;ctx.beginPath();ctx.arc(px,top+4,m.major?4.5:3,0,Math.PI*2);ctx.fill();
-      if(m.major){ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(px,top+4,1.7,0,Math.PI*2);ctx.fill();}});ctx.restore();}};
+  // Full vertical lines ONLY for major milestones (keeps the chart uncluttered);
+  // minor ones are just a dot at the top — hover the curve for their names.
+  const plugin={id:"ms",afterDatasetsDraw(c){const{ctx,chartArea:{top,bottom,right},scales:{x}}=c;ctx.save();
+    MS_MARKS.forEach(m=>{if(m.i<0)return;const px=x.getPixelForValue(m.i);
+      if(m.major){ctx.strokeStyle=m.color;ctx.globalAlpha=.5;ctx.lineWidth=1.5;ctx.setLineDash([4,4]);
+        ctx.beginPath();ctx.moveTo(px,top+16);ctx.lineTo(px,bottom);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;}
+      ctx.fillStyle=m.color;ctx.beginPath();ctx.arc(px,top+5,m.major?5:3,0,Math.PI*2);ctx.fill();
+      if(m.major){ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(px,top+5,1.8,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle=m.color;ctx.font="700 10.5px Inter";const rt=px>right-90;ctx.textAlign=rt?"right":"left";
+        const t=m.label.length>20?m.label.slice(0,18)+"…":m.label;ctx.fillText(t,px+(rt?-7:7),top+9);}});ctx.restore();}};
   msChart=new Chart(document.getElementById("cMilestone"),{type:"line",
     data:{labels,datasets:[{label:"Channels streaming",data:vals,borderColor:"#8b5cf6",backgroundColor:"rgba(139,92,246,.12)",fill:true,tension:.3,pointRadius:0,pointHoverRadius:4,borderWidth:2}]},
     options:{plugins:{legend:{display:false},tooltip:{callbacks:{
@@ -913,14 +938,17 @@ async function drawMilestones(){
 }
 function renderMsLegend(){
   const today=new Date().toISOString().slice(0,10);
+  const MONS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const types=[...new Set(MS_ALL.map(m=>m.type))];
   const filters=types.map(t=>`<button class="msf ${MS_TYPES.has(t)?'on':''}" data-t="${t}" style="--mc:${MS_COLOR[t]||'#938da8'}"><i style="background:${MS_COLOR[t]||'#938da8'}"></i>${MS_TLABEL[t]||t}</button>`).join("");
-  const list=MS_ALL.slice().sort((a,b)=>a.date.localeCompare(b.date))
-    .filter(m=>MS_TYPES.has(m.type)).map(m=>{
-      const fut=m.date>today;
-      const range=m.end?` → ${m.end.slice(5)}`:"";
+  const shown=MS_ALL.slice().sort((a,b)=>a.date.localeCompare(b.date)).filter(m=>MS_TYPES.has(m.type));
+  const groups={};shown.forEach(m=>{const k=m.date.slice(0,7);(groups[k]=groups[k]||[]).push(m);});
+  const list=Object.keys(groups).sort().map(k=>{
+    const [y,mo]=k.split("-");
+    const chips=groups[k].map(m=>{const fut=m.date>today;const range=m.end?` → ${m.end.slice(5)}`:"";
       return `<span class="mschip ${fut?'fut':''}" style="border-left-color:${m.color}" title="${esc(m.note||(fut?'upcoming':''))}"><i style="background:${m.color}"></i><b>${m.date.slice(5)}${range}</b> ${esc(m.label)}${m.major?' ★':''}</span>`;}).join("");
-  document.getElementById("msLegend").innerHTML=`<div class="msfilters">${filters}</div><div class="mslist">${list}</div>`;
+    return `<div class="msmonth"><div class="msmlabel">${MONS[+mo-1]} ${y}</div><div class="mslist">${chips}</div></div>`;}).join("");
+  document.getElementById("msLegend").innerHTML=`<div class="msfilters">${filters}</div>${list}`;
   document.querySelectorAll("#msLegend .msf").forEach(b=>b.onclick=()=>{
     const t=b.dataset.t;MS_TYPES.has(t)?MS_TYPES.delete(t):MS_TYPES.add(t);
     MS_MARKS=MS_ALL.filter(m=>MS_TYPES.has(m.type));msChart.update();renderMsLegend();});
@@ -1059,7 +1087,7 @@ async function overlayLive(){
   liveCount=apiLive.length;const kl=document.getElementById("kpiLive");if(kl)kl.textContent=liveCount;
   const nd=document.getElementById("navdot");if(nd)nd.style.display=apiLive.length>0?"inline-block":"none";
   // keep the real-time trend view fresh while it's open
-  if(charted.trends&&tGran&&tGran.value==="live"&&document.querySelector(".tab[data-tab=trends]").classList.contains("active"))drawTrends();
+  if(charted.trends&&tRange&&tRange.value==="24h"&&document.querySelector(".tab[data-tab=trends]").classList.contains("active"))drawTrends();
 }
 
 /* ---------- boot ---------- */
