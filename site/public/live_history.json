@@ -1,5 +1,62 @@
 [
   {
+    "stream_id": "320038791514",
+    "user_id": "1511641649",
+    "user_login": "paceplsettv",
+    "user_name": "paceplsettv",
+    "logo": "https://static-cdn.jtvnw.net/jtv_user_pictures/df5ca2ea-15cf-44bf-b2e0-3dcbb065e6dd-profile_image-300x300.png",
+    "broadcaster_type": "",
+    "title": "Last pirates Demo",
+    "language": "en",
+    "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_paceplsettv-320x180.jpg",
+    "started_at": "2026-06-26T01:14:59Z",
+    "peak_viewers": 0,
+    "last_viewers": 0,
+    "followers": 2,
+    "is_live": true,
+    "first_seen": "2026-06-26T01:15:26Z",
+    "last_seen": "2026-06-26T01:15:26Z",
+    "ended_at": null
+  },
+  {
+    "stream_id": "320150094939",
+    "user_id": "927371108",
+    "user_login": "jah_aims",
+    "user_name": "jah_aims",
+    "logo": "https://static-cdn.jtvnw.net/jtv_user_pictures/62dcc3a8-f4bf-45cd-adb0-8e5ad33fa43c-profile_image-300x300.png",
+    "broadcaster_type": "",
+    "title": "🎮 GAMING 🎮| RANDOM GAMES, TWINS HERE | 💥NIGHTBOT'S MY #1 FAN 💥",
+    "language": "en",
+    "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_jah_aims-320x180.jpg",
+    "started_at": "2026-06-26T01:12:07Z",
+    "peak_viewers": 1,
+    "last_viewers": 1,
+    "followers": 64,
+    "is_live": true,
+    "first_seen": "2026-06-26T01:15:26Z",
+    "last_seen": "2026-06-26T01:15:26Z",
+    "ended_at": null
+  },
+  {
+    "stream_id": "320038697306",
+    "user_id": "539640755",
+    "user_login": "revolvermcguffin",
+    "user_name": "RevolverMcguffin",
+    "logo": "https://static-cdn.jtvnw.net/jtv_user_pictures/f4122ebc-229c-4eca-a5bb-b5304b5f2a61-profile_image-300x300.jpeg",
+    "broadcaster_type": "",
+    "title": "Backrooms",
+    "language": "en",
+    "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_revolvermcguffin-320x180.jpg",
+    "started_at": "2026-06-26T01:10:43Z",
+    "peak_viewers": 1,
+    "last_viewers": 1,
+    "followers": 17,
+    "is_live": true,
+    "first_seen": "2026-06-26T01:15:26Z",
+    "last_seen": "2026-06-26T01:15:26Z",
+    "ended_at": null
+  },
+  {
     "stream_id": "319979441497",
     "user_id": "1511641649",
     "user_login": "paceplsettv",
@@ -13,10 +70,10 @@
     "peak_viewers": 3,
     "last_viewers": 1,
     "followers": 2,
-    "is_live": true,
+    "is_live": false,
     "first_seen": "2026-06-26T00:55:19Z",
     "last_seen": "2026-06-26T01:10:28Z",
-    "ended_at": null
+    "ended_at": "2026-06-26T01:10:28Z"
   },
   {
     "stream_id": "319135655774",
@@ -34,7 +91,7 @@
     "followers": 26,
     "is_live": true,
     "first_seen": "2026-06-26T00:10:26Z",
-    "last_seen": "2026-06-26T01:10:28Z",
+    "last_seen": "2026-06-26T01:15:26Z",
     "ended_at": null
   },
   {
@@ -51,10 +108,10 @@
     "peak_viewers": 3,
     "last_viewers": 3,
     "followers": 73,
-    "is_live": true,
+    "is_live": false,
     "first_seen": "2026-06-26T00:01:00Z",
     "last_seen": "2026-06-26T01:10:28Z",
-    "ended_at": null
+    "ended_at": "2026-06-26T01:10:28Z"
   },
   {
     "stream_id": "320147530203",
@@ -167,7 +224,7 @@
     "followers": 123,
     "is_live": true,
     "first_seen": "2026-06-25T22:20:25Z",
-    "last_seen": "2026-06-26T01:10:28Z",
+    "last_seen": "2026-06-26T01:15:26Z",
     "ended_at": null
   },
   {
