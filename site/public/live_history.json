@@ -11,11 +11,11 @@
     "thumb": "https://static-cdn.jtvnw.net/previews-ttv/live_user_apasyok-320x180.jpg",
     "started_at": "2026-06-26T10:02:26Z",
     "peak_viewers": 5,
-    "last_viewers": 2,
+    "last_viewers": 5,
     "followers": 744,
     "is_live": true,
     "first_seen": "2026-06-26T10:10:26Z",
-    "last_seen": "2026-06-26T11:35:18Z",
+    "last_seen": "2026-06-26T11:40:27Z",
     "ended_at": null
   },
   {
@@ -51,10 +51,10 @@
     "peak_viewers": 20,
     "last_viewers": 18,
     "followers": 1302,
-    "is_live": true,
+    "is_live": false,
     "first_seen": "2026-06-26T09:30:40Z",
     "last_seen": "2026-06-26T11:35:18Z",
-    "ended_at": null
+    "ended_at": "2026-06-26T11:35:18Z"
   },
   {
     "stream_id": "320043293146",
