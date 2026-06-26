@@ -247,14 +247,14 @@
   .src.ended{background:rgba(52,211,153,.92);color:#04231a}
   .src.vod{background:rgba(139,92,246,.92);color:#fff}
   /* ---------- calendar heatmap ---------- */
-  .calwrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;width:fit-content;max-width:100%}
-  .calgrid{display:flex;gap:12px;align-items:flex-start;overflow-x:auto;padding-bottom:6px}
-  .calwd{display:grid;grid-template-rows:repeat(7,22px);gap:4px;padding-top:26px;flex-shrink:0}
-  .calwd span{font-size:10.5px;line-height:22px;color:var(--muted);font-weight:600;text-align:right}
+  .calwrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px 18px}
+  .calgrid{display:flex;gap:12px;align-items:flex-start;justify-content:center;overflow-x:auto;padding-bottom:6px}
+  .calwd{display:grid;grid-template-rows:repeat(7,24px);gap:4px;padding-top:26px;flex-shrink:0}
+  .calwd span{font-size:10.5px;line-height:24px;color:var(--muted);font-weight:600;text-align:right}
   .calcols{display:flex;flex-direction:column}
   .calmonths{display:flex;gap:4px;height:18px;margin-bottom:4px}
-  .calmonths .m{width:22px;font-size:11.5px;color:var(--text2);font-weight:700;white-space:nowrap;flex-shrink:0}
-  .cal{display:grid;grid-template-rows:repeat(7,22px);grid-auto-flow:column;grid-auto-columns:22px;gap:4px}
+  .calmonths .m{width:24px;font-size:11.5px;color:var(--text2);font-weight:700;white-space:nowrap;flex-shrink:0}
+  .cal{display:grid;grid-template-rows:repeat(7,24px);grid-auto-flow:column;grid-auto-columns:24px;gap:4px}
   .cal .cell{border-radius:4px;background:var(--panel3);transition:.1s;cursor:default}
   .cal .cell:hover{outline:2px solid var(--gold2);outline-offset:1px}
   .cal .cell.empty{background:transparent;outline:none}
@@ -870,7 +870,7 @@ function drawCalendar(){
     const first=wk.find(c=>c);const mo=first?first.d.getMonth():-1;
     let lbl="";if(mo!==-1&&mo!==lastMon){lbl=MON[mo];lastMon=mo;}
     return `<div class="m">${lbl}</div>`;}).join("");
-  document.getElementById("calWd").innerHTML=["Mon","","Wed","","Fri","","Sun"].map(d=>`<span>${d}</span>`).join("");
+  document.getElementById("calWd").innerHTML=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(d=>`<span>${d}</span>`).join("");
   // flat cell list — CSS grid (grid-auto-flow:column, 7 rows) lays them out by week column
   document.getElementById("cal").innerHTML=grid.map(c=>c
     ?`<div class="cell" style="background:${col(c.v)}" title="${c.date} · ${c.v} channel${c.v===1?'':'s'} streaming"></div>`
@@ -911,25 +911,46 @@ async function drawMilestones(){
   // keep ALL milestones from the campaign start for the roadmap legend; the chart can
   // only PLACE those that fall within the data range (i>=0), so future ones (demo close,
   // EA release) still show as upcoming chips in the legend below.
-  MS_ALL=(MS||[]).filter(m=>m.date>=MS_START).map(m=>({...m,i:nearest(m.date),color:MS_COLOR[m.type]||"#938da8"}));
+  MS_ALL=(MS||[]).filter(m=>m.date>=MS_START).map(m=>({...m,i:nearest(m.date),
+    ei:m.end?nearest(m.end):-1,color:MS_COLOR[m.type]||"#938da8"}));
   MS_TYPES=MS_TYPES||new Set(MS_ALL.map(m=>m.type));
   MS_MARKS=MS_ALL.filter(m=>MS_TYPES.has(m.type));
-  // Full vertical lines ONLY for major milestones (keeps the chart uncluttered);
-  // minor ones are just a dot at the top — hover the curve for their names.
-  const plugin={id:"ms",afterDatasetsDraw(c){const{ctx,chartArea:{top,bottom,right},scales:{x}}=c;ctx.save();
-    MS_MARKS.forEach(m=>{if(m.i<0)return;const px=x.getPixelForValue(m.i);
-      if(m.major){ctx.strokeStyle=m.color;ctx.globalAlpha=.5;ctx.lineWidth=1.5;ctx.setLineDash([4,4]);
-        ctx.beginPath();ctx.moveTo(px,top+16);ctx.lineTo(px,bottom);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;}
-      ctx.fillStyle=m.color;ctx.beginPath();ctx.arc(px,top+5,m.major?5:3,0,Math.PI*2);ctx.fill();
-      if(m.major){ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(px,top+5,1.8,0,Math.PI*2);ctx.fill();
-        ctx.fillStyle=m.color;ctx.font="700 10.5px Inter";const rt=px>right-90;ctx.textAlign=rt?"right":"left";
-        const t=m.label.length>20?m.label.slice(0,18)+"…":m.label;ctx.fillText(t,px+(rt?-7:7),top+9);}});ctx.restore();}};
+  // Event WINDOWS (playtests/fests with a date range) render as shaded bands behind the
+  // curve, so you can see streaming activity DURING each event. Single-day majors get a
+  // line. Labels live in a reserved lane ABOVE the curve so nothing overlaps it. Minor
+  // single-day events stay in the legend roadmap below (no chart clutter).
+  const plugin={id:"ms",
+    beforeDatasetsDraw(c){const{ctx,chartArea:{top,bottom},scales:{x}}=c;ctx.save();
+      MS_MARKS.forEach(m=>{if(m.i<0)return;
+        if(m.ei>=0){const x1=x.getPixelForValue(m.i),x2=x.getPixelForValue(m.ei),w=Math.max(3,x2-x1);
+          ctx.fillStyle=m.color;ctx.globalAlpha=.12;ctx.fillRect(x1,top,w,bottom-top);
+          ctx.globalAlpha=.45;ctx.fillRect(x1,top,1.5,bottom-top);ctx.fillRect(x2-1.5,top,1.5,bottom-top);ctx.globalAlpha=1;}
+        else if(m.major){const px=x.getPixelForValue(m.i);ctx.strokeStyle=m.color;ctx.globalAlpha=.5;
+          ctx.lineWidth=1.5;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(px,top);ctx.lineTo(px,bottom);
+          ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;}});ctx.restore();},
+    afterDatasetsDraw(c){const{ctx,chartArea:{top,left,right},scales:{x}}=c;ctx.save();ctx.font="700 11px Inter";
+      // label only the major milestones, in the reserved lane above the plot — staggered
+      // onto two rows so neighbours never collide.
+      const majors=MS_MARKS.filter(m=>m.major&&m.i>=0)
+        .map(m=>({m,cx:m.ei>=0?(x.getPixelForValue(m.i)+x.getPixelForValue(m.ei))/2:x.getPixelForValue(m.i)}))
+        .sort((a,b)=>a.cx-b.cx);
+      let prevRight=-1e9,prevRow=1;
+      majors.forEach(o=>{const m=o.m;const t=m.label.length>22?m.label.slice(0,20)+"…":m.label;
+        const w=ctx.measureText(t).width;let row=0;
+        if(o.cx-9-w<prevRight&&prevRow===0)row=1;       // overlaps the previous top-row label → drop a row
+        const ly=row===0?top-22:top-8;
+        const rt=o.cx>right-w-14;const tx=o.cx+(rt?-9:9);
+        ctx.fillStyle=m.color;ctx.beginPath();ctx.arc(o.cx,top-6,3.5,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(o.cx,top-6,1.4,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle=m.color;ctx.textAlign=rt?"right":"left";ctx.fillText(t,tx,ly);
+        prevRight=o.cx+(rt?0:w+9);prevRow=row;});
+      ctx.restore();}};
   msChart=new Chart(document.getElementById("cMilestone"),{type:"line",
     data:{labels,datasets:[{label:"Channels streaming",data:vals,borderColor:"#8b5cf6",backgroundColor:"rgba(139,92,246,.12)",fill:true,tension:.3,pointRadius:0,pointHoverRadius:4,borderWidth:2}]},
-    options:{plugins:{legend:{display:false},tooltip:{callbacks:{
+    options:{layout:{padding:{top:34}},plugins:{legend:{display:false},tooltip:{callbacks:{
       title:items=>labels[items[0].dataIndex].slice(0,10),
       label:item=>` ${fmt(item.parsed.y)} channels streaming`,
-      afterBody:items=>{const i=items[0].dataIndex;const h=MS_MARKS.filter(m=>m.i===i);return h.length?h.map(m=>"★ "+m.label+(m.note?" — "+m.note:"")):[];}}}},
+      afterBody:items=>{const i=items[0].dataIndex;const h=MS_MARKS.filter(m=>(m.i===i)||(m.i>=0&&m.ei>=i&&m.i<=i));return h.length?h.map(m=>"★ "+m.label+(m.note?" — "+m.note:"")):[];}}}},
       scales:{x:{ticks:{color:"#938da8",maxTicksLimit:12,callback:v=>labels[v]?labels[v].slice(5,10):""},grid:{display:false}},
         y:{beginAtZero:true,ticks:{color:"#938da8"},grid:{color:"#211d36"}}}},
     plugins:[plugin]});
