@@ -204,7 +204,7 @@
     background:var(--panel3);border:1px solid var(--line);border-radius:8px;padding:4px 9px}
   .chip svg{width:13px;height:13px;color:var(--muted)}
   .chip.langtag{color:var(--purple2);font-weight:700}
-  .flag{font-size:14px;line-height:1}
+  .flag{width:14px;height:14px;vertical-align:-2px;margin-right:5px;border-radius:2px;display:inline-block}
   .scard .side{display:flex;flex-direction:column;align-items:flex-end;justify-content:space-between;gap:10px;text-align:right}
   .scard .headline{font-size:26px;font-weight:900;letter-spacing:-.5px}
   .scard .headline span{display:block;color:var(--muted);font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-top:2px}
@@ -763,10 +763,14 @@ document.addEventListener("change",e=>{if(e.target.matches(".check input[type=ch
 
 /* ---------- live overlay (fresh live_history.json on top of the 2h baseline) ---------- */
 const LANGN={en:"English",es:"Spanish",pt:"Portuguese",ru:"Russian",fr:"French",de:"German",it:"Italian",pl:"Polish",tr:"Turkish",th:"Thai",zh:"Chinese",ja:"Japanese",ko:"Korean",ar:"Arabic",uk:"Ukrainian",nl:"Dutch",cs:"Czech",hu:"Hungarian",fi:"Finnish",el:"Greek",sv:"Swedish",id:"Indonesian",vi:"Vietnamese",fil:"Filipino",tl:"Filipino"};
-// flag per broadcast language (representative country). Russian = neutral white flag (no RU flag).
-const FLAG={English:"🇬🇧",Spanish:"🇪🇸",Portuguese:"🇧🇷",Russian:"🏳️",French:"🇫🇷",German:"🇩🇪",Italian:"🇮🇹",Polish:"🇵🇱",Turkish:"🇹🇷",Thai:"🇹🇭",Chinese:"🇨🇳","Chinese (Hong Kong SAR)":"🇭🇰",Japanese:"🇯🇵",Korean:"🇰🇷",Arabic:"🇸🇦",Ukrainian:"🇺🇦",Dutch:"🇳🇱",Czech:"🇨🇿",Hungarian:"🇭🇺",Finnish:"🇫🇮",Greek:"🇬🇷",Swedish:"🇸🇪",Danish:"🇩🇰",Norwegian:"🇳🇴",Romanian:"🇷🇴",Indonesian:"🇮🇩",Vietnamese:"🇻🇳",Filipino:"🇵🇭",Hindi:"🇮🇳",Bulgarian:"🇧🇬",Slovak:"🇸🇰",Catalan:"🇪🇸"};
-const flag=l=>FLAG[l]||"";
-const langTag=l=>l?`<span class="chip langtag">${flag(l)?`<span class="flag">${flag(l)}</span> `:""}${l}</span>`:"";
+// flag per broadcast language -> Twemoji PNG (renders on Windows too, unlike flag emoji).
+// Russian = neutral white flag (no RU flag).
+const CC={English:"gb",Spanish:"es",Portuguese:"br",Russian:"white",French:"fr",German:"de",Italian:"it",Polish:"pl",Turkish:"tr",Thai:"th",Chinese:"cn","Chinese (Hong Kong SAR)":"hk",Japanese:"jp",Korean:"kr",Arabic:"sa",Ukrainian:"ua",Dutch:"nl",Czech:"cz",Hungarian:"hu",Finnish:"fi",Greek:"gr",Swedish:"se",Danish:"dk",Norwegian:"no",Romanian:"ro",Indonesian:"id",Vietnamese:"vn",Filipino:"ph",Hindi:"in",Bulgarian:"bg",Slovak:"sk",Catalan:"es"};
+const TW="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/";
+function flag(l){const c=CC[l];if(!c)return"";
+  const code=c==="white"?"1f3f3":[...c.toUpperCase()].map(ch=>(0x1f1e6+ch.charCodeAt(0)-65).toString(16)).join("-");
+  return `<img class="flag" loading="lazy" src="${TW}${code}.png" alt="">`;}
+const langTag=l=>l?`<span class="chip langtag">${flag(l)}${l}</span>`:"";
 function histToStream(h){
   const login=(h.user_login||"").toLowerCase();
   const len=(!h.is_live&&h.started_at&&h.ended_at)?Math.max(1,Math.round((new Date(h.ended_at)-new Date(h.started_at))/6e4)):null;
