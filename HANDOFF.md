@@ -152,19 +152,26 @@ Two cron-job.org jobs: **"LP live snapshot"** every **5 min** → live-snapshot.
 **2h** → update-data.yml. GitHub `schedule:` kept as a flaky backup (live=*/10, full=0 */2).
 
 - **`live-snapshot.yml`** (every 5 min): runs ONLY `collect_stream_history.py` and **force-pushes
-  `live_history.json` to the `data` branch** (NOT main). Cheap, Twitch-only, no SullyGnome.
+  `live_history.json` + `live_samples.json` to the `data` branch** (NOT main). Cheap, Twitch-only, no SullyGnome.
 - **`update-data.yml`** (every 2h): full pipeline (sullygnome + streams + recent + videos + enrich + build).
   Pulls latest `live_history.json` from the `data` branch (curl raw) before building, then commits
-  **`data.json` to `main`** (no `[skip ci]`).
+  **`data.json` + `roster.json` to `main`** (no `[skip ci]`).
 
-**Two deploy gotchas that cost us debugging rounds (do NOT regress):**
-1. **Vercel honours `[skip ci]`** in commit messages and SKIPS the deploy. A `[skip ci]` commit landing on
-   top of `main` suppresses the deploy of everything beneath. → That's WHY live snapshots go to the `data`
-   branch (Vercel watches only `main`): no deploy churn AND no suppressed real deploys. Keep main commits
-   WITHOUT `[skip ci]`.
-2. The frontend reads `live_history.json` from the **`data` branch via raw.githubusercontent.com** (CORS=*,
-   ~5-min CDN cache) → live/ended streams refresh within minutes with NO Vercel deploy. The Live tab is
-   truly real-time via `/api/live`.
+**Deploy gotchas that cost us debugging rounds (do NOT regress):**
+1. ⚠️ **Vercel DEPLOYS EVERY BRANCH BY DEFAULT — including `data`.** The old assumption "Vercel watches only
+   main" was WRONG and bit us hard (2026-06-26): the every-5-min `data`-branch snapshots each spawned a
+   Preview deployment, which clogged the Hobby build queue (On-Demand Concurrent Builds = off) so that real
+   `main` commits stopped deploying for hours. **Fix (in repo):** `vercel.json` →
+   `"git": { "deploymentEnabled": { "data": false } }` disables builds for the `data` branch entirely.
+   Keep that. (Belt-and-suspenders if it ever regresses: Settings → Git → Ignored Build Step →
+   `if [ "$VERCEL_GIT_COMMIT_REF" = "main" ]; then exit 1; else exit 0; fi`.)
+2. **Force a production deploy** (when the auto-webhook is stuck/queued): a **Vercel Deploy Hook** for `main`
+   (Settings → Git → Deploy Hooks) → `curl -X POST "<hook-url>"` builds main's tip into production, bypassing
+   the webhook queue. Verified working 2026-06-26.
+3. `[skip ci]` in a commit message makes Vercel skip that commit's deploy — keep main commits WITHOUT it.
+4. The frontend reads `live_history.json` + `live_samples.json` from the **`data` branch via
+   raw.githubusercontent.com** (CORS=*, ~5-min CDN cache) → live/ended streams + the real-time trend spine
+   refresh within minutes with NO Vercel deploy. The Live tab is truly real-time via `/api/live`.
 
 Repo Settings → Actions → Workflow permissions = Read and write (set).
 
@@ -218,15 +225,25 @@ followers, peaks. Game-branded redesign. Colorized cards/tiers. Trends & Analyti
 calendar heatmap, returning streamers. Regions drill-down. Source filter + badges. Kyiv time. Twemoji flags.
 Deploy architecture fixed (data branch + no `[skip ci]` on main). SullyGnome backfill (window 7/30).
 
-**Health is green** (verified 2026-06-26): live-snapshot every ~5 min all success; 2h build every 2h all
-success; data.json has all sources (twitch/sullygnome/ended/live); data branch readable.
+**Done (v6, 2026-06-26):** (1) **all-time streamer count fixed** — was frozen at 1076 (SullyGnome's 365-day
+table is a stale snapshot, even LOWER than its 90-day total). Now a cumulative `site/public/roster.json`
+(union of every login ever seen, only grows; seeded 1233); `build_site_data` maintains it, frontend reads it
+directly so the real figure shows immediately. (2) **real-time sample spine** — `collect_stream_history`
+appends `{t,viewers,channels}` per ~5-min run to `live_samples.json` (data branch); Trends has a "Real-time"
+granularity off it (no SullyGnome lag). (3) merged **Channels** tab (Top+All); nav order
+Overview·Trends·Live·Newest·Channels·Regions; Regions drill-down under the cards; Twitch restart-duplicates
+collapse (≤45 min). (4) Trends metric **overlay** (2nd axis) + Real-time/Hourly/Daily ranges. (5) milestone
+timeline + calendar **clamped to the campaign window** (Steam page launch 2026-02-23, added as a milestone);
+type-filter chips + roadmap legend with upcoming events. (6) **Fixed the real deploy bug:** Vercel was
+auto-deploying the `data` branch (every-5-min snapshots), clogging the Hobby build queue so `main` stopped
+deploying for hours — fixed via `vercel.json` `git.deploymentEnabled.data=false`; forced v6 live via a
+Deploy Hook (see §8).
 
-**Next (Nikita's plan — "A-B-C" was just shipped; remaining for the next session):**
-1. **Overview deeper rework** — Nikita & team will send screenshots + specific comments on the analytics
-   tabs; he considers Overview still improvable. Iterate on those.
-2. **Optional polish:** collapse restart-duplicates (same channel, consecutive Twitch sessions) into one
-   card; per-region → per-country deeper drill; tighten cron-job.org live interval if short no-VOD streams
-   are being missed.
+**Next:**
+1. **Overview deeper rework** — Nikita & team will send screenshots + comments; iterate.
+2. **Verify the deploy fix held:** after the next live-snapshot, confirm the `data` branch no longer spawns
+   Preview deployments and that `main` 2h-build auto-deploys resume (else use the Deploy Hook / Ignored Build
+   Step from §8). Per-region → per-country deeper drill is still open.
 3. **YouTube module** (his next source) — same pattern: a collector writing the same shapes, reuse the
    frontend components / tabs.
 4. Eventually other sources + manual-number/CRM tiles (Google Sheets via Sasha's service account) for the
