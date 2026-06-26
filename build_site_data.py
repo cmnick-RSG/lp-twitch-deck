@@ -12,6 +12,7 @@ ROOT = Path(__file__).parent
 SRC = ROOT / "data" / "sullygnome"
 TWITCH = ROOT / "data" / "twitch"
 STATE = ROOT / "site" / "public" / "live_history.json"
+ROSTER = ROOT / "site" / "public" / "roster.json"
 OUT = ROOT / "site" / "public" / "data.json"
 
 _DUR = re.compile(r"(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?")
@@ -214,6 +215,40 @@ def merge_streams(lang_by_login):
     return recs
 
 
+def _login_of(c):
+    """Universal channel key = lowercase Twitch login (works across all sources)."""
+    url = (c.get("twitchurl") or c.get("channelurl") or "")
+    if "/" in url:
+        url = url.rstrip("/").rsplit("/", 1)[-1]
+    return (url or c.get("user_login") or "").lower()
+
+
+def update_roster(channels, history, streams, run_date):
+    """Persist a CUMULATIVE roster of every Twitch login we have EVER seen stream
+    Last Pirates, across all sources and all runs. This is the TRUE all-time unique
+    streamer count — it only grows. We do NOT trust SullyGnome's 365-day table total
+    for this: that window is a stale snapshot (~1076) and is actually LOWER than the
+    90-day total, so it never reflects new streamers. The roster fixes that."""
+    roster = {}
+    if ROSTER.exists():
+        try:
+            j = json.loads(ROSTER.read_text(encoding="utf-8"))
+            roster = j.get("logins", j) if isinstance(j, dict) else {}
+        except Exception:
+            roster = {}
+    before = len(roster)
+    for src in (channels, history, streams):
+        for c in src or []:
+            login = _login_of(c)
+            if login and login not in roster:
+                roster[login] = run_date
+    ROSTER.write_text(json.dumps({"updated": run_date, "logins": roster},
+                                 ensure_ascii=False), encoding="utf-8")
+    added = len(roster) - before
+    print(f"  roster: {len(roster)} all-time unique streamers (+{added} new this run)")
+    return roster
+
+
 def main():
     meta = read_json("run_meta.json", {})
     channels = read_channels()
@@ -225,9 +260,18 @@ def main():
             lang_by_login[login] = c["language"]
 
     streams = merge_streams(lang_by_login)
+
+    # TRUE all-time unique streamers via a cumulative, self-owned roster (not the
+    # stale SullyGnome 365 window). Overrides the frozen total_streamers headline.
+    run_date = (meta.get("run_at") or "")[:10]
+    roster = update_roster(channels, [], streams, run_date)
+    summary = dict(meta.get("summary", {}))
+    summary["total_streamers"] = max(len(roster), summary.get("total_streamers", 0))
+    summary["roster_count"] = len(roster)
+
     data = {
         "generated_at": meta.get("run_at"),
-        "summary": meta.get("summary", {}),
+        "summary": summary,
         "windows": read_json("windows.json", {}),
         "languages": read_json("languages_latest.json", {}),
         "channels": channels,

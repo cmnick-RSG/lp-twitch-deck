@@ -44,7 +44,7 @@ jobs:
           # deploy of real main commits (a "[skip ci]" snapshot landing on top used to block it).
           # The frontend reads live_history.json from this branch via GitHub raw. force-push: ok.
           git checkout -B data
-          git add -f site/public/live_history.json
+          git add -f site/public/live_history.json site/public/live_samples.json
           if git diff --cached --quiet; then
             echo "No live changes."
           else

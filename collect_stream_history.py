@@ -25,7 +25,12 @@ import requests
 GAME_ID = "350287257"
 # served by Vercel + committed, so the frontend can overlay it fresh between full builds
 STATE = pathlib.Path(__file__).parent / "site" / "public" / "live_history.json"
+# real-time sample spine: one point per run (every ~5 min) of total live viewers +
+# live channel count. This is OUR own time-series — fresh to minutes, with NO
+# SullyGnome lag. The frontend stitches it onto SullyGnome's historical daily curve.
+SAMPLES = pathlib.Path(__file__).parent / "site" / "public" / "live_samples.json"
 KEEP_DAYS = 14
+SAMPLES_KEEP_DAYS = 35
 
 
 def env():
@@ -150,10 +155,34 @@ def main():
 
     STATE.parent.mkdir(parents=True, exist_ok=True)
     STATE.write_text(json.dumps(kept, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    # --- real-time sample spine -------------------------------------------- #
+    # Append this snapshot's totals: viewers = sum of current viewers across all
+    # live streams, channels = how many are live. Cap to SAMPLES_KEEP_DAYS.
+    total_viewers = sum((v.get("viewer_count") or 0) for v in live)
+    sample = {"t": ts, "viewers": int(total_viewers), "channels": len(live)}
+    samples = []
+    if SAMPLES.exists():
+        try:
+            samples = json.loads(SAMPLES.read_text(encoding="utf-8"))
+        except Exception:
+            samples = []
+    samples.append(sample)
+    scut = datetime.now(timezone.utc) - timedelta(days=SAMPLES_KEEP_DAYS)
+    pruned = []
+    for sm in samples:
+        try:
+            t = datetime.fromisoformat((sm.get("t") or "").replace("Z", "+00:00"))
+            if t >= scut:
+                pruned.append(sm)
+        except Exception:
+            pruned.append(sm)
+    SAMPLES.write_text(json.dumps(pruned, ensure_ascii=False), encoding="utf-8")
+
     n_live = sum(1 for r in kept if r.get("is_live"))
     print(f"live_history: {len(live)} live now, {len(kept)} in store ({n_live} live, "
-          f"{len(kept) - n_live} ended). peak example: "
-          f"{kept[0]['user_name'] if kept else '-'}")
+          f"{len(kept) - n_live} ended). sample: {sample['viewers']}v / "
+          f"{sample['channels']}ch · {len(pruned)} samples kept.")
 
 
 if __name__ == "__main__":

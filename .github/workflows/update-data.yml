@@ -65,7 +65,7 @@ jobs:
         run: |
           git config user.name  "lp-deck-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add site/public/data.json
+          git add site/public/data.json site/public/roster.json
           if git diff --staged --quiet; then
             echo "No data changes."
           else
