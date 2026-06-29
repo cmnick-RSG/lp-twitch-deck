@@ -166,6 +166,9 @@
   .card .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px 7px;font-size:12px}
   .card .stats b{display:block;font-size:15.5px;font-weight:800}
   .card .stats span{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.3px}
+  .card .cardfoot{margin-top:11px;padding-top:10px;border-top:1px solid var(--line);font-size:11px;
+    color:var(--muted);font-weight:600;display:flex;justify-content:space-between;gap:6px}
+  .card .cardfoot b{color:var(--text2);font-weight:700}
 
   /* ---------- rows (top channels preview) ---------- */
   .row{display:grid;grid-template-columns:44px 1fr auto;gap:14px;align-items:center;background:var(--panel);
@@ -247,8 +250,14 @@
   .src.ended{background:rgba(52,211,153,.92);color:#04231a}
   .src.vod{background:rgba(139,92,246,.92);color:#fff}
   /* ---------- calendar heatmap ---------- */
-  .calwrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px 18px}
-  .calgrid{display:flex;gap:12px;align-items:flex-start;justify-content:center;overflow-x:auto;padding-bottom:6px}
+  .calwrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px}
+  .calmain{display:flex;gap:34px;align-items:flex-start;flex-wrap:wrap}
+  .calgrid{display:flex;gap:12px;align-items:flex-start;overflow-x:auto;padding-bottom:6px}
+  .calctx{flex:1;min-width:200px;display:grid;grid-template-columns:1fr 1fr;gap:11px;align-content:start;padding-top:24px}
+  .calctx .cx{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+  .calctx .cx b{display:block;font-size:21px;font-weight:900;color:var(--gold2);line-height:1.1}
+  .calctx .cx span{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-top:5px;text-transform:uppercase;letter-spacing:.3px}
+  @media(max-width:760px){.calctx{grid-template-columns:1fr 1fr;padding-top:4px}}
   .calwd{display:grid;grid-template-rows:repeat(7,24px);gap:4px;padding-top:26px;flex-shrink:0}
   .calwd span{font-size:10.5px;line-height:24px;color:var(--muted);font-weight:600;text-align:right}
   .calcols{display:flex;flex-direction:column}
@@ -375,17 +384,26 @@
     <div class="chartwrap tall"><canvas id="cTrend"></canvas></div>
     <div id="tInsight" class="tile" style="line-height:1.7;margin-bottom:6px"></div>
 
-    <div class="sec-h"><h2>Streams vs key events</h2><span class="hint">milestones over the campaign · hover the curve for events · filter by type below</span><div class="ln"></div></div>
+    <div class="sec-h"><h2>Streams vs key events</h2><span class="hint">event windows shaded on the curve · hover for details · filter &amp; choose the metric</span><div class="ln"></div></div>
+    <div class="toolbar" style="margin-bottom:13px">
+      <label class="fld"><span>Metric</span>
+        <select id="msMetric" class="ctl"><option value="channels">Channels streaming</option><option value="viewers">Peak viewers</option><option value="viewerratio">Viewers per channel</option></select></label>
+      <label class="fld"><span>Window</span>
+        <select id="msRange" class="ctl"><option value="campaign">Whole campaign</option><option value="90">Last 90 days</option><option value="30">Last 30 days</option></select></label>
+    </div>
     <div class="chartwrap tall"><canvas id="cMilestone"></canvas></div>
     <div id="msLegend" style="margin:2px 0 4px"></div>
 
     <div class="sec-h"><h2>Streaming calendar</h2><span class="hint">channels streaming each day · since the Steam page launch</span><div class="ln"></div></div>
     <div class="calwrap">
-      <div class="calgrid">
-        <div class="calwd" id="calWd"></div>
-        <div class="calcols"><div class="calmonths" id="calMonths"></div><div class="cal" id="cal"></div></div>
+      <div class="calmain">
+        <div class="calgrid">
+          <div class="calwd" id="calWd"></div>
+          <div class="calcols"><div class="calmonths" id="calMonths"></div><div class="cal" id="cal"></div></div>
+        </div>
+        <div class="calctx" id="calCtx"></div>
       </div>
-      <div class="callegend">Fewer <i style="background:var(--panel3)"></i><i style="background:rgba(245,196,81,.35)"></i><i style="background:rgba(245,196,81,.65)"></i><i style="background:var(--gold)"></i><i style="background:var(--ember)"></i> More channels streaming that day · hover a square for the date &amp; count</div></div>
+      <div class="callegend">Fewer <i style="background:var(--panel3)"></i><i style="background:rgba(245,196,81,.35)"></i><i style="background:rgba(245,196,81,.65)"></i><i style="background:var(--gold)"></i><i style="background:var(--ember)"></i> More channels streaming that day · hover a square for the exact date &amp; count</div></div>
 
     <div class="sec-h"><h2>Returning streamers</h2><span class="hint" id="retHint">channels who streamed Last Pirates more than once</span><div class="ln"></div></div>
     <div class="ret" id="ret"></div>
@@ -407,8 +425,11 @@
         <select id="fSort" class="ctl">
           <option value="viewminutes">Hours watched</option><option value="maxviewers">Peak viewers</option>
           <option value="avgviewers">Avg viewers</option><option value="streamedminutes">Hours streamed</option><option value="followers">Followers</option>
+          <option value="_last">Last stream</option><option value="_nstreams">Total streams</option>
         </select></label>
       <label class="fld"><span>Order</span><select id="fDir" class="ctl"><option value="desc">High → Low</option><option value="asc">Low → High</option></select></label>
+      <label class="fld"><span>Activity</span>
+        <select id="fActive" class="ctl"><option value="">Any time</option><option value="7">Streamed ≤ 7d</option><option value="30">Streamed ≤ 30d</option></select></label>
       <label class="fld"><span>Language</span><select id="fLang" class="ctl"></select></label>
       <label class="fld"><span>Size</span>
         <select id="fTier" class="ctl">
@@ -495,7 +516,8 @@ const TZ="Europe/Kyiv";
 function kyiv(iso,withDate=true){if(!iso)return"";const d=new Date(iso);if(isNaN(d))return"";
   const o={timeZone:TZ,hour:"2-digit",minute:"2-digit",hour12:false};if(withDate){o.day="2-digit";o.month="short";}
   try{return new Intl.DateTimeFormat("en-GB",o).format(d).replace(",","");}catch(e){return iso.replace("T"," ").slice(5,16);}}
-let D=null,charted={},liveTimer=null,langMap={},liveCount=null;
+let D=null,charted={},liveTimer=null,langMap={},liveCount=null,followByLogin={},streamStatsByLogin={};
+const loginOf=u=>{u=(u||"");if(u.indexOf("/")>=0)u=u.replace(/\/+$/,"").split("/").pop();return u.toLowerCase();};
 
 Chart.defaults.font.family="Inter";Chart.defaults.font.weight="500";Chart.defaults.color="#938da8";
 Chart.defaults.plugins.tooltip.backgroundColor="rgba(18,15,31,.97)";
@@ -631,17 +653,21 @@ function card(c,rk){return `<div class="card"><div class="rk">#${rk||c.rownum}</
   <div class="nm"><a href="${c.twitchurl}" target="_blank" rel="noopener">${esc(c.displayname)}</a></div>
   <div class="tags">${tags(c)}</div>
   <div class="stats"><div><b class="num" style="color:var(--gold)">${hrs(c.viewminutes)}</b><span>watch hrs</span></div><div><b class="num" style="color:${vColor(c.maxviewers)}">${fmt(c.maxviewers)}</b><span>peak</span></div>
-  <div><b class="num" style="color:var(--purple2)">${fmt(c.avgviewers)}</b><span>avg</span></div><div><b class="num">${fmt(c.followers)}</b><span>followers</span></div></div></div>`;}
+  <div><b class="num" style="color:var(--purple2)">${fmt(c.avgviewers)}</b><span>avg</span></div><div><b class="num">${fmt(c.followers)}</b><span>followers</span></div></div>
+  <div class="cardfoot"><span><b>${fmt(c._nstreams||0)}</b> stream${c._nstreams===1?'':'s'}</span><span>${c._last?`last <b>${kyiv(c._last)}</b>`:'no recent stream'}</span></div></div>`;}
 function langOptions(vals){return `<option value="">All languages</option>`+[...new Set(vals.filter(Boolean))].sort().map(l=>`<option>${l}</option>`).join("");}
 function buildFilters(){
   document.getElementById("fLang").innerHTML=langOptions(D.channels.map(c=>c.language));
-  ["fSearch","fLang","fTier","fSort","fDir","fN","fPartner"].forEach(id=>document.getElementById(id).addEventListener("input",allGrid));
+  ["fSearch","fLang","fTier","fSort","fDir","fN","fActive","fPartner"].forEach(id=>document.getElementById(id).addEventListener("input",allGrid));
 }
 function allGrid(){
   const q=fSearch.value.toLowerCase(),lang=fLang.value,tk=fTier.value,sort=fSort.value,
-        partner=fPartner.checked,dir=fDir.value==="asc"?-1:1,n=parseInt(fN.value)||0;
-  let r=D.channels.filter(c=>c.displayname.toLowerCase().includes(q)&&(!lang||c.language===lang)&&(!partner||c.partner)&&(!tk||tier(c.followers)[0]===tk));
-  r.sort((a,b)=>((b[sort]||0)-(a[sort]||0))*dir);
+        partner=fPartner.checked,dir=fDir.value==="asc"?-1:1,n=parseInt(fN.value)||0,active=fActive.value;
+  const acut=active?Date.now()-parseInt(active)*864e5:0;
+  const sval=c=>sort==="_last"?(c._last?new Date(c._last).getTime():0):(c[sort]||0);
+  let r=D.channels.filter(c=>c.displayname.toLowerCase().includes(q)&&(!lang||c.language===lang)&&(!partner||c.partner)&&(!tk||tier(c.followers)[0]===tk)
+    &&(!active||(c._last&&new Date(c._last).getTime()>=acut)));
+  r.sort((a,b)=>(sval(b)-sval(a))*dir);
   const total=r.length;
   if(n>0)r=r.slice(0,n);else r=r.slice(0,500);     // hard cap 500 for DOM sanity
   document.getElementById("allCount").textContent=`showing ${fmt(r.length)} of ${fmt(total)} (${fmt(D.channels.length)} tracked)`;
@@ -696,9 +722,16 @@ function collapseRestarts(list){
   });
   return out;
 }
+function endTime(s){ // broadcast end = start + duration (when we know the length)
+  if(s.is_live||!s.startDateTime||!s.length)return null;
+  const e=new Date(new Date(s.startDateTime).getTime()+s.length*60000);
+  return isNaN(e)?null:e.toISOString();
+}
 function streamCard(s){
   const login=s.channelurl||s.channeldisplayname;
-  const peak=s.peak_viewers!=null?s.peak_viewers:s.maxviewers;
+  const peak=s.peak_viewers!=null?s.peak_viewers:(s.maxviewers!=null?s.maxviewers:null);
+  // followers everywhere: fall back to the channel roster when the stream record lacks it
+  const followers=s.followers!=null?s.followers:(followByLogin[login]!=null?followByLogin[login]:null);
   let srcCls,srcLbl;
   if(s.is_live){srcCls="live";srcLbl="LIVE";}
   else if(s.source==="sullygnome"){srcCls="sully";srcLbl="SullyGnome";}
@@ -708,21 +741,27 @@ function streamCard(s){
   if(s.is_live) headline=`<div class="headline hl-peak num">${fmt(s.viewer_count)}<span>watching now</span></div>`;
   else if(peak!=null) headline=`<div class="headline num" style="color:${vColor(peak)}">${fmt(peak)}<span>peak viewers</span></div>`;
   else if(s.vod_views!=null) headline=`<div class="headline hl-views num">${fmt(s.vod_views)}<span>VOD views</span></div>`;
-  else headline=`<div class="headline num" style="color:var(--muted)">—<span>no stats yet</span></div>`;
+  else headline=`<div class="headline num" style="color:var(--muted)">—<span>no live stats</span></div>`;
   const btn=s.is_live
     ?`<a class="vodbtn live" href="https://www.twitch.tv/${login}" target="_blank" rel="noopener">${svg("play",13)} Watch live</a>`
     :s.vod_url?`<a class="vodbtn" href="${s.vod_url}" target="_blank" rel="noopener">${svg("play",13)} Watch VOD</a>`
     :`<span class="vodbtn dead">no VOD</span>`;
   const chips=[];
   if(s._parts>1)chips.push(`<span class="chip" style="color:var(--gold);border-color:var(--gold)">↻ ${s._parts} sessions merged</span>`);
-  if(s.followers!=null)chips.push(`<span class="chip">${svg("users",13)} ${fmt(s.followers)} followers</span>`);
+  if(followers!=null)chips.push(`<span class="chip">${svg("users",13)} ${fmt(followers)} followers</span>`);
+  // show BOTH peak and VOD views whenever each exists (one is the headline, the other a chip)
+  if(!s.is_live&&peak!=null&&headline.indexOf("peak viewers")<0)chips.push(`<span class="chip">${svg("flame",13)} ${fmt(peak)} peak</span>`);
+  if(s.vod_views!=null&&headline.indexOf("VOD views")<0)chips.push(`<span class="chip">${svg("play",13)} ${fmt(s.vod_views)} VOD views</span>`);
   if(s.avgviewers!=null)chips.push(`<span class="chip">${svg("eye",13)} ${fmt(s.avgviewers)} avg</span>`);
-  if(!s.is_live&&peak!=null&&s.vod_url&&s.vod_views!=null)chips.push(`<span class="chip">${svg("play",13)} ${fmt(s.vod_views)} VOD views</span>`);
-  if(s.length)chips.push(`<span class="chip">${svg("clock",13)} ${dur(s.length)}</span>`);
   if(s.language)chips.push(langTag(s.language));
   if(s.viewminutes)chips.push(`<span class="chip">${svg("hours",13)} ${hrs(s.viewminutes)} watch-hrs</span>`);
   const durBadge=s.is_live?`<span class="dur" style="background:rgba(240,87,60,.9)">● LIVE ${uptime(s.startDateTime)}</span>`
     :s.vod_duration?`<span class="dur">${s.vod_duration}</span>`:(s.length?`<span class="dur">${dur(s.length)}</span>`:"");
+  // explicit broadcast start (and end when known) — answers "is this start or end?"
+  const en=endTime(s);
+  const timeChip=s.is_live
+    ?`<span class="chip" title="broadcast start (Kyiv time)">${svg("cal",13)} live since ${kyiv(s.startDateTime)}</span>`
+    :`<span class="chip" title="broadcast start → end (Kyiv time)">${svg("cal",13)} ${kyiv(s.startDateTime)}${en?` → ${kyiv(en,false)}`:" start"} · ${timeAgo(s.startDateTime)}</span>`;
   return `<div class="scard">
     <div class="thumb-wrap">
       <img class="thumb" loading="lazy" src="${s.vod_thumb||TH}" onerror="this.src='${TH}'">
@@ -732,7 +771,7 @@ function streamCard(s){
     <div class="body">
       <div class="tl"><img src="${s.channellogo||AV}" onerror="this.src='${AV}'"><a href="https://www.twitch.tv/${login}" target="_blank" rel="noopener">${esc(s.channeldisplayname)}</a>${s.partner?`<span class="tag p" style="margin-left:2px">partner</span>`:""}</div>
       ${s.title?`<div class="title">${esc(s.title)}</div>`:`<div class="title" style="color:var(--muted)">Last Pirates: Die Together</div>`}
-      <div class="chips"><span class="chip">${svg("cal",13)} ${s.is_live?"started":timeAgo(s.startDateTime)+" ·"} ${kyiv(s.startDateTime)}</span>${chips.join("")}</div>
+      <div class="chips">${timeChip}${chips.join("")}</div>
     </div>
     <div class="side">${headline}${btn}</div>
   </div>`;
@@ -875,6 +914,22 @@ function drawCalendar(){
   document.getElementById("cal").innerHTML=grid.map(c=>c
     ?`<div class="cell" style="background:${col(c.v)}" title="${c.date} · ${c.v} channel${c.v===1?'':'s'} streaming"></div>`
     :`<div class="cell empty"></div>`).join("");
+  // persistent context panel on the right (was empty space)
+  const active=days.filter(x=>x.v>0);
+  const busiest=days.reduce((a,b)=>b.v>a.v?b:a,days[0]);
+  const avgActive=active.length?active.reduce((s,x)=>s+x.v,0)/active.length:0;
+  const WD=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const byWd={};days.forEach(x=>{const w=x.d.getDay();byWd[w]=(byWd[w]||0)+x.v;});
+  const topWd=Object.keys(byWd).sort((a,b)=>byWd[b]-byWd[a])[0];
+  const latest=days[days.length-1];
+  document.getElementById("calCtx").innerHTML=[
+    [`${fmt(busiest.v)}`,`busiest day · ${kyiv(busiest.date,true).replace(/ \d{2}:\d{2}$/,"")}`],
+    [`${fmt(active.length)}`,`days with streams`],
+    [`${avgActive.toFixed(1)}`,`avg channels / active day`],
+    [`${WD[topWd]||"—"}`,`most active weekday`],
+    [`${fmt(latest.v)}`,`latest day (${kyiv(latest.date,true).replace(/ \d{2}:\d{2}$/,"")})`],
+    [`${fmt(max)}`,`all-time daily peak`],
+  ].map(([v,l])=>`<div class="cx"><b>${v}</b><span>${l}</span></div>`).join("");
 }
 
 /* ---------- returning streamers (>1 stream in the feed) ---------- */
@@ -900,20 +955,29 @@ const MS_TLABEL={launch:"Launches",playtest:"Playtests",festival:"Festivals",rel
 const MS_START="2026-02-23";   // Steam page launch — campaign window start (no point showing 2025)
 async function drawMilestones(){
   if(MS===null){try{MS=await(await fetch("milestones.json",{cache:"no-store"})).json();}catch(e){MS=[];}}
-  if(msChart)return;                                  // build once; filters update in place
-  // clamp to the campaign window — the daily series reaches back a full year otherwise
-  const series=(D.timeseries.channels||[]).filter(p=>p.date&&p.date.slice(0,10)>=MS_START);
+  if(!charted.ms){charted.ms=true;
+    ["msMetric","msRange"].forEach(id=>{const e=document.getElementById(id);if(e&&!e.dataset.b){e.dataset.b=1;e.addEventListener("change",buildMs);}});}
+  if(msChart)return;                                  // initial build once; controls rebuild via buildMs()
+  buildMs();
+}
+function buildMs(){
+  const metric=(document.getElementById("msMetric")||{}).value||"channels";
+  const rng=(document.getElementById("msRange")||{}).value||"campaign";
+  const [mlabel,mcolor]=TMETA[metric]||["Channels streaming","#8b5cf6"];
+  // clamp to the campaign window (no point reaching back a year); the Window control
+  // can zoom to the last 30/90 days.
+  let series=(D.timeseries[metric]||[]).filter(p=>p.date&&p.date.slice(0,10)>=MS_START);
+  if(rng!=="campaign"){const cut=Date.now()-parseInt(rng)*864e5;series=series.filter(p=>new Date(p.date).getTime()>=cut);}
   if(series.length<2)return;
   const labels=series.map(p=>p.date),vals=series.map(p=>Math.round(p.value));
   const idx={};labels.forEach((d,i)=>idx[d]=i);
   const nearest=date=>{if(idx[date]!=null)return idx[date];const t=new Date(date).getTime();let bi=-1,bd=1e15;
     labels.forEach((d,i)=>{const k=Math.abs(new Date(d).getTime()-t);if(k<bd){bd=k;bi=i;}});return bd<6.1e8?bi:-1;};
-  // keep ALL milestones from the campaign start for the roadmap legend; the chart can
-  // only PLACE those that fall within the data range (i>=0), so future ones (demo close,
-  // EA release) still show as upcoming chips in the legend below.
+  // ALL milestones stay in the legend roadmap; the chart only PLACES those inside the
+  // current window (i>=0). Filter chips are based on the full type set, stable across rebuilds.
   MS_ALL=(MS||[]).filter(m=>m.date>=MS_START).map(m=>({...m,i:nearest(m.date),
     ei:m.end?nearest(m.end):-1,color:MS_COLOR[m.type]||"#938da8"}));
-  MS_TYPES=MS_TYPES||new Set(MS_ALL.map(m=>m.type));
+  MS_TYPES=MS_TYPES||new Set((MS||[]).map(m=>m.type));
   MS_MARKS=MS_ALL.filter(m=>MS_TYPES.has(m.type));
   // Event WINDOWS (playtests/fests with a date range) render as shaded bands behind the
   // curve, so you can see streaming activity DURING each event. Single-day majors get a
@@ -945,11 +1009,12 @@ async function drawMilestones(){
         ctx.fillStyle=m.color;ctx.textAlign=rt?"right":"left";ctx.fillText(t,tx,ly);
         prevRight=o.cx+(rt?0:w+9);prevRow=row;});
       ctx.restore();}};
+  if(msChart)msChart.destroy();
   msChart=new Chart(document.getElementById("cMilestone"),{type:"line",
-    data:{labels,datasets:[{label:"Channels streaming",data:vals,borderColor:"#8b5cf6",backgroundColor:"rgba(139,92,246,.12)",fill:true,tension:.3,pointRadius:0,pointHoverRadius:4,borderWidth:2}]},
+    data:{labels,datasets:[{label:mlabel,data:vals,borderColor:mcolor,backgroundColor:mcolor+"1f",fill:true,tension:.3,pointRadius:0,pointHoverRadius:4,borderWidth:2}]},
     options:{layout:{padding:{top:34}},plugins:{legend:{display:false},tooltip:{callbacks:{
       title:items=>labels[items[0].dataIndex].slice(0,10),
-      label:item=>` ${fmt(item.parsed.y)} channels streaming`,
+      label:item=>` ${fmt(item.parsed.y)} ${mlabel.toLowerCase()}`,
       afterBody:items=>{const i=items[0].dataIndex;const h=MS_MARKS.filter(m=>(m.i===i)||(m.i>=0&&m.ei>=i&&m.i<=i));return h.length?h.map(m=>"★ "+m.label+(m.note?" — "+m.note:"")):[];}}}},
       scales:{x:{ticks:{color:"#938da8",maxTicksLimit:12,callback:v=>labels[v]?labels[v].slice(5,10):""},grid:{display:false}},
         y:{beginAtZero:true,ticks:{color:"#938da8"},grid:{color:"#211d36"}}}},
@@ -1112,7 +1177,15 @@ async function overlayLive(){
 
 /* ---------- boot ---------- */
 fetch("data.json").then(r=>r.json()).then(d=>{
-  D=d;D._base=(d.streams||[]).slice();d.channels.forEach(c=>langMap[c.displayname]=c.language);buildNav();
+  D=d;D._base=(d.streams||[]).slice();d.channels.forEach(c=>langMap[c.displayname]=c.language);
+  // login → followers (so the feed can show followers for SullyGnome/VOD streams too)
+  followByLogin={};d.channels.forEach(c=>{const lg=loginOf(c.twitchurl);if(lg&&c.followers!=null)followByLogin[lg]=c.followers;});
+  // per-channel stream stats from the tracked feed: count + last-seen
+  streamStatsByLogin={};(d.streams||[]).forEach(s=>{const lg=loginOf(s.channelurl);if(!lg)return;
+    const o=streamStatsByLogin[lg]||(streamStatsByLogin[lg]={n:0,last:""});o.n++;
+    if((s.startDateTime||"")>o.last)o.last=s.startDateTime;});
+  d.channels.forEach(c=>{const st=streamStatsByLogin[loginOf(c.twitchurl)];c._nstreams=st?st.n:0;c._last=st?st.last:"";});
+  buildNav();
   const src=(d.streams||[]).reduce((m,s)=>{m[s.source]=(m[s.source]||0)+1;return m;},{});
   document.getElementById("strHint").textContent=`Twitch-first · ${fmt((src.twitch||0)+(src.both||0))} from Twitch + ${fmt(src.sullygnome||0)} from SullyGnome · times in Kyiv`;
   document.getElementById("foot").innerHTML=`<b>Sources:</b> Twitch Helix (live streams + recently-ended VODs: links, views, thumbnails, in real time) and SullyGnome (historical aggregates & viewer depth). `+
