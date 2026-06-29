@@ -455,6 +455,10 @@
           <option value="date">Newest first</option><option value="maxviewers">Peak viewers</option>
           <option value="vod_views">VOD views</option><option value="length">Duration</option>
         </select></label>
+      <label class="fld"><span>Min length</span>
+        <select id="sMinLen" class="ctl">
+          <option value="0">Any length</option><option value="30">≥ 30 min</option><option value="60">≥ 1 hour</option><option value="180">≥ 3 hours</option><option value="360">≥ 6 hours</option>
+        </select></label>
       <label class="fld"><span>Source</span>
         <select id="sSrc" class="ctl">
           <option value="">All sources</option><option value="live">Live now</option>
@@ -681,14 +685,14 @@ function timeAgo(iso){if(!iso)return"";const s=Math.max(0,(Date.now()-new Date(i
 function dur(min){min=Math.round(min||0);const h=Math.floor(min/60),m=min%60;return h?`${h}h ${m}m`:`${m}m`;}
 function buildStreamFilters(){
   document.getElementById("sLang").innerHTML=langOptions(D.streams.map(s=>s.language));
-  ["sSearch","sLang","sSort","sVod","sSrc"].forEach(id=>document.getElementById(id).addEventListener("input",streams));
+  ["sSearch","sLang","sSort","sMinLen","sVod","sSrc"].forEach(id=>document.getElementById(id).addEventListener("input",streams));
 }
 function streams(){
   const el=document.getElementById("streams");
   if(!D.streams||!D.streams.length){el.innerHTML=`<div class="empty">Feed is empty right now.</div>`;return;}
-  const q=sSearch.value.toLowerCase(),lang=sLang.value,sort=sSort.value,vodOnly=sVod.checked,src=sSrc.value;
+  const q=sSearch.value.toLowerCase(),lang=sLang.value,sort=sSort.value,vodOnly=sVod.checked,src=sSrc.value,minLen=parseInt(sMinLen.value)||0;
   let r=D.streams.filter(s=>(s.channeldisplayname||"").toLowerCase().includes(q)
-    &&(!lang||s.language===lang)&&(!vodOnly||s.vod_url)&&(!src||s.source===src));
+    &&(!lang||s.language===lang)&&(!vodOnly||s.vod_url)&&(!src||s.source===src)&&(!minLen||(s.length||0)>=minLen));
   if(sort==="date")r.sort((a,b)=>(b.startDateTime||"").localeCompare(a.startDateTime||""));
   else r.sort((a,b)=>(b[sort]||0)-(a[sort]||0));
   document.getElementById("strCount").textContent=`${fmt(r.length)} shown`;
@@ -712,8 +716,8 @@ function collapseRestarts(list){
       if(cur&&!s.is_live&&!cur.is_live&&st-curEnd<=GAP){
         cur._parts=(cur._parts||1)+1;
         cur.length=(cur.length||0)+(s.length||0);
-        cur.peak_viewers=Math.max(cur.peak_viewers||0,s.peak_viewers||0);
-        cur.maxviewers=Math.max(cur.maxviewers||0,s.maxviewers||0);
+        if(s.peak_viewers!=null)cur.peak_viewers=Math.max(cur.peak_viewers||0,s.peak_viewers);
+        if(s.maxviewers!=null)cur.maxviewers=Math.max(cur.maxviewers||0,s.maxviewers);
         if(s.vod_views!=null)cur.vod_views=(cur.vod_views||0)+s.vod_views;
         if(s.vod_url&&!cur.vod_url){cur.vod_url=s.vod_url;cur.vod_duration=s.vod_duration;cur.vod_thumb=cur.vod_thumb||s.vod_thumb;}
         curEnd=Math.max(curEnd,end);
@@ -752,6 +756,7 @@ function streamCard(s){
   // show BOTH peak and VOD views whenever each exists (one is the headline, the other a chip)
   if(!s.is_live&&peak!=null&&headline.indexOf("peak viewers")<0)chips.push(`<span class="chip">${svg("flame",13)} ${fmt(peak)} peak</span>`);
   if(s.vod_views!=null&&headline.indexOf("VOD views")<0)chips.push(`<span class="chip">${svg("play",13)} ${fmt(s.vod_views)} VOD views</span>`);
+  if(!s.is_live&&s.length)chips.push(`<span class="chip" title="total stream length">${svg("clock",13)} ${dur(s.length)} long</span>`);
   if(s.avgviewers!=null)chips.push(`<span class="chip">${svg("eye",13)} ${fmt(s.avgviewers)} avg</span>`);
   if(s.language)chips.push(langTag(s.language));
   if(s.viewminutes)chips.push(`<span class="chip">${svg("hours",13)} ${hrs(s.viewminutes)} watch-hrs</span>`);
