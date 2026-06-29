@@ -195,6 +195,14 @@ def merge_streams(lang_by_login):
                     rec[k] = sst[k]
             if not rec.get("length") and sst.get("length"):
                 rec["length"] = sst["length"]
+            # carry the VOD enrich_helix found per-channel (e.g. a stream Twitch filed
+            # under a different game category) onto the record if it lacks one
+            if not rec.get("vod_url") and sst.get("vod_url"):
+                rec["vod_url"] = sst.get("vod_url")
+                rec["vod_views"] = sst.get("vod_views")
+                rec["vod_duration"] = sst.get("vod_duration")
+                if sst.get("vod_thumb"):
+                    rec["vod_thumb"] = sst["vod_thumb"]
         else:
             add({
                 "source": "sullygnome", "is_live": False, "_sully": True,
@@ -205,6 +213,9 @@ def merge_streams(lang_by_login):
                 "length": sst.get("length"),
                 "avgviewers": sst.get("avgviewers"), "maxviewers": sst.get("maxviewers"),
                 "viewminutes": sst.get("viewminutes"), "followergain": sst.get("followergain"),
+                # VOD link/views/duration/thumbnail from enrich_helix (per-channel match)
+                "vod_url": sst.get("vod_url"), "vod_views": sst.get("vod_views"),
+                "vod_duration": sst.get("vod_duration"), "vod_thumb": sst.get("vod_thumb"),
             })
 
     for r in recs:
