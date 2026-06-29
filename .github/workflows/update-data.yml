@@ -41,6 +41,9 @@ jobs:
       - name: Collect short-window (hourly) + momentum
         run: python collect_recent.py
 
+      - name: Refresh per-channel all-time meta (last stream + total streams, batched)
+        run: python collect_channel_meta.py
+
       - name: Collect Twitch-first recent streams (Helix videos by game)
         env:
           TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
@@ -65,7 +68,7 @@ jobs:
         run: |
           git config user.name  "lp-deck-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add site/public/data.json site/public/roster.json
+          git add site/public/data.json site/public/roster.json site/public/channel_meta.json
           if git diff --staged --quiet; then
             echo "No data changes."
           else

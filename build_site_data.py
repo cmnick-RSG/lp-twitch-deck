@@ -252,6 +252,20 @@ def update_roster(channels, history, streams, run_date):
 def main():
     meta = read_json("run_meta.json", {})
     channels = read_channels()
+    # merge all-time per-channel LP meta (total streams + last stream date),
+    # refreshed in batches by collect_channel_meta.py into channel_meta.json
+    cmeta = {}
+    mp = ROOT / "site" / "public" / "channel_meta.json"
+    if mp.exists():
+        try:
+            cmeta = json.loads(mp.read_text(encoding="utf-8")).get("channels", {})
+        except Exception:
+            cmeta = {}
+    for c in channels:
+        m = cmeta.get(_login_of(c))
+        if m:
+            c["total_streams"] = m.get("n")
+            c["last_stream"] = m.get("last")
     # login -> language, for tagging Twitch-only streams from the channel table
     lang_by_login = {}
     for c in channels:

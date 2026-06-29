@@ -417,7 +417,7 @@
 
   <!-- CHANNELS (merged Top + All) -->
   <section class="tab" data-tab="channels">
-    <div class="sec-h"><h2>Channels</h2><span class="count" id="allCount"></span><span class="hint">stats are all-time · “recent” = streams in the tracked feed (~30 days)</span><div class="ln"></div></div>
+    <div class="sec-h"><h2>Channels</h2><span class="count" id="allCount"></span><span class="hint">all-time Last Pirates stats · stream counts &amp; last-stream fill in over ~a day</span><div class="ln"></div></div>
     <div class="toolbar">
       <label class="fld"><span>Search</span>
         <span class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="fSearch" class="ctl" placeholder="channel name…"></span></label>
@@ -425,7 +425,7 @@
         <select id="fSort" class="ctl">
           <option value="viewminutes">Hours watched</option><option value="maxviewers">Peak viewers</option>
           <option value="avgviewers">Avg viewers</option><option value="streamedminutes">Hours streamed</option><option value="followers">Followers</option>
-          <option value="_last">Last stream</option><option value="_nstreams">Recent streams (~30d)</option>
+          <option value="_last">Last stream</option><option value="_nstreams">Total LP streams</option>
         </select></label>
       <label class="fld"><span>Order</span><select id="fDir" class="ctl"><option value="desc">High → Low</option><option value="asc">Low → High</option></select></label>
       <label class="fld"><span>Activity</span>
@@ -654,7 +654,7 @@ function card(c,rk){return `<div class="card"><div class="rk">#${rk||c.rownum}</
   <div class="tags">${tags(c)}</div>
   <div class="stats"><div><b class="num" style="color:var(--gold)">${hrs(c.viewminutes)}</b><span>watch hrs</span></div><div><b class="num" style="color:${vColor(c.maxviewers)}">${fmt(c.maxviewers)}</b><span>peak</span></div>
   <div><b class="num" style="color:var(--purple2)">${fmt(c.avgviewers)}</b><span>avg</span></div><div><b class="num">${fmt(c.followers)}</b><span>followers</span></div></div>
-  <div class="cardfoot" title="all-time stats above · 'recent' = the tracked feed, ~last 30 days"><span><b>${fmt(c._nstreams||0)}</b> recent</span><span>${c._last?`last <b>${kyiv(c._last)}</b>`:'not streamed in ~30d'}</span></div></div>`;}
+  <div class="cardfoot" title="all-time Last Pirates streams &amp; last LP broadcast (Kyiv)"><span><b>${fmt(c._nstreams||0)}</b> LP stream${c._nstreams===1?'':'s'}</span><span>${c._last?`last <b>${kyiv(c._last)}</b>`:'—'}</span></div></div>`;}
 function langOptions(vals){return `<option value="">All languages</option>`+[...new Set(vals.filter(Boolean))].sort().map(l=>`<option>${l}</option>`).join("");}
 function buildFilters(){
   document.getElementById("fLang").innerHTML=langOptions(D.channels.map(c=>c.language));
@@ -1184,7 +1184,11 @@ fetch("data.json").then(r=>r.json()).then(d=>{
   streamStatsByLogin={};(d.streams||[]).forEach(s=>{const lg=loginOf(s.channelurl);if(!lg)return;
     const o=streamStatsByLogin[lg]||(streamStatsByLogin[lg]={n:0,last:""});o.n++;
     if((s.startDateTime||"")>o.last)o.last=s.startDateTime;});
-  d.channels.forEach(c=>{const st=streamStatsByLogin[loginOf(c.twitchurl)];c._nstreams=st?st.n:0;c._last=st?st.last:"";});
+  // prefer all-time LP meta (channel_meta.json, refreshed in batches) → fall back to the
+  // recent tracked feed until the per-channel scan has covered that channel.
+  d.channels.forEach(c=>{const st=streamStatsByLogin[loginOf(c.twitchurl)];
+    c._nstreams=c.total_streams!=null?c.total_streams:(st?st.n:0);
+    c._last=c.last_stream||(st?st.last:"");});
   buildNav();
   const src=(d.streams||[]).reduce((m,s)=>{m[s.source]=(m[s.source]||0)+1;return m;},{});
   document.getElementById("strHint").textContent=`Twitch-first · ${fmt((src.twitch||0)+(src.both||0))} from Twitch + ${fmt(src.sullygnome||0)} from SullyGnome · times in Kyiv`;
@@ -1199,6 +1203,13 @@ fetch("data.json").then(r=>r.json()).then(d=>{
   fetch("roster.json",{cache:"no-store"}).then(r=>r.json()).then(j=>{
     const n=Object.keys((j&&j.logins)||j||{}).length;
     if(n>(D.summary.total_streamers||0)){D.summary.total_streamers=n;overview();}
+  }).catch(()=>{});
+  // all-time per-channel LP meta (total streams + last stream), refreshed in batches —
+  // read directly so it shows immediately without waiting for the 2h build.
+  fetch("channel_meta.json",{cache:"no-store"}).then(r=>r.json()).then(j=>{
+    const cm=(j&&j.channels)||{};
+    D.channels.forEach(c=>{const m=cm[loginOf(c.twitchurl)];if(m){c.total_streams=m.n;c.last_stream=m.last;c._nstreams=m.n;c._last=m.last||c._last;}});
+    if(rendered.channels)allGrid();
   }).catch(()=>{});
   overlayLive();setInterval(overlayLive,60000);   // refresh live overlay every 60s
 }).catch(e=>{document.getElementById("ovMeta").textContent="failed to load data.json: "+e;});
