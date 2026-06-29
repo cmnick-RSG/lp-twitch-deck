@@ -93,6 +93,16 @@ def main():
             for u in r.get("data", []):
                 logos[u["id"]] = u.get("profile_image_url")
 
+        # 2b) follower totals per channel (app token works for /channels/followers)
+        follows = {}
+        for uid in ids:
+            try:
+                rf = s.get("https://api.twitch.tv/helix/channels/followers",
+                           params={"broadcaster_id": uid, "first": 1}, timeout=20).json()
+                follows[uid] = rf.get("total")
+            except Exception:
+                follows[uid] = None
+
     feed = []
     for v in raw:
         feed.append({
@@ -102,6 +112,7 @@ def main():
             "channeldisplayname": v.get("user_name"),
             "channelurl": (v.get("user_login") or "").lower(),
             "channellogo": logos.get(v.get("user_id")),
+            "followers": follows.get(v.get("user_id")),
             "title": v.get("title"),
             "language": v.get("language"),
             "startDateTime": v.get("created_at"),

@@ -171,6 +171,8 @@ def merge_streams(lang_by_login):
                 rec["length"] = _dur_min(v.get("vod_duration"))
             if not rec.get("title"):
                 rec["title"] = v.get("title")
+            if rec.get("followers") is None and v.get("followers") is not None:
+                rec["followers"] = v.get("followers")
         else:
             add({
                 "source": "twitch", "is_live": False,
@@ -179,6 +181,7 @@ def merge_streams(lang_by_login):
                 "title": v.get("title"), "language": _langname(v.get("language")),
                 "startDateTime": v.get("startDateTime"),
                 "length": _dur_min(v.get("vod_duration")),
+                "followers": v.get("followers"),
                 "vod_url": v.get("vod_url"), "vod_views": v.get("vod_views"),
                 "vod_duration": v.get("vod_duration"), "vod_thumb": v.get("vod_thumb"),
                 "_vod": True,
@@ -195,6 +198,8 @@ def merge_streams(lang_by_login):
                     rec[k] = sst[k]
             if not rec.get("length") and sst.get("length"):
                 rec["length"] = sst["length"]
+            if rec.get("followers") is None and sst.get("followers") is not None:
+                rec["followers"] = sst.get("followers")
             # carry the VOD enrich_helix found per-channel (e.g. a stream Twitch filed
             # under a different game category) onto the record if it lacks one
             if not rec.get("vod_url") and sst.get("vod_url"):
@@ -213,6 +218,7 @@ def merge_streams(lang_by_login):
                 "length": sst.get("length"),
                 "avgviewers": sst.get("avgviewers"), "maxviewers": sst.get("maxviewers"),
                 "viewminutes": sst.get("viewminutes"), "followergain": sst.get("followergain"),
+                "followers": sst.get("followers"),
                 # VOD link/views/duration/thumbnail from enrich_helix (per-channel match)
                 "vod_url": sst.get("vod_url"), "vod_views": sst.get("vod_views"),
                 "vod_duration": sst.get("vod_duration"), "vod_thumb": sst.get("vod_thumb"),

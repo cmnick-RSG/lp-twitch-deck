@@ -56,8 +56,9 @@ def main():
         for u in r.get("data", []):
             uid[u["login"].lower()] = u["id"]
 
-    # 2) per user -> archive videos
+    # 2) per user -> archive videos + follower total
     vids = {}
+    follows = {}
     for login, id_ in uid.items():
         try:
             r = requests.get("https://api.twitch.tv/helix/videos",
@@ -66,11 +67,20 @@ def main():
             vids[login] = r.get("data", [])
         except Exception:
             vids[login] = []
+        try:
+            rf = requests.get("https://api.twitch.tv/helix/channels/followers",
+                              params={"broadcaster_id": id_, "first": 1},
+                              headers=HH, timeout=20).json()
+            follows[login] = rf.get("total")
+        except Exception:
+            follows[login] = None
 
-    # 3) match each stream to a VOD by start time
+    # 3) match each stream to a VOD by start time (+ attach follower total)
     enriched = 0
     for s in streams:
         login = (s.get("channelurl") or "").lower()
+        if follows.get(login) is not None:
+            s["followers"] = follows[login]
         st = parse(s.get("startDateTime"))
         best, bestdiff = None, MATCH_MIN * 60 + 1
         for v in vids.get(login, []):
