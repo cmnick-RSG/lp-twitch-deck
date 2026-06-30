@@ -53,7 +53,7 @@ def thumb(url: str) -> str:
     return (url or "").replace("{width}", "320").replace("{height}", "180")
 
 
-def main():
+def _run():
     e = env()
     if not e.get("TWITCH_CLIENT_ID") or not e.get("TWITCH_CLIENT_SECRET"):
         print("collect_stream_history: no Twitch keys — skipping live capture.")
@@ -183,6 +183,23 @@ def main():
     print(f"live_history: {len(live)} live now, {len(kept)} in store ({n_live} live, "
           f"{len(kept) - n_live} ended). sample: {sample['viewers']}v / "
           f"{sample['channels']}ch · {len(pruned)} samples kept.")
+
+
+def main():
+    # Twitch Helix occasionally hiccups (timeout / 5xx / rate limit). Since this runs
+    # every ~5 min, retry a few times then SKIP this snapshot gracefully (exit 0) rather
+    # than failing the job and emailing a false alarm — the data-branch state is untouched
+    # (nothing is written until a full successful fetch), so the next run just continues.
+    import time
+    for attempt in range(1, 4):
+        try:
+            return _run()
+        except Exception as ex:  # noqa: BLE001
+            print(f"  collect_stream_history attempt {attempt}/3 failed: {ex}")
+            if attempt < 3:
+                time.sleep(4 * attempt)
+    print("collect_stream_history: Twitch unreachable after retries — skipping this "
+          "snapshot (state preserved, next run retries).")
 
 
 if __name__ == "__main__":
