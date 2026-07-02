@@ -452,8 +452,8 @@
       <label class="fld"><span>Language</span><select id="sLang" class="ctl"></select></label>
       <label class="fld"><span>Sort by</span>
         <select id="sSort" class="ctl">
-          <option value="date">Newest first</option><option value="maxviewers">Peak viewers</option>
-          <option value="vod_views">VOD views</option><option value="length">Duration</option>
+          <optgroup label="By time"><option value="date">Newest first</option><option value="date_asc">Oldest first</option></optgroup>
+          <optgroup label="By numbers"><option value="maxviewers">Peak viewers</option><option value="vod_views">VOD views</option><option value="length">Duration</option></optgroup>
         </select></label>
       <label class="fld"><span>Min length</span>
         <select id="sMinLen" class="ctl">
@@ -694,6 +694,7 @@ function streams(){
   let r=D.streams.filter(s=>(s.channeldisplayname||"").toLowerCase().includes(q)
     &&(!lang||s.language===lang)&&(!vodOnly||s.vod_url)&&(!src||s.source===src)&&(!minLen||(s.length||0)>=minLen));
   if(sort==="date")r.sort((a,b)=>(b.startDateTime||"").localeCompare(a.startDateTime||""));
+  else if(sort==="date_asc")r.sort((a,b)=>(a.startDateTime||"").localeCompare(b.startDateTime||""));
   else r.sort((a,b)=>(b[sort]||0)-(a[sort]||0));
   document.getElementById("strCount").textContent=`${fmt(r.length)} shown`;
   el.innerHTML=r.slice(0,140).map(streamCard).join("");

@@ -81,3 +81,16 @@ jobs:
               git push && break || { echo "push race, rebasing…"; git pull --rebase --autostash origin main; }
             done
           fi
+
+      - name: Trigger Vercel deploy of the fresh data.json
+        # Vercel's auto-deploy on bot pushes is unreliable here (prod ends up ~1 build
+        # behind main). A deploy hook makes every 2h build publish deterministically.
+        # Add the hook URL as repo secret VERCEL_DEPLOY_HOOK (Settings → Secrets → Actions).
+        env:
+          VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+        run: |
+          if [ -n "$VERCEL_DEPLOY_HOOK" ]; then
+            curl -s -X POST "$VERCEL_DEPLOY_HOOK" >/dev/null && echo "Vercel deploy triggered." || echo "deploy hook call failed."
+          else
+            echo "No VERCEL_DEPLOY_HOOK secret set — relying on Vercel auto-deploy."
+          fi
