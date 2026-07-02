@@ -450,10 +450,12 @@
       <label class="fld"><span>Search</span>
         <span class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="sSearch" class="ctl" placeholder="channel name…"></span></label>
       <label class="fld"><span>Language</span><select id="sLang" class="ctl"></select></label>
+      <label class="fld"><span>Time</span>
+        <select id="sTime" class="ctl"><option value="new">Newest first</option><option value="old">Oldest first</option></select></label>
       <label class="fld"><span>Sort by</span>
         <select id="sSort" class="ctl">
-          <optgroup label="By time"><option value="date">Newest first</option><option value="date_asc">Oldest first</option></optgroup>
-          <optgroup label="By numbers"><option value="maxviewers">Peak viewers</option><option value="vod_views">VOD views</option><option value="length">Duration</option></optgroup>
+          <option value="">— by time —</option><option value="maxviewers">Peak viewers</option>
+          <option value="vod_views">VOD views</option><option value="length">Duration</option>
         </select></label>
       <label class="fld"><span>Min length</span>
         <select id="sMinLen" class="ctl">
@@ -685,7 +687,7 @@ function timeAgo(iso){if(!iso)return"";const s=Math.max(0,(Date.now()-new Date(i
 function dur(min){min=Math.round(min||0);const h=Math.floor(min/60),m=min%60;return h?`${h}h ${m}m`:`${m}m`;}
 function buildStreamFilters(){
   document.getElementById("sLang").innerHTML=langOptions(D.streams.map(s=>s.language));
-  ["sSearch","sLang","sSort","sMinLen","sVod","sSrc"].forEach(id=>document.getElementById(id).addEventListener("input",streams));
+  ["sSearch","sLang","sTime","sSort","sMinLen","sVod","sSrc"].forEach(id=>document.getElementById(id).addEventListener("input",streams));
 }
 function streams(){
   const el=document.getElementById("streams");
@@ -693,9 +695,13 @@ function streams(){
   const q=sSearch.value.toLowerCase(),lang=sLang.value,sort=sSort.value,vodOnly=sVod.checked,src=sSrc.value,minLen=parseInt(sMinLen.value)||0;
   let r=D.streams.filter(s=>(s.channeldisplayname||"").toLowerCase().includes(q)
     &&(!lang||s.language===lang)&&(!vodOnly||s.vod_url)&&(!src||s.source===src)&&(!minLen||(s.length||0)>=minLen));
-  if(sort==="date")r.sort((a,b)=>(b.startDateTime||"").localeCompare(a.startDateTime||""));
-  else if(sort==="date_asc")r.sort((a,b)=>(a.startDateTime||"").localeCompare(b.startDateTime||""));
-  else r.sort((a,b)=>(b[sort]||0)-(a[sort]||0));
+  // Two independent controls: Time (newest/oldest) and an optional metric sort.
+  // Metric = primary key; Time = direction when no metric, and tiebreaker when a metric is chosen.
+  const cmpTime=(a,b)=>sTime.value==="old"
+    ?(a.startDateTime||"").localeCompare(b.startDateTime||"")
+    :(b.startDateTime||"").localeCompare(a.startDateTime||"");
+  if(!sort)r.sort(cmpTime);
+  else r.sort((a,b)=>((b[sort]||0)-(a[sort]||0))||cmpTime(a,b));
   document.getElementById("strCount").textContent=`${fmt(r.length)} shown`;
   el.innerHTML=r.slice(0,140).map(streamCard).join("");
   syncCheck();
