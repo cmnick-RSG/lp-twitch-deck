@@ -866,16 +866,27 @@ function drawTrends(){
   const chg=first?((latest-first)/first*100):0;
   const peakAt=vals.length?s[vals.indexOf(mx)].x:"";
   const chgCls=chg>1?"up":chg<-1?"down":"flat",chgArr=chg>1?"▲":chg<-1?"▼":"▬";
-  // overall unique channels for the range (accurate SullyGnome window totals / roster) —
-  // the per-bucket "channels streaming" curve doesn't convey the distinct total, so add it.
+  // ----- period totals (the per-bucket curve doesn't convey these) -----
   const W=D.windows||{};
   const uniq=(r==="24h"||r==="3d")?W["3"]:r==="7d"?W["7"]:r==="30d"?W["30"]
     :r==="90d"?W["365"]:(D.summary.total_streamers||W["365"]);
+  const allTime=(r==="all"||r==="campaign");
+  const feed=D._base||D.streams||[];
+  const dc={"24h":1,"3d":3,"7d":7,"30d":30,"90d":90}[r];
+  const cut=dc?Date.now()-dc*864e5:null;
+  const inR=(r==="campaign")?feed.filter(x=>(x.startDateTime||"")>=MS_START)
+    :cut?feed.filter(x=>x.startDateTime&&new Date(x.startDateTime).getTime()>=cut):feed;
+  // all streams in the period; watch-hours = total viewership (Σ viewers×time). All-time
+  // uses authoritative SullyGnome totals; recent periods sum the tracked feed (fills in
+  // as SullyGnome processes fresh streams).
+  const nStreams=allTime?(D.channels.reduce((a,c)=>a+(c.total_streams||0),0)||inR.length):inR.length;
+  const whrs=allTime?Math.round(D.summary.total_hours_watched||0)
+    :Math.round(inR.reduce((a,x)=>a+(x.viewminutes||0),0)/60);
   const tiles=[
-    ["Peak",fmt(Math.round(mx)),"gold"],["Average",fmt(Math.round(avg)),"b"],
-    ["Latest",fmt(Math.round(latest)),"g"],["Change over range",`<span class="delta ${chgCls}">${chgArr} ${Math.abs(chg).toFixed(1)}%</span>`,""],
-    ["Data points",fmt(s.length),"p"]];
-  if(metric==="channels"&&uniq!=null)tiles.splice(3,0,["Unique channels",fmt(uniq),"gold"]);
+    ["Peak",fmt(Math.round(mx)),"gold"],["Average",fmt(Math.round(avg)),"b"],["Latest",fmt(Math.round(latest)),"g"],
+    ["Streams",fmt(nStreams),"p"],["Watch-hours",fmt(whrs),"gold"],
+    ["Change over range",`<span class="delta ${chgCls}">${chgArr} ${Math.abs(chg).toFixed(1)}%</span>`,""]];
+  if(metric==="channels"&&uniq!=null)tiles.splice(3,0,["Unique channels",fmt(uniq),"b"]);
   document.getElementById("tStats").innerHTML=tiles
     .map(([l,v,cl])=>`<div class="tile"><div class="v ${cl} num" style="font-size:24px">${v}</div><div class="l">${l}</div></div>`).join("");
 
