@@ -888,9 +888,15 @@ function drawTrends(){
   const nStreams=allTime?(D.channels.reduce((a,c)=>a+(c.total_streams||0),0)||inR.length):inR.length;
   const whrs=allTime?Math.round(D.summary.total_hours_watched||0)
     :Math.round(inR.reduce((a,x)=>a+(x.viewminutes||0),0)/60);
+  // combined peak = Σ of each stream's peak (rough reach — repeat viewers double-count,
+  // NOT unique people); VOD views = Σ replay views. Both summed over the tracked feed.
+  const pk=x=>x.peak_viewers!=null?x.peak_viewers:(x.viewer_count!=null?x.viewer_count:(x.maxviewers||0));
+  const cpeak=inR.reduce((a,x)=>a+pk(x),0);
+  const vodv=inR.reduce((a,x)=>a+(x.vod_views||0),0);
   const tiles=[
     ["Peak",fmt(Math.round(mx)),"gold"],["Average",fmt(Math.round(avg)),"b"],["Latest",fmt(Math.round(latest)),"g"],
     ["Streams",fmt(nStreams),"p"],["Watch-hours",fmt(whrs),"gold"],
+    ["Combined peak",fmt(cpeak),"a"],["VOD views",fmt(vodv),"g"],
     ["Change over range",`<span class="delta ${chgCls}">${chgArr} ${Math.abs(chg).toFixed(1)}%</span>`,""]];
   if(metric==="channels"&&uniq!=null)tiles.splice(3,0,["Unique channels",fmt(uniq),"b"]);
   document.getElementById("tStats").innerHTML=tiles
