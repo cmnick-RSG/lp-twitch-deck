@@ -707,8 +707,14 @@ function streams(){
   const cmpTime=(a,b)=>sTime.value==="old"
     ?(a.startDateTime||"").localeCompare(b.startDateTime||"")
     :(b.startDateTime||"").localeCompare(a.startDateTime||"");
+  // effective peak = the SAME value the card shows (captured streams keep it in
+  // peak_viewers, SullyGnome in maxviewers, live in viewer_count) — sorting on the raw
+  // maxviewers field alone dropped every captured stream to 0.
+  const sval=s=>sort==="maxviewers"
+    ?(s.peak_viewers!=null?s.peak_viewers:(s.viewer_count!=null?s.viewer_count:(s.maxviewers||0)))
+    :(s[sort]||0);
   if(!sort)r.sort(cmpTime);
-  else r.sort((a,b)=>((b[sort]||0)-(a[sort]||0))||cmpTime(a,b));
+  else r.sort((a,b)=>(sval(b)-sval(a))||cmpTime(a,b));
   document.getElementById("strCount").textContent=`${fmt(r.length)} shown`;
   el.innerHTML=r.slice(0,140).map(streamCard).join("");
   syncCheck();
