@@ -50,16 +50,17 @@ jobs:
           TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
         run: python collect_videos.py
 
-      - name: Enrich SullyGnome streams with Twitch VOD data (links/views/thumbnails)
+      - name: Pull latest live history from the 'data' branch (snapshots live there now)
+        # BEFORE enrich so enrich_helix can also resolve captured/live channels' VODs
+        run: |
+          curl -sfL "https://raw.githubusercontent.com/cmnick-RSG/lp-twitch-deck/data/site/public/live_history.json" \
+            -o site/public/live_history.json || echo "[]" > site/public/live_history.json
+
+      - name: Enrich streams with Twitch VOD data + per-channel VOD map (links/views/thumbs)
         env:
           TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
           TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
         run: python enrich_helix.py
-
-      - name: Pull latest live history from the 'data' branch (snapshots live there now)
-        run: |
-          curl -sfL "https://raw.githubusercontent.com/cmnick-RSG/lp-twitch-deck/data/site/public/live_history.json" \
-            -o site/public/live_history.json || echo "[]" > site/public/live_history.json
 
       - name: Build site data.json
         run: python build_site_data.py

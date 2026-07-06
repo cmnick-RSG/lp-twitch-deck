@@ -45,7 +45,20 @@ def main():
     HH = {"Client-ID": e["TWITCH_CLIENT_ID"], "Authorization": f"Bearer {tok}"}
 
     streams = json.loads(STREAMS.read_text(encoding="utf-8"))
-    logins = sorted({(s.get("channelurl") or "").lower() for s in streams if s.get("channelurl")})
+    logins = {(s.get("channelurl") or "").lower() for s in streams if s.get("channelurl")}
+    # also resolve captured/live channels so their VODs get matched too — a stream we
+    # caught live whose VOD Twitch filed under another category would otherwise read
+    # "no VOD" even though the recording exists (needs live_history pulled first).
+    lh = pathlib.Path(__file__).parent / "site" / "public" / "live_history.json"
+    if lh.exists():
+        try:
+            for h in json.loads(lh.read_text(encoding="utf-8")):
+                lg = (h.get("user_login") or "").lower()
+                if lg:
+                    logins.add(lg)
+        except Exception:
+            pass
+    logins = sorted(logins)
 
     # 1) logins -> user_id (batch 100)
     uid = {}
@@ -100,8 +113,21 @@ def main():
             enriched += 1
 
     STREAMS.write_text(json.dumps(streams, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    # per-channel VOD map for build_site_data to match against ANY feed record (captured,
+    # SullyGnome, Twitch) that lacks a VOD — including recordings Twitch filed under a
+    # different game category.
+    def _thumb(u):
+        return (u or "").replace("%{width}", "320").replace("%{height}", "180") \
+            .replace("{width}", "320").replace("{height}", "180")
+    channel_vods = {login: [{"created_at": v.get("created_at"), "url": v.get("url"),
+                             "view_count": v.get("view_count"), "duration": v.get("duration"),
+                             "thumbnail": _thumb(v.get("thumbnail_url"))} for v in arr]
+                    for login, arr in vids.items() if arr}
+    (pathlib.Path(__file__).parent / "data" / "twitch" / "channel_vods.json").write_text(
+        json.dumps(channel_vods, ensure_ascii=False), encoding="utf-8")
     print(f"enriched {enriched}/{len(streams)} streams with live Twitch VOD data "
-          f"({len(uid)} channels resolved)")
+          f"({len(uid)} channels resolved, {len(channel_vods)} with VODs)")
 
 
 if __name__ == "__main__":

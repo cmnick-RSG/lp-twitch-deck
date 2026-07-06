@@ -450,6 +450,11 @@
       <label class="fld"><span>Search</span>
         <span class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="sSearch" class="ctl" placeholder="channel name…"></span></label>
       <label class="fld"><span>Language</span><select id="sLang" class="ctl"></select></label>
+      <label class="fld"><span>Period</span>
+        <select id="sPeriod" class="ctl">
+          <option value="0">All time</option><option value="1">Last 24 hours</option><option value="3">Last 3 days</option>
+          <option value="7">Last 7 days</option><option value="14">Last 2 weeks</option><option value="30">Last 30 days</option>
+        </select></label>
       <label class="fld"><span>Time</span>
         <select id="sTime" class="ctl"><option value="new">Newest first</option><option value="old">Oldest first</option></select></label>
       <label class="fld"><span>Sort by</span>
@@ -687,14 +692,16 @@ function timeAgo(iso){if(!iso)return"";const s=Math.max(0,(Date.now()-new Date(i
 function dur(min){min=Math.round(min||0);const h=Math.floor(min/60),m=min%60;return h?`${h}h ${m}m`:`${m}m`;}
 function buildStreamFilters(){
   document.getElementById("sLang").innerHTML=langOptions(D.streams.map(s=>s.language));
-  ["sSearch","sLang","sTime","sSort","sMinLen","sVod","sSrc"].forEach(id=>document.getElementById(id).addEventListener("input",streams));
+  ["sSearch","sLang","sPeriod","sTime","sSort","sMinLen","sVod","sSrc"].forEach(id=>document.getElementById(id).addEventListener("input",streams));
 }
 function streams(){
   const el=document.getElementById("streams");
   if(!D.streams||!D.streams.length){el.innerHTML=`<div class="empty">Feed is empty right now.</div>`;return;}
   const q=sSearch.value.toLowerCase(),lang=sLang.value,sort=sSort.value,vodOnly=sVod.checked,src=sSrc.value,minLen=parseInt(sMinLen.value)||0;
+  const days=parseInt(sPeriod.value)||0,pcut=days?Date.now()-days*864e5:0;
   let r=D.streams.filter(s=>(s.channeldisplayname||"").toLowerCase().includes(q)
-    &&(!lang||s.language===lang)&&(!vodOnly||s.vod_url)&&(!src||s.source===src)&&(!minLen||(s.length||0)>=minLen));
+    &&(!lang||s.language===lang)&&(!vodOnly||s.vod_url)&&(!src||s.source===src)&&(!minLen||(s.length||0)>=minLen)
+    &&(!pcut||(s.is_live||(s.startDateTime&&new Date(s.startDateTime).getTime()>=pcut))));
   // Two independent controls: Time (newest/oldest) and an optional metric sort.
   // Metric = primary key; Time = direction when no metric, and tiebreaker when a metric is chosen.
   const cmpTime=(a,b)=>sTime.value==="old"
@@ -859,11 +866,18 @@ function drawTrends(){
   const chg=first?((latest-first)/first*100):0;
   const peakAt=vals.length?s[vals.indexOf(mx)].x:"";
   const chgCls=chg>1?"up":chg<-1?"down":"flat",chgArr=chg>1?"▲":chg<-1?"▼":"▬";
-  document.getElementById("tStats").innerHTML=[
+  // overall unique channels for the range (accurate SullyGnome window totals / roster) —
+  // the per-bucket "channels streaming" curve doesn't convey the distinct total, so add it.
+  const W=D.windows||{};
+  const uniq=(r==="24h"||r==="3d")?W["3"]:r==="7d"?W["7"]:r==="30d"?W["30"]
+    :r==="90d"?W["365"]:(D.summary.total_streamers||W["365"]);
+  const tiles=[
     ["Peak",fmt(Math.round(mx)),"gold"],["Average",fmt(Math.round(avg)),"b"],
     ["Latest",fmt(Math.round(latest)),"g"],["Change over range",`<span class="delta ${chgCls}">${chgArr} ${Math.abs(chg).toFixed(1)}%</span>`,""],
-    ["Data points",fmt(s.length),"p"]
-  ].map(([l,v,cl])=>`<div class="tile"><div class="v ${cl} num" style="font-size:24px">${v}</div><div class="l">${l}</div></div>`).join("");
+    ["Data points",fmt(s.length),"p"]];
+  if(metric==="channels"&&uniq!=null)tiles.splice(3,0,["Unique channels",fmt(uniq),"gold"]);
+  document.getElementById("tStats").innerHTML=tiles
+    .map(([l,v,cl])=>`<div class="tile"><div class="v ${cl} num" style="font-size:24px">${v}</div><div class="l">${l}</div></div>`).join("");
 
   if(trendChart)trendChart.destroy();
   const intraday=src!=="daily";

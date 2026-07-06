@@ -224,6 +224,32 @@ def merge_streams(lang_by_login):
                 "vod_duration": sst.get("vod_duration"), "vod_thumb": sst.get("vod_thumb"),
             })
 
+    # final VOD backfill: match ANY record still lacking a VOD (captured/live, SullyGnome,
+    # Twitch) to a per-channel VOD by start time — catches recordings Twitch filed under a
+    # different game category (channel_vods.json from enrich_helix).
+    cvods = read_json("../twitch/channel_vods.json", {})
+    if cvods:
+        for rec in recs:
+            if rec.get("vod_url") or rec.get("is_live"):
+                continue
+            arr = cvods.get(rec.get("channelurl"))
+            st = _parse(rec.get("startDateTime"))
+            if not (arr and st):
+                continue
+            best, bd = None, 90 * 60 + 1
+            for v in arr:
+                cv = _parse(v.get("created_at"))
+                if cv:
+                    d = abs((cv - st).total_seconds())
+                    if d < bd:
+                        best, bd = v, d
+            if best:
+                rec["vod_url"] = best.get("url")
+                rec["vod_views"] = best.get("view_count")
+                rec["vod_duration"] = best.get("duration")
+                if best.get("thumbnail") and not rec.get("vod_thumb"):
+                    rec["vod_thumb"] = best["thumbnail"]
+
     for r in recs:
         r.pop("_vod", None)
         r.pop("_sully", None)
