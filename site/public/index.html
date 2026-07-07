@@ -343,7 +343,7 @@
     <div class="tiles" id="tiles"></div>
     <div class="sec-h"><h2>Last 3 days — viewers &amp; live channels (hourly)</h2><div class="ln"></div></div>
     <div class="chartwrap"><canvas id="cHourly"></canvas></div>
-    <div class="sec-h"><h2>Channels streaming over time</h2><span class="toggle" id="actToggle"></span><div class="ln"></div></div>
+    <div class="sec-h"><h2>Concurrent channels over time</h2><span class="hint">channels live at once</span><span class="toggle" id="actToggle"></span><div class="ln"></div></div>
     <div class="chartwrap"><canvas id="cActivity"></canvas></div>
     <div class="sec-h"><h2>Top channels</h2><span class="hint">by hours watched</span><div class="ln"></div></div>
     <div id="top8"></div>
@@ -363,10 +363,10 @@
           <option value="campaign" selected>Whole campaign</option>
           <option value="all">All time</option>
         </select></label>
-      <label class="fld"><span>Metric</span>
+      <label class="fld" title="Concurrent channels = live at once (SullyGnome). Unique streamers = distinct channels over the period (deduped)."><span>Metric</span>
         <select id="tMetric" class="ctl">
           <option value="viewers">Peak viewers</option>
-          <option value="channels">Channels streaming</option>
+          <option value="channels">Concurrent channels</option>
           <option value="viewerratio">Viewers per channel</option>
           <option value="uniquestreamers">Unique streamers</option>
           <option value="watchhours">Watch-hours</option>
@@ -375,7 +375,7 @@
         <select id="tCompare" class="ctl">
           <option value="">— none —</option>
           <option value="viewers">Peak viewers</option>
-          <option value="channels" selected>Channels streaming</option>
+          <option value="channels" selected>Concurrent channels</option>
           <option value="viewerratio">Viewers per channel</option>
           <option value="uniquestreamers">Unique streamers</option>
           <option value="watchhours">Watch-hours</option>
@@ -391,7 +391,7 @@
     <div class="sec-h"><h2>Streams vs key events</h2><span class="hint">event windows shaded on the curve · hover for details · filter &amp; choose the metric</span><div class="ln"></div></div>
     <div class="toolbar" style="margin-bottom:13px">
       <label class="fld"><span>Metric</span>
-        <select id="msMetric" class="ctl"><option value="channels">Channels streaming</option><option value="viewers">Peak viewers</option><option value="viewerratio">Viewers per channel</option></select></label>
+        <select id="msMetric" class="ctl"><option value="channels">Concurrent channels</option><option value="viewers">Peak viewers</option><option value="viewerratio">Viewers per channel</option></select></label>
       <label class="fld"><span>Window</span>
         <select id="msRange" class="ctl"><option value="campaign">Whole campaign</option><option value="90">Last 90 days</option><option value="30">Last 30 days</option></select></label>
     </div>
@@ -830,7 +830,7 @@ async function drawLive(){
 
 /* ---------- trends & analytics ---------- */
 let trendChart=null,trendType="line";
-const TMETA={viewers:["Peak viewers","#5fb0ef"],channels:["Channels streaming","#34d399"],viewerratio:["Viewers per channel","#f5c451"],
+const TMETA={viewers:["Peak viewers","#5fb0ef"],channels:["Concurrent channels","#34d399"],viewerratio:["Viewers per channel","#f5c451"],
   uniquestreamers:["Unique streamers","#39c5cf"],watchhours:["Watch-hours","#ff9b3c"]};
 // derived metrics have no SullyGnome time-series — we bucket them from our own feed
 // (daily only, accurate to the feed's depth ~30d). They force the whole view to daily.
@@ -1048,7 +1048,7 @@ async function drawMilestones(){
 function buildMs(){
   const metric=(document.getElementById("msMetric")||{}).value||"channels";
   const rng=(document.getElementById("msRange")||{}).value||"campaign";
-  const [mlabel,mcolor]=TMETA[metric]||["Channels streaming","#8b5cf6"];
+  const [mlabel,mcolor]=TMETA[metric]||["Concurrent channels","#8b5cf6"];
   // clamp to the campaign window (no point reaching back a year); the Window control
   // can zoom to the last 30/90 days.
   let series=(D.timeseries[metric]||[]).filter(p=>p.date&&p.date.slice(0,10)>=MS_START);
