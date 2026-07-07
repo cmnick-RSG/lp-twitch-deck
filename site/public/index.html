@@ -380,7 +380,7 @@
       <label class="check" id="tMaLbl"><input type="checkbox" id="tMa"> Moving avg</label>
       <span class="count" id="tRes" style="align-self:center"></span>
     </div>
-    <div class="tiles" id="tStats" style="margin-bottom:16px"></div>
+    <div class="tiles" id="tStats" style="margin-bottom:16px;grid-template-columns:repeat(auto-fit,minmax(136px,1fr))"></div>
     <div class="chartwrap tall"><canvas id="cTrend"></canvas></div>
     <div id="tInsight" class="tile" style="line-height:1.7;margin-bottom:6px"></div>
 
@@ -894,11 +894,10 @@ function drawTrends(){
   const cpeak=inR.reduce((a,x)=>a+pk(x),0);
   const vodv=inR.reduce((a,x)=>a+(x.vod_views||0),0);
   const tiles=[
-    ["Peak",fmt(Math.round(mx)),"gold"],["Average",fmt(Math.round(avg)),"b"],["Latest",fmt(Math.round(latest)),"g"],
-    ["Streams",fmt(nStreams),"p"],["Watch-hours",fmt(whrs),"gold"],
-    ["Combined peak",fmt(cpeak),"a"],["VOD views",fmt(vodv),"g"],
+    ["Peak",fmt(Math.round(mx)),"gold"],["Average",fmt(Math.round(avg)),"b"],
+    ["Unique streamers",fmt(uniq),"b"],["Streams",fmt(nStreams),"p"],
+    ["Watch-hours",fmt(whrs),"gold"],["Combined peak",fmt(cpeak),"a"],["VOD views",fmt(vodv),"g"],
     ["Change over range",`<span class="delta ${chgCls}">${chgArr} ${Math.abs(chg).toFixed(1)}%</span>`,""]];
-  if(metric==="channels"&&uniq!=null)tiles.splice(3,0,["Unique channels",fmt(uniq),"b"]);
   document.getElementById("tStats").innerHTML=tiles
     .map(([l,v,cl])=>`<div class="tile"><div class="v ${cl} num" style="font-size:24px">${v}</div><div class="l">${l}</div></div>`).join("");
 
