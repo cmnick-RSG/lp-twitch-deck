@@ -368,6 +368,8 @@
           <option value="viewers">Peak viewers</option>
           <option value="channels">Channels streaming</option>
           <option value="viewerratio">Viewers per channel</option>
+          <option value="uniquestreamers">Unique streamers</option>
+          <option value="watchhours">Watch-hours</option>
         </select></label>
       <label class="fld"><span>Compare with</span>
         <select id="tCompare" class="ctl">
@@ -375,6 +377,8 @@
           <option value="viewers">Peak viewers</option>
           <option value="channels" selected>Channels streaming</option>
           <option value="viewerratio">Viewers per channel</option>
+          <option value="uniquestreamers">Unique streamers</option>
+          <option value="watchhours">Watch-hours</option>
         </select></label>
       <label class="fld"><span>Chart</span><span class="toggle" id="tType"></span></label>
       <label class="check" id="tMaLbl"><input type="checkbox" id="tMa"> Moving avg</label>
@@ -826,7 +830,23 @@ async function drawLive(){
 
 /* ---------- trends & analytics ---------- */
 let trendChart=null,trendType="line";
-const TMETA={viewers:["Peak viewers","#5fb0ef"],channels:["Channels streaming","#34d399"],viewerratio:["Viewers per channel","#f5c451"]};
+const TMETA={viewers:["Peak viewers","#5fb0ef"],channels:["Channels streaming","#34d399"],viewerratio:["Viewers per channel","#f5c451"],
+  uniquestreamers:["Unique streamers","#39c5cf"],watchhours:["Watch-hours","#ff9b3c"]};
+// derived metrics have no SullyGnome time-series — we bucket them from our own feed
+// (daily only, accurate to the feed's depth ~30d). They force the whole view to daily.
+const DERIVED=new Set(["uniquestreamers","watchhours"]);
+function feedDailySeries(metric,r){
+  const feed=D._base||D.streams||[];
+  const dc={"24h":1,"3d":3,"7d":7,"30d":30,"90d":90}[r];
+  const cut=dc?Date.now()-dc*864e5:null;
+  const inR=(r==="campaign")?feed.filter(x=>(x.startDateTime||"")>=MS_START)
+    :cut?feed.filter(x=>x.startDateTime&&new Date(x.startDateTime).getTime()>=cut):feed;
+  const byDay={};
+  inR.forEach(s=>{if(!s.startDateTime)return;const d=s.startDateTime.slice(0,10);
+    if(metric==="watchhours")byDay[d]=(byDay[d]||0)+(s.viewminutes||0);
+    else(byDay[d]=byDay[d]||new Set()).add((s.channelurl||"").toLowerCase());});
+  return Object.keys(byDay).sort().map(d=>({x:d,v:metric==="watchhours"?Math.round(byDay[d]/60):byDay[d].size}));
+}
 const RLABEL={"24h":"the last 24 hours","3d":"the last 3 days","7d":"the last 7 days","30d":"the last 30 days","90d":"the last 90 days","campaign":"the whole campaign","all":"all time"};
 // Range is the PRIMARY control. Resolution (5-min / hourly / daily) and the data
 // source are chosen automatically from the range — no "granularity" jargon:
@@ -842,8 +862,18 @@ function rangeMeta(r){
   if(r==="campaign")return{src:"daily",res:"daily",from:MS_START};
   return{src:"daily",res:"daily"};
 }
-function seriesFor(metric,r){
+function seriesFor(metric,r,forceDaily){
+  if(DERIVED.has(metric))return{series:feedDailySeries(metric,r),res:"daily · from feed",src:"daily"};
   const m=rangeMeta(r);let s;
+  // when overlaid with a derived (daily-only) metric, collapse this metric to daily too so
+  // the two curves share a day axis
+  if(forceDaily&&m.src!=="daily"){
+    s=(D.timeseries[metric]||[]).map(p=>({x:p.date.slice(0,10),v:p.value}));
+    const dc={"24h":1,"3d":3,"7d":7,"30d":30,"90d":90}[r];
+    if(r==="campaign")s=s.filter(p=>p.x>=MS_START);
+    else if(dc)s=s.slice(-dc);
+    return{series:s,res:"daily",src:"daily"};
+  }
   const pick=p=>metric==="channels"?p.channels:metric==="viewerratio"?(p.channels?+(p.viewers/p.channels).toFixed(2):0):p.viewers;
   if(m.src==="samples"){
     s=(D._samples||[]).map(p=>({x:p.t,v:pick(p)}));
@@ -865,7 +895,8 @@ function drawTrends(){
   if(!charted.trends){charted.trends=true;buildTrendControls();}
   const r=tRange.value,metric=tMetric.value,[label,c]=TMETA[metric];
   const compare=tCompare.value&&tCompare.value!==metric?tCompare.value:"";
-  const {series:s,res,src}=seriesFor(metric,r),vals=s.map(p=>p.v);
+  const forceDaily=DERIVED.has(metric)||DERIVED.has(compare);   // derived metrics are daily-only
+  const {series:s,res,src}=seriesFor(metric,r,forceDaily),vals=s.map(p=>p.v);
   document.getElementById("tRes").textContent=`${fmt(s.length)} points · ${res}`;
   const mx=vals.length?Math.max(...vals):0,avg=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;
   const latest=vals.length?vals[vals.length-1]:0,first=vals.length?vals[0]:0;
@@ -912,8 +943,13 @@ function drawTrends(){
     y:{beginAtZero:true,ticks:{color:"#938da8"},grid:{color:"#211d36"},
        title:compare?{display:true,text:label,color:c}:{display:false}}};
   if(compare){
-    const s2=seriesFor(compare,r).series,[l2,c2]=TMETA[compare];
-    ds.push({type:"line",label:l2,data:s2.map(p=>p.v),borderColor:c2,backgroundColor:c2+"20",
+    const s2=seriesFor(compare,r,forceDaily).series,[l2,c2]=TMETA[compare];
+    // align the compare series onto the primary's points: by day-key when daily (the two
+    // may have different day sets), else index-aligned (same source/resolution)
+    let cData;
+    if(forceDaily){const m2={};s2.forEach(p=>m2[p.x.slice(0,10)]=p.v);cData=s.map(p=>{const k=m2[p.x.slice(0,10)];return k!=null?k:null;});}
+    else cData=s2.map(p=>p.v);
+    ds.push({type:"line",label:l2,data:cData,borderColor:c2,backgroundColor:c2+"20",spanGaps:true,
       fill:false,tension:.25,pointRadius:0,pointHoverRadius:5,borderWidth:2,borderDash:[5,4],order:1,yAxisID:"y2"});
     scales.y2={position:"right",beginAtZero:true,ticks:{color:"#938da8"},grid:{display:false},
       title:{display:true,text:l2,color:c2}};
@@ -924,7 +960,8 @@ function drawTrends(){
       scales,elements:{point:{hoverRadius:5}}}});
 
   const dir=chg>1?`<b style="color:var(--green)">up ${chg.toFixed(1)}%</b>`:chg<-1?`<b style="color:var(--ember)">down ${Math.abs(chg).toFixed(1)}%</b>`:`<b>roughly flat</b>`;
-  const freshNote=src==="samples"?` Built from our own live snapshots every ~5 min — fresh to the minute.`
+  const freshNote=DERIVED.has(metric)?` Derived daily from our tracked stream feed (accurate to the feed's depth, ~30 days).`
+    :src==="samples"?` Built from our own live snapshots every ~5 min — fresh to the minute.`
     :src==="daily"?` Daily figures run about a day behind; pick <b>Last 24 hours</b> for the freshest, minute-level signal.`:` Hourly resolution from SullyGnome.`;
   const cmpNote=compare?` Overlaid against <b>${TMETA[compare][0].toLowerCase()}</b> on the right axis.`:"";
   document.getElementById("tInsight").innerHTML=
