@@ -270,16 +270,18 @@
   .callegend{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);margin-top:14px;flex-wrap:wrap}
   .callegend i{width:16px;height:16px;border-radius:4px;display:inline-block}
   /* ---------- returning streamers ---------- */
-  .ret{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:11px}
-  .retc{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:11px 14px;transition:.15s}
-  .retc:hover{border-color:var(--gold)}
-  .retc img{width:42px;height:42px;border-radius:50%;border:2px solid var(--gold);object-fit:cover;background:var(--panel3);flex-shrink:0}
-  .retc .rn{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ret{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+  .retc{display:flex;align-items:center;gap:13px;background:linear-gradient(165deg,var(--panel2),var(--panel));
+    border:1px solid var(--line);border-radius:14px;padding:13px 15px;transition:.16s}
+  .retc:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:var(--shadow)}
+  .retc img{width:46px;height:46px;border-radius:50%;border:2px solid var(--gold);object-fit:cover;background:var(--panel3);flex-shrink:0}
+  .retc .retinfo{min-width:0;flex:1}
+  .retc .rn{font-weight:800;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .retc .rn a{color:var(--text)} .retc .rn a:hover{color:var(--gold)}
-  .retc .rm{color:var(--muted);font-size:11.5px;margin-top:2px}
-  .retc .cnt{margin-left:auto;text-align:right;flex-shrink:0}
-  .retc .cnt b{font-size:21px;font-weight:900;color:var(--gold);display:block;line-height:1}
-  .retc .cnt span{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+  .retc .retrow{display:flex;flex-wrap:wrap;gap:5px 12px;margin:7px 0 5px}
+  .retc .rs{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+  .retc .rs b{font-size:15px;font-weight:800;margin-right:3px;letter-spacing:-.3px}
+  .retc .rm{color:var(--muted);font-size:11px}
   /* ---------- milestone timeline ---------- */
   .msfilters{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px}
   .msf{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer;
@@ -1029,16 +1031,23 @@ function drawCalendar(){
 function drawReturning(){
   const cnt={};
   (D._base||D.streams||[]).forEach(s=>{const k=(s.channelurl||"").toLowerCase();if(!k)return;
-    const o=cnt[k]||(cnt[k]={login:k,name:s.channeldisplayname,logo:s.channellogo,n:0,peak:0,last:""});
+    const o=cnt[k]||(cnt[k]={login:k,name:s.channeldisplayname,logo:s.channellogo,n:0,peak:0,foll:null,last:""});
     o.n++;o.peak=Math.max(o.peak,s.peak_viewers||s.maxviewers||0);
+    if(s.followers!=null)o.foll=Math.max(o.foll||0,s.followers);
     if((s.startDateTime||"")>o.last){o.last=s.startDateTime;if(s.channeldisplayname)o.name=s.channeldisplayname;if(s.channellogo)o.logo=s.channellogo;}});
   const list=Object.values(cnt).filter(o=>o.n>=2).sort((a,b)=>b.n-a.n||b.peak-a.peak);
   document.getElementById("retHint").textContent=`${fmt(list.length)} channels streamed Last Pirates more than once (in the tracked feed)`;
-  document.getElementById("ret").innerHTML=list.length?list.slice(0,60).map(o=>`<div class="retc">
+  document.getElementById("ret").innerHTML=list.length?list.slice(0,60).map(o=>{
+    const f=o.foll!=null?o.foll:followByLogin[o.login];
+    return `<div class="retc">
     <img loading="lazy" src="${o.logo||AV}" onerror="this.src='${AV}'">
-    <div style="min-width:0"><div class="rn"><a href="https://www.twitch.tv/${o.login}" target="_blank" rel="noopener">${esc(o.name)}</a></div>
-      <div class="rm">peak ${fmt(o.peak)}${o.last?` · last ${kyiv(o.last)}`:""}</div></div>
-    <div class="cnt"><b class="num">${o.n}</b><span>streams</span></div></div>`).join(""):`<div class="empty">No repeat streamers tracked yet — they'll appear as the feed grows.</div>`;
+    <div class="retinfo"><div class="rn"><a href="https://www.twitch.tv/${o.login}" target="_blank" rel="noopener">${esc(o.name)}</a></div>
+      <div class="retrow">
+        <span class="rs"><b style="color:var(--gold)">${fmt(o.n)}</b>streams</span>
+        <span class="rs"><b style="color:${vColor(o.peak)}">${fmt(o.peak)}</b>peak</span>
+        ${f!=null?`<span class="rs"><b style="color:var(--text)">${fmt(f)}</b>followers</span>`:""}
+      </div>
+      <div class="rm">last ${o.last?kyiv(o.last):"—"}</div></div></div>`;}).join(""):`<div class="empty">No repeat streamers tracked yet — they'll appear as the feed grows.</div>`;
 }
 
 /* ---------- milestone timeline (events overlaid on daily channels) ---------- */
