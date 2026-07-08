@@ -166,7 +166,7 @@
   .card .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px 7px;font-size:12px}
   .card .stats b{display:block;font-size:15.5px;font-weight:800}
   .card .stats span{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.3px}
-  .card .cardfoot{margin-top:11px;padding-top:10px;border-top:1px solid var(--line);font-size:11px;
+  .card .cardfoot{margin-top:11px;padding-top:10px;border-top:1px solid var(--line);font-size:12.5px;
     color:var(--muted);font-weight:600;display:flex;justify-content:space-between;gap:6px}
   .card .cardfoot b{color:var(--text2);font-weight:700}
 
@@ -278,10 +278,10 @@
   .retc .retinfo{min-width:0;flex:1}
   .retc .rn{font-weight:800;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .retc .rn a{color:var(--text)} .retc .rn a:hover{color:var(--gold)}
-  .retc .retrow{display:flex;flex-wrap:wrap;gap:5px 12px;margin:7px 0 5px}
-  .retc .rs{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.3px}
-  .retc .rs b{font-size:15px;font-weight:800;margin-right:3px;letter-spacing:-.3px}
-  .retc .rm{color:var(--muted);font-size:11px}
+  .retc .retrow{display:flex;flex-wrap:wrap;gap:5px 13px;margin:8px 0 6px}
+  .retc .rs{font-size:12.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+  .retc .rs b{font-size:17px;font-weight:800;margin-right:4px;letter-spacing:-.3px}
+  .retc .rm{color:var(--muted);font-size:12.5px}
   /* ---------- milestone timeline ---------- */
   .msfilters{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px}
   .msf{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer;
@@ -1035,19 +1035,25 @@ function drawReturning(){
     o.n++;o.peak=Math.max(o.peak,s.peak_viewers||s.maxviewers||0);
     if(s.followers!=null)o.foll=Math.max(o.foll||0,s.followers);
     if((s.startDateTime||"")>o.last){o.last=s.startDateTime;if(s.channeldisplayname)o.name=s.channeldisplayname;if(s.channellogo)o.logo=s.channellogo;}});
-  const list=Object.values(cnt).filter(o=>o.n>=2).sort((a,b)=>b.n-a.n||b.peak-a.peak);
-  document.getElementById("retHint").textContent=`${fmt(list.length)} channels streamed Last Pirates more than once (in the tracked feed)`;
-  document.getElementById("ret").innerHTML=list.length?list.slice(0,60).map(o=>{
-    const f=o.foll!=null?o.foll:followByLogin[o.login];
-    return `<div class="retc">
+  // membership = "returned in the tracked feed"; but DISPLAY the channel's all-time stats
+  // (same source as the Channels tab) so the numbers match instead of showing feed-only.
+  const chan={};D.channels.forEach(c=>{chan[loginOf(c.twitchurl)]=c;});
+  const list=Object.values(cnt).filter(o=>o.n>=2)
+    .map(o=>{const c=chan[o.login]||{};return{login:o.login,name:o.name,logo:o.logo,last:o.last,
+      streams:c.total_streams!=null?c.total_streams:o.n,
+      peak:c.maxviewers!=null?Math.max(c.maxviewers,o.peak):o.peak,
+      foll:c.followers!=null?c.followers:(o.foll!=null?o.foll:followByLogin[o.login])};})
+    .sort((a,b)=>b.streams-a.streams||b.peak-a.peak);
+  document.getElementById("retHint").textContent=`${fmt(list.length)} channels streamed Last Pirates more than once · all-time stats`;
+  document.getElementById("ret").innerHTML=list.length?list.slice(0,60).map(o=>`<div class="retc">
     <img loading="lazy" src="${o.logo||AV}" onerror="this.src='${AV}'">
     <div class="retinfo"><div class="rn"><a href="https://www.twitch.tv/${o.login}" target="_blank" rel="noopener">${esc(o.name)}</a></div>
       <div class="retrow">
-        <span class="rs"><b style="color:var(--gold)">${fmt(o.n)}</b>streams</span>
+        <span class="rs"><b style="color:var(--gold)">${fmt(o.streams)}</b>streams</span>
         <span class="rs"><b style="color:${vColor(o.peak)}">${fmt(o.peak)}</b>peak</span>
-        ${f!=null?`<span class="rs"><b style="color:var(--text)">${fmt(f)}</b>followers</span>`:""}
+        ${o.foll!=null?`<span class="rs"><b style="color:var(--text)">${fmt(o.foll)}</b>followers</span>`:""}
       </div>
-      <div class="rm">last ${o.last?kyiv(o.last):"—"}</div></div></div>`;}).join(""):`<div class="empty">No repeat streamers tracked yet — they'll appear as the feed grows.</div>`;
+      <div class="rm">last ${o.last?kyiv(o.last):"—"}</div></div></div>`).join(""):`<div class="empty">No repeat streamers tracked yet — they'll appear as the feed grows.</div>`;
 }
 
 /* ---------- milestone timeline (events overlaid on daily channels) ---------- */
