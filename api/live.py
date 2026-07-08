@@ -47,6 +47,7 @@ def fetch_live():
         j = r.json()
         for s in j.get("data", []):
             live.append({
+                "user_id": s.get("user_id"),
                 "user_name": s.get("user_name"),
                 "user_login": s.get("user_login"),
                 "viewer_count": s.get("viewer_count", 0),
@@ -59,6 +60,18 @@ def fetch_live():
         cursor = j.get("pagination", {}).get("cursor")
         if not cursor:
             break
+    # follower totals per live channel (works with an app token; few are live → cheap)
+    for s in live:
+        s["followers"] = None
+        if s.get("user_id"):
+            try:
+                rf = requests.get("https://api.twitch.tv/helix/channels/followers",
+                                  params={"broadcaster_id": s["user_id"], "first": 1},
+                                  headers=headers, timeout=15)
+                if rf.status_code == 200:
+                    s["followers"] = rf.json().get("total")
+            except Exception:  # noqa: BLE001
+                pass
     live.sort(key=lambda x: x["viewer_count"], reverse=True)
     return {"game": GAME_NAME, "game_id": TWITCH_GAME_ID,
             "count": len(live), "live": live}

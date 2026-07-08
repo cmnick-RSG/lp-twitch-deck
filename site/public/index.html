@@ -821,7 +821,7 @@ async function drawLive(){
       <span class="src twitch">● LIVE</span></div>
     <div class="body"><div class="tl"><a href="https://www.twitch.tv/${s.user_login}" target="_blank" rel="noopener">${esc(s.user_name)}</a></div>
       <div class="title">${esc((s.title||"").slice(0,140))}</div>
-      <div class="chips"><span class="chip">${svg("clock",13)} ${uptime(s.started_at)} uptime</span>${langTag(LANGN[s.language]||s.language)}</div></div>
+      <div class="chips"><span class="chip">${svg("clock",13)} ${uptime(s.started_at)} uptime</span>${(function(){const f=s.followers!=null?s.followers:followByLogin[(s.user_login||"").toLowerCase()];return f!=null?`<span class="chip">${svg("users",13)} ${fmt(f)} followers</span>`:"";})()}${langTag(LANGN[s.language]||s.language)}</div></div>
     <div class="side"><div class="headline hl-peak num">${fmt(s.viewer_count)}<span>viewers now</span></div>
       <a class="vodbtn" href="https://www.twitch.tv/${s.user_login}" target="_blank" rel="noopener">${svg("play",13)} Watch live</a></div></div>`).join("")
     :`<div class="empty">No one is streaming Last Pirates right now.<br>This updates in real time — check back soon.</div>`;
