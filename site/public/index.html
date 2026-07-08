@@ -384,6 +384,7 @@
       <label class="check" id="tMaLbl"><input type="checkbox" id="tMa"> Moving avg</label>
       <span class="count" id="tRes" style="align-self:center"></span>
     </div>
+    <div id="tMetricDef" style="font-size:12.5px;color:var(--muted);margin:-2px 0 14px;display:flex;align-items:center;gap:7px"></div>
     <div class="tiles" id="tStats" style="margin-bottom:16px;grid-template-columns:repeat(auto-fit,minmax(136px,1fr))"></div>
     <div class="chartwrap tall"><canvas id="cTrend"></canvas></div>
     <div id="tInsight" class="tile" style="line-height:1.7;margin-bottom:6px"></div>
@@ -835,6 +836,12 @@ const TMETA={viewers:["Peak viewers","#5fb0ef"],channels:["Concurrent channels",
 // derived metrics have no SullyGnome time-series — we bucket them from our own feed
 // (daily only, accurate to the feed's depth ~30d). They force the whole view to daily.
 const DERIVED=new Set(["uniquestreamers","watchhours"]);
+const METRIC_DEF={
+  viewers:"Peak concurrent viewers watching Last Pirates at once (SullyGnome).",
+  channels:"Channels live at the same moment — concurrency, not the distinct total.",
+  viewerratio:"Average audience per live channel (viewers ÷ channels) — how big the typical stream is.",
+  uniquestreamers:"Distinct channels that streamed in the period (deduped) — reach, not concurrency. From our feed (~30d deep).",
+  watchhours:"Total hours watched — Σ viewers × time — overall viewership volume. From our feed (~30d deep)."};
 function feedDailySeries(metric,r){
   const feed=D._base||D.streams||[];
   const dc={"24h":1,"3d":3,"7d":7,"30d":30,"90d":90}[r];
@@ -898,6 +905,7 @@ function drawTrends(){
   const forceDaily=DERIVED.has(metric)||DERIVED.has(compare);   // derived metrics are daily-only
   const {series:s,res,src}=seriesFor(metric,r,forceDaily),vals=s.map(p=>p.v);
   document.getElementById("tRes").textContent=`${fmt(s.length)} points · ${res}`;
+  document.getElementById("tMetricDef").innerHTML=`<span style="width:9px;height:9px;border-radius:50%;background:${c};flex-shrink:0"></span><b style="color:var(--text2);font-weight:700">${label}:</b> ${METRIC_DEF[metric]||""}`;
   const mx=vals.length?Math.max(...vals):0,avg=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;
   const latest=vals.length?vals[vals.length-1]:0,first=vals.length?vals[0]:0;
   const chg=first?((latest-first)/first*100):0;
