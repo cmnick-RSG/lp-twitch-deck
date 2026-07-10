@@ -39,10 +39,12 @@ jobs:
           git fetch origin data || true
           git checkout origin/data -- site/public/live_history.json 2>/dev/null || echo "no live_history on data yet"
           git checkout origin/data -- site/public/live_samples.json 2>/dev/null || echo "no live_samples on data yet"
-      - name: Snapshot live streams (Twitch Helix)
+      - name: Snapshot live streams (Twitch Helix) + Discord 100+ alerts
         env:
           TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
           TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          LP_ALERT_MIN: "100"
         run: python collect_stream_history.py
       - name: Publish live history to the 'data' branch (NOT main)
         run: |

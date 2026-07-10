@@ -32,6 +32,40 @@ SAMPLES = pathlib.Path(__file__).parent / "site" / "public" / "live_samples.json
 KEEP_DAYS = 14
 SAMPLES_KEEP_DAYS = 35
 
+# Discord alert when a stream is live with >= this many concurrent viewers. Fires ONCE
+# per stream (deduped via the persisted `alerted` flag). Webhook + threshold from env.
+import os as _os
+ALERT_MIN = int(_os.environ.get("LP_ALERT_MIN", "100"))
+LANG_NAME_A = {"en": "English", "es": "Spanish", "pt": "Portuguese", "ru": "Russian",
+               "fr": "French", "de": "German", "it": "Italian", "th": "Thai",
+               "zh": "Chinese", "ja": "Japanese", "ko": "Korean", "ar": "Arabic",
+               "uk": "Ukrainian", "pl": "Polish", "tr": "Turkish"}
+
+
+def notify_discord(webhook, s):
+    """Post a rich embed to a Discord webhook for one live stream over the threshold."""
+    login = s.get("user_login") or ""
+    lang = LANG_NAME_A.get((s.get("language") or "").lower(), s.get("language") or "")
+    fields = [{"name": "Viewers now", "value": f"**{s.get('last_viewers', 0):,}**", "inline": True}]
+    if s.get("followers") is not None:
+        fields.append({"name": "Followers", "value": f"{s['followers']:,}", "inline": True})
+    if lang:
+        fields.append({"name": "Language", "value": lang, "inline": True})
+    embed = {
+        "title": f"🔴 {s.get('user_name') or login} is live — {s.get('last_viewers', 0):,} viewers",
+        "url": f"https://www.twitch.tv/{login}",
+        "description": (s.get("title") or "Last Pirates: Die Together")[:300],
+        "color": 0xF0573C,
+        "fields": fields,
+        "footer": {"text": "Last Pirates · Twitch Live Deck"},
+    }
+    if s.get("thumb"):
+        embed["thumbnail"] = {"url": s["thumb"]}
+    try:
+        requests.post(webhook, json={"username": "LP Twitch Alerts", "embeds": [embed]}, timeout=15)
+    except Exception as ex:  # noqa: BLE001
+        print(f"  discord notify failed for {login}: {ex}")
+
 
 def env():
     import os
@@ -109,12 +143,16 @@ def _run():
                 follows[uid] = None
 
     ts = now_iso()
+    webhook = e.get("DISCORD_WEBHOOK")
+    alerts = []
     # 4) upsert live streams
     for v in live:
         sid = v["id"]
         cur = v.get("viewer_count") or 0
         p = prof.get(v["user_id"], {})
         rec = store.get(sid, {})
+        already = bool(rec.get("alerted"))
+        fire = (cur >= ALERT_MIN) and not already   # crossed the threshold for the first time
         store[sid] = {
             "stream_id": sid,
             "user_id": v["user_id"],
@@ -133,7 +171,18 @@ def _run():
             "first_seen": rec.get("first_seen") or ts,
             "last_seen": ts,
             "ended_at": None,
+            "alerted": already or (cur >= ALERT_MIN),
         }
+        if fire:
+            alerts.append(store[sid])
+
+    # 4b) fire Discord alerts for streams that just crossed the threshold (once per stream)
+    if alerts and webhook:
+        for s in sorted(alerts, key=lambda x: x.get("last_viewers", 0), reverse=True):
+            notify_discord(webhook, s)
+        print(f"  discord: sent {len(alerts)} alert(s) for streams >= {ALERT_MIN} viewers")
+    elif alerts:
+        print(f"  discord: {len(alerts)} stream(s) >= {ALERT_MIN} but no DISCORD_WEBHOOK set")
 
     # 5) mark streams that left the live list as ended (keep them)
     for sid, rec in store.items():
