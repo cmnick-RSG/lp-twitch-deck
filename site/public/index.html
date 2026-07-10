@@ -282,6 +282,18 @@
   .retc .rs{font-size:12.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.3px}
   .retc .rs b{font-size:17px;font-weight:800;margin-right:4px;letter-spacing:-.3px}
   .retc .rm{color:var(--muted);font-size:12.5px}
+  /* ---------- highlights (leaders per range) ---------- */
+  .hl{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+  .hlc{background:linear-gradient(165deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:14px;padding:14px 15px;transition:.16s}
+  .hlc:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:var(--shadow)}
+  .hlc .hll{font-size:10.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:6px}
+  .hlc .hll svg{width:14px;height:14px}
+  .hlc .hlv{font-size:25px;font-weight:900;line-height:1;margin:10px 0 9px;letter-spacing:-.5px}
+  .hlc .hln{display:flex;align-items:center;gap:8px;min-width:0}
+  .hlc .hln img{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--line2);object-fit:cover;background:var(--panel3);flex-shrink:0}
+  .hlc .hln a{font-weight:700;font-size:13.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hlc .hln a:hover{color:var(--gold)}
+  .hlc .hls{font-size:11.5px;color:var(--muted);margin-top:6px}
   /* ---------- milestone timeline ---------- */
   .msfilters{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px}
   .msf{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer;
@@ -390,6 +402,9 @@
     <div class="tiles" id="tStats" style="margin-bottom:16px;grid-template-columns:repeat(auto-fit,minmax(136px,1fr))"></div>
     <div class="chartwrap tall"><canvas id="cTrend"></canvas></div>
     <div id="tInsight" class="tile" style="line-height:1.7;margin-bottom:6px"></div>
+
+    <div class="sec-h"><h2>Highlights</h2><span class="hint" id="hlHint">top performers in the selected range</span><div class="ln"></div></div>
+    <div class="hl" id="highlights"></div>
 
     <div class="sec-h"><h2>Streams vs key events</h2><span class="hint">event windows shaded on the curve · hover for details · filter &amp; choose the metric</span><div class="ln"></div></div>
     <div class="toolbar" style="margin-bottom:13px">
@@ -977,7 +992,7 @@ function drawTrends(){
   document.getElementById("tInsight").innerHTML=
     `Over <b>${RLABEL[r]||"this range"}</b>, <b>${label.toLowerCase()}</b> averaged <b class="num">${fmt(Math.round(avg))}</b> and peaked at <b class="num">${fmt(Math.round(mx))}</b>`+
     `${peakAt?` on <b>${src==="daily"?peakAt.slice(0,10):kyiv(peakAt)}</b>`:""}. The trend is ${dir} (first vs latest point).${cmpNote}${freshNote}`;
-  drawMilestones();drawCalendar();drawReturning();syncCheck();
+  drawMilestones();drawCalendar();drawReturning();drawHighlights();syncCheck();
 }
 function buildTrendControls(){
   document.getElementById("tType").innerHTML=[["line","Line"],["bar","Bar"]].map(([t,l])=>`<button data-t="${t}" class="${t===trendType?'on':''}">${l}</button>`).join("");
@@ -1054,6 +1069,50 @@ function drawReturning(){
         ${o.foll!=null?`<span class="rs"><b style="color:var(--text)">${fmt(o.foll)}</b>followers</span>`:""}
       </div>
       <div class="rm">last ${o.last?kyiv(o.last):"—"}</div></div></div>`).join(""):`<div class="empty">No repeat streamers tracked yet — they'll appear as the feed grows.</div>`;
+}
+
+/* ---------- highlights: leaders for the selected range (from the tracked feed) ---------- */
+function drawHighlights(){
+  const el=document.getElementById("highlights");if(!el)return;
+  const r=tRange.value,feed=D._base||D.streams||[];
+  const dc={"24h":1,"3d":3,"7d":7,"30d":30,"90d":90}[r];
+  const cut=dc?Date.now()-dc*864e5:null;
+  const inR=(r==="campaign")?feed.filter(x=>(x.startDateTime||"")>=MS_START)
+    :cut?feed.filter(x=>x.startDateTime&&new Date(x.startDateTime).getTime()>=cut):feed;
+  document.getElementById("hlHint").textContent=`top performers · ${RLABEL[r]||"this range"} · ${fmt(inR.length)} streams`;
+  if(!inR.length){el.innerHTML=`<div class="empty">No streams tracked in this range yet.</div>`;return;}
+  const peak=x=>x.peak_viewers!=null?x.peak_viewers:(x.maxviewers!=null?x.maxviewers:(x.viewer_count||0));
+  // per-channel aggregates
+  const ch={};
+  inR.forEach(s=>{const k=(s.channelurl||"").toLowerCase();if(!k)return;
+    const o=ch[k]||(ch[k]={login:k,name:s.channeldisplayname,logo:s.channellogo,n:0,mins:0,watch:0,vod:0,peak:0,avg:0,foll:null});
+    o.n++;o.mins+=s.length||0;o.watch+=s.viewminutes||0;o.vod+=s.vod_views||0;
+    o.peak=Math.max(o.peak,peak(s));o.avg=Math.max(o.avg,s.avgviewers||0);
+    if(s.followers!=null)o.foll=Math.max(o.foll||0,s.followers);
+    if(s.channeldisplayname)o.name=s.channeldisplayname;if(s.channellogo)o.logo=s.channellogo;});
+  const chans=Object.values(ch);
+  const best=(f)=>chans.reduce((a,b)=>f(b)>f(a)?b:a,chans[0]);
+  // top-peak individual stream (with date)
+  let tp=inR[0];inR.forEach(s=>{if(peak(s)>peak(tp))tp=s;});
+  // best retention: per-stream avg/peak, min peak 20 to be meaningful
+  let ret=null;inR.forEach(s=>{const p=s.maxviewers!=null?s.maxviewers:peak(s);const a=s.avgviewers;
+    if(a!=null&&p>=20){const q=a/p;if(!ret||q>ret.q)ret={s,q,p,a};}});
+  const cards=[];
+  const add=(ic,lbl,color,val,o,sub)=>{if(!o||!val)return;
+    cards.push(`<div class="hlc"><div class="hll">${svg(ic,14)} ${lbl}</div>
+      <div class="hlv" style="color:${color}">${val}</div>
+      <div class="hln"><img loading="lazy" src="${o.logo||AV}" onerror="this.src='${AV}'"><a href="https://www.twitch.tv/${o.login}" target="_blank" rel="noopener">${esc(o.name||o.login)}</a></div>
+      <div class="hls">${sub||""}</div></div>`);};
+  const tpCh={login:(tp.channelurl||"").toLowerCase(),name:tp.channeldisplayname,logo:tp.channellogo};
+  add("flame","Biggest peak","var(--gold)",fmt(peak(tp)),tpCh,`peak viewers · ${tp.startDateTime?kyiv(tp.startDateTime):""}`);
+  const mw=best(o=>o.watch);if(mw&&mw.watch)add("eye","Most watch-hours","var(--gold2)",`${hrs(mw.watch)}h`,mw,`${fmt(mw.n)} stream${mw.n===1?"":"s"}`);
+  const mv=best(o=>o.vod);if(mv&&mv.vod)add("play","Most VOD views","var(--green)",fmt(mv.vod),mv,"views on recorded VODs");
+  const ms=best(o=>o.n);if(ms&&ms.n)add("streams","Most streams","var(--purple2)",fmt(ms.n),ms,`${hrs(ms.mins)}h streamed`);
+  const mh=best(o=>o.mins);if(mh&&mh.mins)add("clock","Most hours streamed","var(--blue)",`${hrs(mh.mins)}h`,mh,`${fmt(mh.n)} stream${mh.n===1?"":"s"}`);
+  const ma=best(o=>o.avg);if(ma&&ma.avg)add("users","Highest avg viewers","var(--purple2)",fmt(ma.avg),ma,`peak ${fmt(ma.peak)}`);
+  if(ret)add("spark","Best audience retention","var(--blue)",`${Math.round(ret.q*100)}%`,{login:(ret.s.channelurl||"").toLowerCase(),name:ret.s.channeldisplayname,logo:ret.s.channellogo},`held ${fmt(ret.a)} of ${fmt(ret.p)} peak on avg`);
+  const mf=best(o=>o.foll||0);if(mf&&mf.foll)add("top","Biggest channel","var(--gold)",fmt(mf.foll),mf,"followers · reach");
+  el.innerHTML=cards.join("");
 }
 
 /* ---------- milestone timeline (events overlaid on daily channels) ---------- */
