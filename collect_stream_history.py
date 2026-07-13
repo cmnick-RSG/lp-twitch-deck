@@ -39,30 +39,47 @@ ALERT_MIN = int(_os.environ.get("LP_ALERT_MIN", "100"))
 LANG_NAME_A = {"en": "English", "es": "Spanish", "pt": "Portuguese", "ru": "Russian",
                "fr": "French", "de": "German", "it": "Italian", "th": "Thai",
                "zh": "Chinese", "ja": "Japanese", "ko": "Korean", "ar": "Arabic",
-               "uk": "Ukrainian", "pl": "Polish", "tr": "Turkish"}
+               "uk": "Ukrainian", "pl": "Polish", "tr": "Turkish", "nl": "Dutch",
+               "cs": "Czech", "hu": "Hungarian", "fi": "Finnish", "sv": "Swedish"}
+# flag emoji per broadcast language. Russian → neutral white flag (RSG is Ukrainian —
+# never fly the RU flag). Discord renders these unicode flags natively.
+LANG_FLAG = {"en": "🇬🇧", "es": "🇪🇸", "pt": "🇧🇷", "de": "🇩🇪", "fr": "🇫🇷", "it": "🇮🇹",
+             "pl": "🇵🇱", "tr": "🇹🇷", "th": "🇹🇭", "zh": "🇨🇳", "ja": "🇯🇵", "ko": "🇰🇷",
+             "ar": "🇸🇦", "uk": "🇺🇦", "ru": "🏳️", "nl": "🇳🇱", "cs": "🇨🇿", "hu": "🇭🇺",
+             "fi": "🇫🇮", "sv": "🇸🇪"}
+LP_LOGO = "https://lp-twitch-deck.vercel.app/assets/favicon-180.png"
 
 
 def notify_discord(webhook, s):
     """Post a rich embed to a Discord webhook for one live stream over the threshold."""
     login = s.get("user_login") or ""
-    lang = LANG_NAME_A.get((s.get("language") or "").lower(), s.get("language") or "")
-    fields = [{"name": "Viewers now", "value": f"**{s.get('last_viewers', 0):,}**", "inline": True}]
+    code = (s.get("language") or "").lower()
+    lang = LANG_NAME_A.get(code, s.get("language") or "")
+    flag = LANG_FLAG.get(code, "")
+    n = s.get("last_viewers", 0) or 0
+    fields = [{"name": "👀 Viewers now", "value": f"**{n:,}**", "inline": True}]
     if s.get("followers") is not None:
-        fields.append({"name": "Followers", "value": f"{s['followers']:,}", "inline": True})
+        fields.append({"name": "❤️ Followers", "value": f"{s['followers']:,}", "inline": True})
     if lang:
-        fields.append({"name": "Language", "value": lang, "inline": True})
+        fields.append({"name": "🗣️ Language", "value": f"{flag} {lang}".strip(), "inline": True})
     embed = {
-        "title": f"🔴 {s.get('user_name') or login} is live — {s.get('last_viewers', 0):,} viewers",
+        "author": {"name": "Last Pirates — live on Twitch", "url": "https://lp-twitch-deck.vercel.app/",
+                   "icon_url": LP_LOGO},
+        "title": f"🔴 {s.get('user_name') or login} — {n:,} watching",
         "url": f"https://www.twitch.tv/{login}",
         "description": (s.get("title") or "Last Pirates: Die Together")[:300],
         "color": 0xF0573C,
         "fields": fields,
         "footer": {"text": "Last Pirates · Twitch Live Deck"},
+        "timestamp": now_iso(),
     }
+    # big stream preview (the live frame); cache-bust so Discord fetches the current frame
     if s.get("thumb"):
-        embed["thumbnail"] = {"url": s["thumb"]}
+        sep = "&" if "?" in s["thumb"] else "?"
+        embed["image"] = {"url": s["thumb"] + sep + "t=" + now_iso().replace(":", "")}
     try:
-        requests.post(webhook, json={"username": "LP Twitch Alerts", "embeds": [embed]}, timeout=15)
+        requests.post(webhook, json={"username": "LP Twitch Alerts",
+                                     "avatar_url": LP_LOGO, "embeds": [embed]}, timeout=15)
     except Exception as ex:  # noqa: BLE001
         print(f"  discord notify failed for {login}: {ex}")
 
