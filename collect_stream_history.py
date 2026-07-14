@@ -78,8 +78,8 @@ def notify_discord(webhook, s):
         sep = "&" if "?" in s["thumb"] else "?"
         embed["image"] = {"url": s["thumb"] + sep + "t=" + now_iso().replace(":", "")}
     try:
-        requests.post(webhook, json={"username": "LP Twitch Alerts",
-                                     "avatar_url": LP_LOGO, "embeds": [embed]}, timeout=15)
+        # no avatar_url override — keep the webhook's own (purple Twitch) bot avatar
+        requests.post(webhook, json={"username": "LP Twitch Alerts", "embeds": [embed]}, timeout=15)
     except Exception as ex:  # noqa: BLE001
         print(f"  discord notify failed for {login}: {ex}")
 
