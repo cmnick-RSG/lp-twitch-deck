@@ -434,6 +434,7 @@
   <!-- LIVE -->
   <section class="tab" data-tab="live">
     <div class="sec-h"><h2>Live on Twitch right now</h2><span class="hint" id="liveMeta">real-time · refreshes every 60s</span><div class="ln"></div></div>
+    <div class="tiles" id="liveStats" style="margin-bottom:16px"></div>
     <div class="slist" id="live"></div>
   </section>
 
@@ -833,6 +834,23 @@ async function drawLive(){
   const live=data.live||[];liveCount=live.length;
   document.getElementById("liveMeta").textContent=`${live.length} live · real-time · refreshes every 60s`;
   const nd=document.getElementById("navdot");if(nd)nd.style.display=live.length>0?"inline-block":"none";
+  // aggregate bar — only interesting when several channels are live at once
+  const ls=document.getElementById("liveStats");
+  if(ls){
+    if(live.length>=2){
+      const totalNow=live.reduce((a,s)=>a+(s.viewer_count||0),0);
+      const biggest=live.reduce((a,s)=>(s.viewer_count||0)>(a.viewer_count||0)?s:a,live[0]);
+      const sm=(D._samples||[]).filter(p=>new Date(p.t).getTime()>=Date.now()-864e5);
+      const peakToday=Math.max(totalNow,sm.length?Math.max(...sm.map(p=>p.viewers||0)):0);
+      const tiles=[
+        [fmt(totalNow),"Viewers now (all)","gold"],
+        [fmt(live.length),"Channels live","b"],
+        [fmt(biggest.viewer_count),`Biggest · ${esc((biggest.user_name||"").slice(0,14))}`,"a"],
+        [fmt(peakToday),"Peak combined · 24h","p"],
+      ];
+      ls.innerHTML=tiles.map(([v,l,c])=>`<div class="tile"><div class="v ${c} num" style="font-size:24px">${v}</div><div class="l">${l}</div></div>`).join("");
+    }else ls.innerHTML="";
+  }
   el.innerHTML=live.length?live.map(s=>`<div class="scard">
     <div class="thumb-wrap"><img class="thumb" loading="lazy" src="${(s.thumbnail||TH).replace('{width}','320').replace('{height}','180')}" onerror="this.src='${TH}'">
       <span class="src twitch">● LIVE</span></div>
