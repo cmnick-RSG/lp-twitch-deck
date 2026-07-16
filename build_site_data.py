@@ -318,6 +318,52 @@ def main():
 
     streams = merge_streams(lang_by_login)
 
+    # Augment the channel list with streamers we've CAPTURED live (or via VOD) that
+    # SullyGnome's table doesn't include yet — otherwise the Channels grid misses
+    # everyone we caught before SullyGnome tabulated them (e.g. fresh/small channels).
+    existing = {_login_of(c) for c in channels}
+    feed_ch = {}
+    for s in streams:
+        lg = (s.get("channelurl") or "").lower()
+        if not lg or lg in existing:
+            continue
+        pk = s.get("peak_viewers") if s.get("peak_viewers") is not None else (s.get("maxviewers") or 0)
+        o = feed_ch.get(lg)
+        if o is None:
+            o = feed_ch[lg] = {"name": s.get("channeldisplayname") or lg, "logo": s.get("channellogo"),
+                               "language": s.get("language"), "followers": None, "maxv": 0, "avgv": 0,
+                               "vmin": 0, "smin": 0, "n": 0, "last": "", "partner": False}
+        o["n"] += 1
+        o["maxv"] = max(o["maxv"], pk or 0)
+        o["avgv"] = max(o["avgv"], s.get("avgviewers") or 0)
+        o["vmin"] += s.get("viewminutes") or 0
+        o["smin"] += s.get("length") or 0
+        if s.get("followers") is not None:
+            o["followers"] = max(o["followers"] or 0, s["followers"])
+        if s.get("partner"):
+            o["partner"] = True
+        if s.get("language") and not o["language"]:
+            o["language"] = s["language"]
+        if (s.get("startDateTime") or "") > o["last"]:
+            o["last"] = s.get("startDateTime")
+            if s.get("channeldisplayname"):
+                o["name"] = s["channeldisplayname"]
+            if s.get("channellogo"):
+                o["logo"] = s["channellogo"]
+    base_rn = len(channels)
+    for lg, o in feed_ch.items():
+        base_rn += 1
+        channels.append({
+            "rownum": base_rn, "id": "feed:" + lg, "displayname": o["name"],
+            "twitchurl": "https://www.twitch.tv/" + lg, "logo": o["logo"],
+            "language": o["language"], "viewminutes": o["vmin"], "streamedminutes": o["smin"],
+            "maxviewers": o["maxv"], "avgviewers": o["avgv"], "followers": o["followers"] or 0,
+            "followersgained": 0, "partner": o["partner"], "affiliate": False,
+            "total_streams": o["n"], "last_stream": o["last"], "from_feed": True,
+        })
+    if feed_ch:
+        print(f"  channels: +{len(feed_ch)} from the live/VOD feed (not in SullyGnome table)")
+
     # TRUE all-time unique streamers via a cumulative, self-owned roster (not the
     # stale SullyGnome 365 window). Overrides the frozen total_streamers headline.
     run_date = (meta.get("run_at") or "")[:10]
