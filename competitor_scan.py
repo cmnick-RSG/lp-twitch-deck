@@ -113,11 +113,32 @@ def enrich(login):
         return "", ""
 
 
+def _hyperlink_logins(sh, tab):
+    """Twitch logins from cells' derived hyperlink field (catches inserted
+    rich-text links, including the ones we write into our own tab)."""
+    out = set()
+    try:
+        md = sh.fetch_sheet_metadata(params={
+            "ranges": [tab], "fields": "sheets/data/rowData/values/hyperlink"})
+        for s in md.get("sheets", []):
+            for d in s.get("data", []):
+                for row in d.get("rowData", []):
+                    for v in row.get("values", []):
+                        mm = re.search(r"twitch\.tv/([a-z0-9_]{2,25})",
+                                       (v.get("hyperlink") or "").lower())
+                        if mm:
+                            out.add(mm.group(1))
+    except Exception:  # noqa: BLE001
+        pass
+    return out
+
+
 def crm_seen(sh):
     """Every Twitch login + email already present in ANY tab of the CRM.
 
-    Read cells as FORMULA so twitch.tv URLs hidden inside HYPERLINK() formulas
-    (including the ones we write ourselves) are exposed for dedup.
+    Read cells as FORMULA so twitch.tv URLs inside HYPERLINK() formulas are
+    exposed, and additionally harvest our own tab's derived hyperlink field so
+    inserted rich-text links (what we now write) dedup day to day too.
     """
     logins, emails = set(), set()
     for w in sh.worksheets():
@@ -128,13 +149,25 @@ def crm_seen(sh):
         text = "\n".join("\t".join(str(c) for c in r) for r in vals).lower()
         logins |= set(re.findall(r"twitch\.tv/([a-z0-9_]{2,25})", text))
         emails |= set(re.findall(r"[\w.\-+]+@[\w.\-]+\.[a-z]{2,}", text))
+    logins |= _hyperlink_logins(sh, TAB)
     return logins, emails
 
 
-def streamer_cell(login, display):
-    """Clickable channel link; keeps dedup working across days via the URL."""
-    disp = (display or login).replace('"', '""')
-    return f'=HYPERLINK("https://www.twitch.tv/{login}","{disp}")'
+def link_streamer(sh, gid, start_row0, pairs):
+    """Write column C rows as real clickable links (name -> channel URL),
+    styled bold + underlined blue so they read as links."""
+    accent = _rgb(11, 87, 208)
+    rowdata = [{"values": [{
+        "userEnteredValue": {"stringValue": name},
+        "userEnteredFormat": {"textFormat": {
+            "bold": True, "underline": True, "foregroundColor": accent,
+            "fontSize": 10, "link": {"uri": url}}}}]} for name, url in pairs]
+    sh.batch_update({"requests": [{"updateCells": {
+        "range": {"sheetId": gid, "startRowIndex": start_row0,
+                  "endRowIndex": start_row0 + len(pairs),
+                  "startColumnIndex": 2, "endColumnIndex": 3},
+        "rows": rowdata,
+        "fields": "userEnteredValue,userEnteredFormat.textFormat"}}]})
 
 
 def _rgb(r, g, b):
@@ -151,7 +184,6 @@ def beautify(sh, cc):
     WHITE = _rgb(255, 255, 255)
     BAND_A = _rgb(255, 255, 255)     # white
     BAND_B = _rgb(233, 240, 250)     # light blue-gray
-    ACCENT = _rgb(11, 87, 208)       # link blue for the streamer column
 
     meta = sh.fetch_sheet_metadata()
     old_bandings = []
@@ -193,13 +225,7 @@ def beautify(sh, cc):
             "cell": {"userEnteredFormat": {"verticalAlignment": "MIDDLE",
                      "wrapStrategy": "CLIP", "textFormat": {"fontSize": 10}}},
             "fields": "userEnteredFormat(verticalAlignment,wrapStrategy,textFormat.fontSize)"}})
-        # streamer link column: bold accent
-        reqs.append({"repeatCell": {
-            "range": {"sheetId": gid, "startRowIndex": 1, "endRowIndex": n,
-                      "startColumnIndex": 2, "endColumnIndex": 3},
-            "cell": {"userEnteredFormat": {"textFormat": {
-                "bold": True, "foregroundColor": ACCENT, "fontSize": 10}}},
-            "fields": "userEnteredFormat.textFormat"}})
+        # (streamer column C is styled+linked separately by link_streamer)
         # peak + followers: thousands separator, centered
         reqs.append({"repeatCell": {
             "range": {"sheetId": gid, "startRowIndex": 1, "endRowIndex": n,
@@ -239,8 +265,10 @@ def main():
                 if email and email.lower() in seen_emails:
                     continue  # same person already a contact by email
                 added_logins.add(login)
-                rows.append([today, name, streamer_cell(login, c.get("displayname")),
-                             c.get("maxviewers"), c.get("followers"), email, socials])
+                # trailing url is stripped before writing; used for the link
+                rows.append([today, name, c.get("displayname") or login,
+                             c.get("maxviewers"), c.get("followers"), email, socials,
+                             f"https://www.twitch.tv/{login}"])
                 time.sleep(0.3)
             time.sleep(DELAY)
 
@@ -248,14 +276,15 @@ def main():
     cc = sh.worksheet(TAB)
     if not cc.get_all_values() or cc.row_values(1) != HEADER:
         cc.update(values=[HEADER], range_name="A1")
+    start = len(cc.get_all_values())   # 0-based index of the first new row
     if rows:
-        cc.append_rows(rows, value_input_option="USER_ENTERED")
+        cc.append_rows([r[:7] for r in rows], value_input_option="USER_ENTERED")
     beautify(sh, cc)
+    if rows:
+        link_streamer(sh, cc.id, start, [(r[2], r[7]) for r in rows])
     print(f"\nAppended {len(rows)} NEW competitor streamers to '{TAB}'.")
     for r in rows[:10]:
-        disp = re.search(r'","(.*)"\)', str(r[2]))
-        disp = disp.group(1) if disp else str(r[2])
-        print(f"  {r[1]:24.24} {disp[:20]:20} peak={r[3]} foll={r[4]} email={'yes' if r[5] else '-'}")
+        print(f"  {r[1]:24.24} {str(r[2])[:20]:20} peak={r[3]} foll={r[4]} email={'yes' if r[5] else '-'}")
 
 
 if __name__ == "__main__":
