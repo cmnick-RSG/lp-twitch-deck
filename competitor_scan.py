@@ -137,6 +137,86 @@ def streamer_cell(login, display):
     return f'=HYPERLINK("https://www.twitch.tv/{login}","{disp}")'
 
 
+def _rgb(r, g, b):
+    return {"red": r / 255, "green": g / 255, "blue": b / 255}
+
+
+def beautify(sh, cc):
+    """Presentable, idempotent styling: frozen colored header, zebra rows,
+    thousands separators, sensible widths. Safe to re-apply every run."""
+    gid = cc.id
+    n = len(cc.get_all_values()) or 1
+    W = [110, 175, 165, 95, 105, 250, 430]  # date/game/streamer/peak/foll/email/socials
+    HEADER_BG = _rgb(23, 42, 69)     # deep navy
+    WHITE = _rgb(255, 255, 255)
+    BAND_A = _rgb(255, 255, 255)     # white
+    BAND_B = _rgb(233, 240, 250)     # light blue-gray
+    ACCENT = _rgb(11, 87, 208)       # link blue for the streamer column
+
+    meta = sh.fetch_sheet_metadata()
+    old_bandings = []
+    for s in meta.get("sheets", []):
+        if s.get("properties", {}).get("sheetId") == gid:
+            old_bandings = [b["bandedRangeId"] for b in s.get("bandedRanges", [])]
+
+    reqs = [{"updateSheetProperties": {
+        "properties": {"sheetId": gid, "gridProperties": {"frozenRowCount": 1}},
+        "fields": "gridProperties.frozenRowCount"}}]
+    reqs += [{"deleteBanding": {"bandedRangeId": b}} for b in old_bandings]
+    reqs.append({"addBanding": {"bandedRange": {
+        "range": {"sheetId": gid, "startRowIndex": 0, "endRowIndex": n,
+                  "startColumnIndex": 0, "endColumnIndex": 7},
+        "rowProperties": {"headerColor": HEADER_BG, "firstBandColor": BAND_A,
+                          "secondBandColor": BAND_B}}}})
+    # header row
+    reqs.append({"repeatCell": {
+        "range": {"sheetId": gid, "startRowIndex": 0, "endRowIndex": 1,
+                  "startColumnIndex": 0, "endColumnIndex": 7},
+        "cell": {"userEnteredFormat": {
+            "backgroundColor": HEADER_BG, "horizontalAlignment": "CENTER",
+            "verticalAlignment": "MIDDLE", "wrapStrategy": "WRAP",
+            "textFormat": {"foregroundColor": WHITE, "bold": True, "fontSize": 11}}},
+        "fields": "userEnteredFormat(backgroundColor,horizontalAlignment,verticalAlignment,wrapStrategy,textFormat)"}})
+    reqs.append({"updateDimensionProperties": {
+        "range": {"sheetId": gid, "dimension": "ROWS", "startIndex": 0, "endIndex": 1},
+        "properties": {"pixelSize": 38}, "fields": "pixelSize"}})
+    # column widths
+    for i, w in enumerate(W):
+        reqs.append({"updateDimensionProperties": {
+            "range": {"sheetId": gid, "dimension": "COLUMNS", "startIndex": i, "endIndex": i + 1},
+            "properties": {"pixelSize": w}, "fields": "pixelSize"}})
+    if n > 1:
+        # base data format: compact, clipped, vertically centered
+        reqs.append({"repeatCell": {
+            "range": {"sheetId": gid, "startRowIndex": 1, "endRowIndex": n,
+                      "startColumnIndex": 0, "endColumnIndex": 7},
+            "cell": {"userEnteredFormat": {"verticalAlignment": "MIDDLE",
+                     "wrapStrategy": "CLIP", "textFormat": {"fontSize": 10}}},
+            "fields": "userEnteredFormat(verticalAlignment,wrapStrategy,textFormat.fontSize)"}})
+        # streamer link column: bold accent
+        reqs.append({"repeatCell": {
+            "range": {"sheetId": gid, "startRowIndex": 1, "endRowIndex": n,
+                      "startColumnIndex": 2, "endColumnIndex": 3},
+            "cell": {"userEnteredFormat": {"textFormat": {
+                "bold": True, "foregroundColor": ACCENT, "fontSize": 10}}},
+            "fields": "userEnteredFormat.textFormat"}})
+        # peak + followers: thousands separator, centered
+        reqs.append({"repeatCell": {
+            "range": {"sheetId": gid, "startRowIndex": 1, "endRowIndex": n,
+                      "startColumnIndex": 3, "endColumnIndex": 5},
+            "cell": {"userEnteredFormat": {
+                "numberFormat": {"type": "NUMBER", "pattern": "#,##0"},
+                "horizontalAlignment": "CENTER"}},
+            "fields": "userEnteredFormat(numberFormat,horizontalAlignment)"}})
+        # capture date centered
+        reqs.append({"repeatCell": {
+            "range": {"sheetId": gid, "startRowIndex": 1, "endRowIndex": n,
+                      "startColumnIndex": 0, "endColumnIndex": 1},
+            "cell": {"userEnteredFormat": {"horizontalAlignment": "CENTER"}},
+            "fields": "userEnteredFormat.horizontalAlignment"}})
+    sh.batch_update({"requests": reqs})
+
+
 def main():
     gc = gspread.authorize(creds())
     sh = gc.open_by_key(SHEET_ID)
@@ -170,6 +250,7 @@ def main():
         cc.update(values=[HEADER], range_name="A1")
     if rows:
         cc.append_rows(rows, value_input_option="USER_ENTERED")
+    beautify(sh, cc)
     print(f"\nAppended {len(rows)} NEW competitor streamers to '{TAB}'.")
     for r in rows[:10]:
         disp = re.search(r'","(.*)"\)', str(r[2]))
