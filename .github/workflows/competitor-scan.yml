@@ -11,6 +11,7 @@ on:
 
 env:
   LP_COMP_MIN: "100"         # min peak concurrent viewers to include
+  LP_MIN_FOLLOWERS: "1000"   # drop fake/botted low-follower channels
 
 jobs:
   scan:

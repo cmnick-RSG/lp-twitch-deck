@@ -28,6 +28,8 @@ from google.oauth2.service_account import Credentials
 SHEET_ID = "11x1FDXRGDZIKuyakmEjt2C5LrXC1-42K9eDdXkyTKuQ"
 TAB = "Competitor Coverage"
 THRESHOLD = int(os.environ.get("LP_COMP_MIN", "100"))
+MIN_FOLL = int(os.environ.get("LP_MIN_FOLLOWERS", "1000"))  # drop fake/botted low-follower channels
+STATUSES = ["Not contacted", "Contacted"]
 try:
     from zoneinfo import ZoneInfo
     TZ = ZoneInfo("Europe/Kyiv")
@@ -41,7 +43,15 @@ GAMES = {
     221410: "Meowgic", 201544: "YAPYAP", 186876: "R.E.P.O.",
 }
 HEADER = ["Capture date", "Competitor game", "Streamer", "Peak viewers",
-          "Followers", "Email", "Socials"]
+          "Followers", "Email", "Socials", "Status"]
+
+# distinct pastel per competitor game (hex) — quick visual grouping in column B
+GAME_COLORS = {
+    "Content Warning": "FADAD5", "PEAK": "FFF2CC", "Gamble With Your Friends": "D9EAD3",
+    "Escape the Backrooms": "D0E0E3", "Burglin' Gnomes": "EAD1DC", "Lethal Company": "FCE5CD",
+    "Funnel Runners": "CFE2F3", "Pratfall": "D9D2E9", "Forest Escape: Last Train": "B6D7A8",
+    "Meowgic": "FCE1F0", "YAPYAP": "E6F0C8", "R.E.P.O.": "F4CCCC",
+}
 
 SULLY_H = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                           "(KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"),
@@ -108,7 +118,7 @@ def enrich(login):
         emails = sorted(set(re.findall(r"[\w.\-+]+@[\w.\-]+\.[a-zA-Z]{2,}",
                                        (u.get("description") or "") + " " + ptext)))
         return (emails[0] if emails else "",
-                " | ".join(f"{k}: {v}" for k, v in socials.items()))
+                "\n".join(f"{k}: {v}" for k, v in socials.items()))
     except Exception:  # noqa: BLE001
         return "", ""
 
@@ -174,36 +184,46 @@ def _rgb(r, g, b):
     return {"red": r / 255, "green": g / 255, "blue": b / 255}
 
 
+def _hex(h):
+    return _rgb(int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+
+
 def beautify(sh, cc):
     """Presentable, idempotent styling: frozen colored header, zebra rows,
-    thousands separators, sensible widths. Safe to re-apply every run."""
+    per-game color, peak gradient, wrapped socials, a Status dropdown with
+    colored states, thousands separators, sensible widths. Re-applied safely
+    every run (old bandings + conditional-format rules are cleared first)."""
     gid = cc.id
     n = len(cc.get_all_values()) or 1
-    W = [110, 175, 165, 95, 105, 250, 430]  # date/game/streamer/peak/foll/email/socials
-    HEADER_BG = _rgb(23, 42, 69)     # deep navy
+    NC = len(HEADER)  # 8
+    W = [105, 180, 160, 90, 100, 240, 430, 130]  # per-column pixel widths
+    HEADER_BG = _hex("1B2A4A")       # deep indigo
     WHITE = _rgb(255, 255, 255)
-    BAND_A = _rgb(255, 255, 255)     # white
-    BAND_B = _rgb(233, 240, 250)     # light blue-gray
+    BAND_A = _rgb(255, 255, 255)
+    BAND_B = _hex("EEF3FB")          # very light blue-gray
 
     meta = sh.fetch_sheet_metadata()
-    old_bandings = []
+    old_bandings, n_cf = [], 0
     for s in meta.get("sheets", []):
         if s.get("properties", {}).get("sheetId") == gid:
             old_bandings = [b["bandedRangeId"] for b in s.get("bandedRanges", [])]
+            n_cf = len(s.get("conditionalFormats", []))
 
     reqs = [{"updateSheetProperties": {
         "properties": {"sheetId": gid, "gridProperties": {"frozenRowCount": 1}},
         "fields": "gridProperties.frozenRowCount"}}]
     reqs += [{"deleteBanding": {"bandedRangeId": b}} for b in old_bandings]
+    reqs += [{"deleteConditionalFormatRule": {"sheetId": gid, "index": 0}}
+             for _ in range(n_cf)]
     reqs.append({"addBanding": {"bandedRange": {
         "range": {"sheetId": gid, "startRowIndex": 0, "endRowIndex": n,
-                  "startColumnIndex": 0, "endColumnIndex": 7},
+                  "startColumnIndex": 0, "endColumnIndex": NC},
         "rowProperties": {"headerColor": HEADER_BG, "firstBandColor": BAND_A,
                           "secondBandColor": BAND_B}}}})
     # header row
     reqs.append({"repeatCell": {
         "range": {"sheetId": gid, "startRowIndex": 0, "endRowIndex": 1,
-                  "startColumnIndex": 0, "endColumnIndex": 7},
+                  "startColumnIndex": 0, "endColumnIndex": NC},
         "cell": {"userEnteredFormat": {
             "backgroundColor": HEADER_BG, "horizontalAlignment": "CENTER",
             "verticalAlignment": "MIDDLE", "wrapStrategy": "WRAP",
@@ -211,35 +231,72 @@ def beautify(sh, cc):
         "fields": "userEnteredFormat(backgroundColor,horizontalAlignment,verticalAlignment,wrapStrategy,textFormat)"}})
     reqs.append({"updateDimensionProperties": {
         "range": {"sheetId": gid, "dimension": "ROWS", "startIndex": 0, "endIndex": 1},
-        "properties": {"pixelSize": 38}, "fields": "pixelSize"}})
-    # column widths
+        "properties": {"pixelSize": 40}, "fields": "pixelSize"}})
     for i, w in enumerate(W):
         reqs.append({"updateDimensionProperties": {
             "range": {"sheetId": gid, "dimension": "COLUMNS", "startIndex": i, "endIndex": i + 1},
             "properties": {"pixelSize": w}, "fields": "pixelSize"}})
+
+    def rng(c0, c1):
+        return {"sheetId": gid, "startRowIndex": 1, "endRowIndex": n,
+                "startColumnIndex": c0, "endColumnIndex": c1}
+
     if n > 1:
-        # base data format: compact, clipped, vertically centered
-        reqs.append({"repeatCell": {
-            "range": {"sheetId": gid, "startRowIndex": 1, "endRowIndex": n,
-                      "startColumnIndex": 0, "endColumnIndex": 7},
-            "cell": {"userEnteredFormat": {"verticalAlignment": "MIDDLE",
+        # base data format: compact, top-aligned, clipped
+        reqs.append({"repeatCell": {"range": rng(0, NC),
+            "cell": {"userEnteredFormat": {"verticalAlignment": "TOP",
                      "wrapStrategy": "CLIP", "textFormat": {"fontSize": 10}}},
             "fields": "userEnteredFormat(verticalAlignment,wrapStrategy,textFormat.fontSize)"}})
-        # (streamer column C is styled+linked separately by link_streamer)
         # peak + followers: thousands separator, centered
-        reqs.append({"repeatCell": {
-            "range": {"sheetId": gid, "startRowIndex": 1, "endRowIndex": n,
-                      "startColumnIndex": 3, "endColumnIndex": 5},
+        reqs.append({"repeatCell": {"range": rng(3, 5),
             "cell": {"userEnteredFormat": {
                 "numberFormat": {"type": "NUMBER", "pattern": "#,##0"},
                 "horizontalAlignment": "CENTER"}},
             "fields": "userEnteredFormat(numberFormat,horizontalAlignment)"}})
         # capture date centered
-        reqs.append({"repeatCell": {
-            "range": {"sheetId": gid, "startRowIndex": 1, "endRowIndex": n,
-                      "startColumnIndex": 0, "endColumnIndex": 1},
+        reqs.append({"repeatCell": {"range": rng(0, 1),
             "cell": {"userEnteredFormat": {"horizontalAlignment": "CENTER"}},
             "fields": "userEnteredFormat.horizontalAlignment"}})
+        # socials: wrap so each link sits on its own line
+        reqs.append({"repeatCell": {"range": rng(6, 7),
+            "cell": {"userEnteredFormat": {"wrapStrategy": "WRAP"}},
+            "fields": "userEnteredFormat.wrapStrategy"}})
+        # Status: centered + dropdown validation
+        reqs.append({"repeatCell": {"range": rng(7, 8),
+            "cell": {"userEnteredFormat": {"horizontalAlignment": "CENTER"}},
+            "fields": "userEnteredFormat.horizontalAlignment"}})
+        reqs.append({"repeatCell": {"range": rng(7, 8),
+            "cell": {"dataValidation": {
+                "condition": {"type": "ONE_OF_LIST",
+                              "values": [{"userEnteredValue": s} for s in STATUSES]},
+                "showCustomUi": True, "strict": False}},
+            "fields": "dataValidation"}})
+        # per-game color on the game column
+        for gname, hexc in GAME_COLORS.items():
+            reqs.append({"addConditionalFormatRule": {"index": 0, "rule": {
+                "ranges": [rng(1, 2)],
+                "booleanRule": {"condition": {"type": "TEXT_EQ",
+                                "values": [{"userEnteredValue": gname}]},
+                                "format": {"backgroundColor": _hex(hexc)}}}}})
+        # peak gradient (light -> strong): highlights the big streams at a glance
+        reqs.append({"addConditionalFormatRule": {"index": 0, "rule": {
+            "ranges": [rng(3, 4)],
+            "gradientRule": {"minpoint": {"color": _hex("FFFFFF"), "type": "MIN"},
+                             "midpoint": {"color": _hex("C9DAF8"), "type": "PERCENTILE", "value": "60"},
+                             "maxpoint": {"color": _hex("3C78D8"), "type": "MAX"}}}}})
+        # Status colors
+        reqs.append({"addConditionalFormatRule": {"index": 0, "rule": {
+            "ranges": [rng(7, 8)],
+            "booleanRule": {"condition": {"type": "TEXT_EQ",
+                            "values": [{"userEnteredValue": "Contacted"}]},
+                            "format": {"backgroundColor": _hex("B6D7A8"),
+                                       "textFormat": {"foregroundColor": _hex("274E13"), "bold": True}}}}}})
+        reqs.append({"addConditionalFormatRule": {"index": 0, "rule": {
+            "ranges": [rng(7, 8)],
+            "booleanRule": {"condition": {"type": "TEXT_EQ",
+                            "values": [{"userEnteredValue": "Not contacted"}]},
+                            "format": {"backgroundColor": _hex("F4CCCC"),
+                                       "textFormat": {"foregroundColor": _hex("990000")}}}}}})
     sh.batch_update({"requests": reqs})
 
 
@@ -255,8 +312,9 @@ def main():
         s.headers.update(SULLY_H)
         for gid, name in GAMES.items():
             chans = [c for c in channels_last_day(gid, name)
-                     if (c.get("maxviewers") or 0) >= THRESHOLD]
-            print(f"  {name}: {len(chans)} channels >= {THRESHOLD} peak")
+                     if (c.get("maxviewers") or 0) >= THRESHOLD
+                     and (c.get("followers") or 0) >= MIN_FOLL]
+            print(f"  {name}: {len(chans)} channels (>= {THRESHOLD} peak & >= {MIN_FOLL} followers)")
             for c in chans:
                 login = (c.get("twitchurl") or "").rstrip("/").rsplit("/", 1)[-1].lower()
                 if not login or login in seen_logins or login in added_logins:
@@ -268,7 +326,7 @@ def main():
                 # trailing url is stripped before writing; used for the link
                 rows.append([today, name, c.get("displayname") or login,
                              c.get("maxviewers"), c.get("followers"), email, socials,
-                             f"https://www.twitch.tv/{login}"])
+                             "Not contacted", f"https://www.twitch.tv/{login}"])
                 time.sleep(0.3)
             time.sleep(DELAY)
 
@@ -278,10 +336,10 @@ def main():
         cc.update(values=[HEADER], range_name="A1")
     start = len(cc.get_all_values())   # 0-based index of the first new row
     if rows:
-        cc.append_rows([r[:7] for r in rows], value_input_option="USER_ENTERED")
+        cc.append_rows([r[:8] for r in rows], value_input_option="USER_ENTERED")
     beautify(sh, cc)
     if rows:
-        link_streamer(sh, cc.id, start, [(r[2], r[7]) for r in rows])
+        link_streamer(sh, cc.id, start, [(r[2], r[8]) for r in rows])
     print(f"\nAppended {len(rows)} NEW competitor streamers to '{TAB}'.")
     for r in rows[:10]:
         print(f"  {r[1]:24.24} {str(r[2])[:20]:20} peak={r[3]} foll={r[4]} email={'yes' if r[5] else '-'}")
