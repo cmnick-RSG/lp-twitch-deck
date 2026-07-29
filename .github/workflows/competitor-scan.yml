@@ -1,0 +1,33 @@
+name: Competitor coverage scan
+
+# Every morning finds yesterday's competitor-game streamers with peak viewers
+# >= LP_COMP_MIN, enriches each with email + socials, dedups against the WHOLE
+# MasterCRM (every tab), and appends the new ones to the "Competitor Coverage"
+# tab. Writes to Google Sheets only — no repo commit.
+on:
+  schedule:
+    - cron: "0 6 * * *"     # 06:00 UTC = 09:00 Europe/Kyiv, daily
+  workflow_dispatch: {}      # manual "Run workflow" button
+
+env:
+  LP_COMP_MIN: "100"         # min peak concurrent viewers to include
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        run: pip install requests gspread google-auth
+
+      - name: Scan competitors and update Google Sheet
+        env:
+          # Full service-account JSON, pasted as repo secret GCP_SA_KEY
+          # (Settings → Secrets and variables → Actions → New repository secret).
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: python competitor_scan.py

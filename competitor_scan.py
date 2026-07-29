@@ -1,0 +1,181 @@
+"""
+Competitor coverage scanner — DAILY.
+
+For each competitor game (SullyGnome), find channels that streamed it in the last
+day with peak concurrent viewers >= THRESHOLD, enrich each with contact email +
+social links (Twitch GraphQL panels/socials), DEDUP against the whole MasterCRM
+(every tab — skip anyone already a contact anywhere), and append the new ones to
+the "Competitor Coverage" tab.
+
+Fully autonomous: service-account auth (env GCP_SA_KEY in CI, or local key file).
+"""
+from __future__ import annotations
+
+import glob
+import json
+import os
+import re
+import time
+from datetime import datetime, timedelta, timezone
+
+from urllib.parse import quote
+
+import requests
+import gspread
+from google.oauth2.service_account import Credentials
+
+# ---- config ----------------------------------------------------------------
+SHEET_ID = "11x1FDXRGDZIKuyakmEjt2C5LrXC1-42K9eDdXkyTKuQ"
+TAB = "Competitor Coverage"
+THRESHOLD = int(os.environ.get("LP_COMP_MIN", "100"))
+try:
+    from zoneinfo import ZoneInfo
+    TZ = ZoneInfo("Europe/Kyiv")
+except Exception:  # noqa: BLE001  (no tzdata locally — Kyiv is UTC+3 in summer)
+    TZ = timezone(timedelta(hours=3))
+# competitor games: SullyGnome numeric id -> display name (name is used url-encoded)
+GAMES = {
+    164411: "Content Warning", 196063: "PEAK", 203585: "Gamble With Your Friends",
+    115691: "Escape the Backrooms", 211429: "Burglin' Gnomes", 151427: "Lethal Company",
+    218831: "Funnel Runners", 210742: "Pratfall", 214291: "Forest Escape: Last Train",
+    221410: "Meowgic", 201544: "YAPYAP", 186876: "R.E.P.O.",
+}
+HEADER = ["Capture date", "Competitor game", "Streamer", "Peak viewers",
+          "Followers", "Email", "Socials"]
+
+SULLY_H = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                          "(KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"),
+           "Referer": "https://sullygnome.com/", "X-Requested-With": "XMLHttpRequest",
+           "Accept": "application/json, text/javascript, */*; q=0.01"}
+GQL_H = {"Client-ID": "kimne78kx3ncx6brgo4mv6wki5h1ko", "Content-Type": "application/json"}
+GQL_Q = ("query($l:String!){user(login:$l){description channel{socialMedias{name url}} "
+         "panels{__typename ... on DefaultPanel{description linkURL}}}}")
+DELAY = float(os.environ.get("LP_DELAY", "1.0"))
+
+
+def creds():
+    scopes = ["https://www.googleapis.com/auth/spreadsheets",
+              "https://www.googleapis.com/auth/drive"]
+    raw = os.environ.get("GCP_SA_KEY")
+    if raw:
+        return Credentials.from_service_account_info(json.loads(raw), scopes=scopes)
+    key = glob.glob(os.path.join(os.path.dirname(__file__), "*ai-labs-rsg*.json"))
+    return Credentials.from_service_account_file(key[0], scopes=scopes)
+
+
+def channels_last_day(gid, name):
+    """Channels that streamed the game in the last ~day, with their peak (maxviewers)."""
+    ne = quote(name, safe="")
+    out, start = [], 0
+    while True:
+        u = (f"https://sullygnome.com/api/tables/gametables/getgamechannels/1/{gid}/{ne}"
+             f"/0/1/3/desc/{start}/100")
+        try:
+            j = requests.get(u, headers=SULLY_H, timeout=25).json()
+        except Exception as e:  # noqa: BLE001
+            print(f"    sully error {gid}: {e}"); break
+        batch = j.get("data", [])
+        out.extend(batch)
+        tot = j.get("recordsTotal", 0)
+        start += 100
+        if not batch or start >= tot:
+            break
+        time.sleep(DELAY)
+    return out
+
+
+def enrich(login):
+    """Return (email, socials_string) from Twitch GraphQL socials + panels."""
+    try:
+        j = requests.post("https://gql.twitch.tv/gql", headers=GQL_H,
+                          data=json.dumps({"query": GQL_Q, "variables": {"l": login}}),
+                          timeout=20).json()
+        u = (j.get("data") or {}).get("user") or {}
+        sm = (u.get("channel") or {}).get("socialMedias") or []
+        panels = u.get("panels") or []
+        ptext = " ".join([(p.get("description") or "") + " " + (p.get("linkURL") or "")
+                          for p in panels if p])
+        socials = {}
+        for s in sm:
+            if s.get("url"):
+                socials[(s.get("name") or "link").lower()] = s["url"]
+        for lk in re.findall(r"https?://[^\s)\]]+", ptext):
+            low = lk.lower()
+            for k in ("linktr", "linktree", "beacons", "pixie", "discord", "instagram",
+                      "twitter", "x.com", "youtube", "youtu.be", "tiktok"):
+                if k in low and k not in socials:
+                    socials[k] = lk
+        emails = sorted(set(re.findall(r"[\w.\-+]+@[\w.\-]+\.[a-zA-Z]{2,}",
+                                       (u.get("description") or "") + " " + ptext)))
+        return (emails[0] if emails else "",
+                " | ".join(f"{k}: {v}" for k, v in socials.items()))
+    except Exception:  # noqa: BLE001
+        return "", ""
+
+
+def crm_seen(sh):
+    """Every Twitch login + email already present in ANY tab of the CRM.
+
+    Read cells as FORMULA so twitch.tv URLs hidden inside HYPERLINK() formulas
+    (including the ones we write ourselves) are exposed for dedup.
+    """
+    logins, emails = set(), set()
+    for w in sh.worksheets():
+        try:
+            vals = w.get_values(value_render_option="FORMULA")
+        except Exception:  # noqa: BLE001
+            vals = w.get_all_values()
+        text = "\n".join("\t".join(str(c) for c in r) for r in vals).lower()
+        logins |= set(re.findall(r"twitch\.tv/([a-z0-9_]{2,25})", text))
+        emails |= set(re.findall(r"[\w.\-+]+@[\w.\-]+\.[a-z]{2,}", text))
+    return logins, emails
+
+
+def streamer_cell(login, display):
+    """Clickable channel link; keeps dedup working across days via the URL."""
+    disp = (display or login).replace('"', '""')
+    return f'=HYPERLINK("https://www.twitch.tv/{login}","{disp}")'
+
+
+def main():
+    gc = gspread.authorize(creds())
+    sh = gc.open_by_key(SHEET_ID)
+    seen_logins, seen_emails = crm_seen(sh)
+    print(f"CRM: {len(seen_logins)} twitch logins, {len(seen_emails)} emails already on file")
+
+    today = datetime.now(TZ).strftime("%Y-%m-%d")
+    rows, added_logins = [], set()
+    with requests.Session() as s:
+        s.headers.update(SULLY_H)
+        for gid, name in GAMES.items():
+            chans = [c for c in channels_last_day(gid, name)
+                     if (c.get("maxviewers") or 0) >= THRESHOLD]
+            print(f"  {name}: {len(chans)} channels >= {THRESHOLD} peak")
+            for c in chans:
+                login = (c.get("twitchurl") or "").rstrip("/").rsplit("/", 1)[-1].lower()
+                if not login or login in seen_logins or login in added_logins:
+                    continue
+                email, socials = enrich(login)
+                if email and email.lower() in seen_emails:
+                    continue  # same person already a contact by email
+                added_logins.add(login)
+                rows.append([today, name, streamer_cell(login, c.get("displayname")),
+                             c.get("maxviewers"), c.get("followers"), email, socials])
+                time.sleep(0.3)
+            time.sleep(DELAY)
+
+    rows.sort(key=lambda r: -(r[3] or 0))
+    cc = sh.worksheet(TAB)
+    if not cc.get_all_values() or cc.row_values(1) != HEADER:
+        cc.update(values=[HEADER], range_name="A1")
+    if rows:
+        cc.append_rows(rows, value_input_option="USER_ENTERED")
+    print(f"\nAppended {len(rows)} NEW competitor streamers to '{TAB}'.")
+    for r in rows[:10]:
+        disp = re.search(r'","(.*)"\)', str(r[2]))
+        disp = disp.group(1) if disp else str(r[2])
+        print(f"  {r[1]:24.24} {disp[:20]:20} peak={r[3]} foll={r[4]} email={'yes' if r[5] else '-'}")
+
+
+if __name__ == "__main__":
+    main()
