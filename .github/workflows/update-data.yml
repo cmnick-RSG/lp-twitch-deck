@@ -83,11 +83,28 @@ jobs:
             done
           fi
 
-      - name: Competitor coverage scan (rides this job's reliable 06:00 UTC trigger)
-        # GitHub-native cron fires erratically here; this job is dispatched on time
-        # by cron-job.org every 2h, so we run the daily competitor scan on the 06:00
-        # UTC hit (09:00 Kyiv). if: always() so a dashboard-step failure can't skip it,
-        # and its own failure can't red this run. Re-runs are harmless (deduped).
+      - name: Trigger Vercel deploy of the fresh data.json
+        # Vercel's auto-deploy on bot pushes is unreliable here (prod ends up ~1 build
+        # behind main). A deploy hook makes every 2h build publish deterministically.
+        # Add the hook URL as repo secret VERCEL_DEPLOY_HOOK (Settings → Secrets → Actions).
+        env:
+          VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+        run: |
+          if [ -n "$VERCEL_DEPLOY_HOOK" ]; then
+            curl -s -X POST "$VERCEL_DEPLOY_HOOK" >/dev/null && echo "Vercel deploy triggered." || echo "deploy hook call failed."
+          else
+            echo "No VERCEL_DEPLOY_HOOK secret set — relying on Vercel auto-deploy."
+          fi
+
+      # ---- Unrelated side-job: competitor coverage scan --------------------
+      # Runs DEAD LAST so the entire dashboard path (collect → commit → deploy)
+      # is already finished and untouched before this starts. Fully isolated:
+      # it reads SullyGnome/Twitch and writes ONLY to a Google Sheet — it never
+      # touches repo files, data.json, or git. if: always() = runs even if a
+      # dashboard step failed; continue-on-error = its failure can't red this
+      # run. Only fires on the 06:00 UTC hit (09:00 Kyiv); other 2h runs skip
+      # instantly. Re-runs are harmless (deduped).
+      - name: Competitor coverage scan (isolated, 06:00 UTC slot only)
         if: always()
         continue-on-error: true
         env:
@@ -102,17 +119,4 @@ jobs:
             python competitor_scan.py
           else
             echo "hour=$H UTC (not 06) — skipping competitor scan this run"
-          fi
-
-      - name: Trigger Vercel deploy of the fresh data.json
-        # Vercel's auto-deploy on bot pushes is unreliable here (prod ends up ~1 build
-        # behind main). A deploy hook makes every 2h build publish deterministically.
-        # Add the hook URL as repo secret VERCEL_DEPLOY_HOOK (Settings → Secrets → Actions).
-        env:
-          VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
-        run: |
-          if [ -n "$VERCEL_DEPLOY_HOOK" ]; then
-            curl -s -X POST "$VERCEL_DEPLOY_HOOK" >/dev/null && echo "Vercel deploy triggered." || echo "deploy hook call failed."
-          else
-            echo "No VERCEL_DEPLOY_HOOK secret set — relying on Vercel auto-deploy."
           fi
