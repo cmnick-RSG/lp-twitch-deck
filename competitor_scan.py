@@ -29,6 +29,9 @@ SHEET_ID = "11x1FDXRGDZIKuyakmEjt2C5LrXC1-42K9eDdXkyTKuQ"
 TAB = "Competitor Coverage"
 THRESHOLD = int(os.environ.get("LP_COMP_MIN", "100"))
 MIN_FOLL = int(os.environ.get("LP_MIN_FOLLOWERS", "1000"))  # drop fake/botted low-follower channels
+# languages we no longer source into the CRM (SullyGnome `language` field, lowercased).
+# NOTE: "russian" only — Ukrainian is a separate language and is NOT excluded.
+EXCLUDE_LANGS = {"russian"}
 STATUSES = ["Not contacted", "Contacted"]
 try:
     from zoneinfo import ZoneInfo
@@ -313,8 +316,10 @@ def main():
         for gid, name in GAMES.items():
             chans = [c for c in channels_last_day(gid, name)
                      if (c.get("maxviewers") or 0) >= THRESHOLD
-                     and (c.get("followers") or 0) >= MIN_FOLL]
-            print(f"  {name}: {len(chans)} channels (>= {THRESHOLD} peak & >= {MIN_FOLL} followers)")
+                     and (c.get("followers") or 0) >= MIN_FOLL
+                     and (c.get("language") or "").strip().lower() not in EXCLUDE_LANGS]
+            print(f"  {name}: {len(chans)} channels (>= {THRESHOLD} peak & >= {MIN_FOLL} followers, "
+                  f"excl. {'/'.join(sorted(EXCLUDE_LANGS))})")
             for c in chans:
                 login = (c.get("twitchurl") or "").rstrip("/").rsplit("/", 1)[-1].lower()
                 if not login or login in seen_logins or login in added_logins:
