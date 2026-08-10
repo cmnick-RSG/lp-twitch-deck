@@ -2,10 +2,11 @@
 Competitor coverage scanner — DAILY.
 
 For each competitor game (SullyGnome), find channels that streamed it in the last
-day with peak concurrent viewers >= THRESHOLD, enrich each with contact email +
-social links (Twitch GraphQL panels/socials), DEDUP against the whole MasterCRM
-(every tab — skip anyone already a contact anywhere), and append the new ones to
-the "Competitor Coverage" tab.
+day with peak concurrent viewers >= THRESHOLD and followers >= MIN_FOLL, skipping
+Russian-language channels (EXCLUDE_LANGS), enrich each with contact email + social
+links (Twitch GraphQL panels/socials), DEDUP against the whole MasterCRM (every tab
+— skip anyone already a contact anywhere), and append the new ones to the
+"Competitor Coverage" tab. Channels WITHOUT a profile email are never added.
 
 Fully autonomous: service-account auth (env GCP_SA_KEY in CI, or local key file).
 """
@@ -32,6 +33,13 @@ MIN_FOLL = int(os.environ.get("LP_MIN_FOLLOWERS", "1000"))  # drop fake/botted l
 # languages we no longer source into the CRM (SullyGnome `language` field, lowercased).
 # NOTE: "russian" only — Ukrainian is a separate language and is NOT excluded.
 EXCLUDE_LANGS = {"russian"}
+# SullyGnome day window: 1 = last day (normal daily run). Override LP_SCAN_WINDOW=7
+# for a one-off weekly backfill (e.g. when seeding newly-added competitor games).
+SCAN_WINDOW = int(os.environ.get("LP_SCAN_WINDOW", "1"))
+# optional: restrict a run to specific SullyGnome game ids (comma/space separated).
+# empty = scan all GAMES. Used for targeted backfills of just the new competitors.
+ONLY_GAMES = {int(x) for x in re.split(r"[,\s]+", os.environ.get("LP_ONLY_GAMES", ""))
+              if x.strip().isdigit()}
 STATUSES = ["Not contacted", "Contacted"]
 try:
     from zoneinfo import ZoneInfo
@@ -44,6 +52,7 @@ GAMES = {
     115691: "Escape the Backrooms", 211429: "Burglin' Gnomes", 151427: "Lethal Company",
     218831: "Funnel Runners", 210742: "Pratfall", 214291: "Forest Escape: Last Train",
     221410: "Meowgic", 201544: "YAPYAP", 186876: "R.E.P.O.",
+    221608: "Grain Rot", 211693: "Dig Dig Die",
 }
 HEADER = ["Capture date", "Competitor game", "Streamer", "Peak viewers",
           "Followers", "Email", "Socials", "Status"]
@@ -54,6 +63,7 @@ GAME_COLORS = {
     "Escape the Backrooms": "D0E0E3", "Burglin' Gnomes": "EAD1DC", "Lethal Company": "FCE5CD",
     "Funnel Runners": "CFE2F3", "Pratfall": "D9D2E9", "Forest Escape: Last Train": "B6D7A8",
     "Meowgic": "FCE1F0", "YAPYAP": "E6F0C8", "R.E.P.O.": "F4CCCC",
+    "Grain Rot": "F9CB9C", "Dig Dig Die": "B4A7D6",
 }
 
 SULLY_H = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -77,11 +87,11 @@ def creds():
 
 
 def channels_last_day(gid, name):
-    """Channels that streamed the game in the last ~day, with their peak (maxviewers)."""
+    """Channels that streamed the game in the last SCAN_WINDOW day(s), with peak (maxviewers)."""
     ne = quote(name, safe="")
     out, start = [], 0
     while True:
-        u = (f"https://sullygnome.com/api/tables/gametables/getgamechannels/1/{gid}/{ne}"
+        u = (f"https://sullygnome.com/api/tables/gametables/getgamechannels/{SCAN_WINDOW}/{gid}/{ne}"
              f"/0/1/3/desc/{start}/100")
         try:
             j = requests.get(u, headers=SULLY_H, timeout=25).json()
@@ -314,18 +324,22 @@ def main():
     with requests.Session() as s:
         s.headers.update(SULLY_H)
         for gid, name in GAMES.items():
+            if ONLY_GAMES and gid not in ONLY_GAMES:
+                continue
             chans = [c for c in channels_last_day(gid, name)
                      if (c.get("maxviewers") or 0) >= THRESHOLD
                      and (c.get("followers") or 0) >= MIN_FOLL
                      and (c.get("language") or "").strip().lower() not in EXCLUDE_LANGS]
             print(f"  {name}: {len(chans)} channels (>= {THRESHOLD} peak & >= {MIN_FOLL} followers, "
-                  f"excl. {'/'.join(sorted(EXCLUDE_LANGS))})")
+                  f"excl. {'/'.join(sorted(EXCLUDE_LANGS))}, window={SCAN_WINDOW}d)")
             for c in chans:
                 login = (c.get("twitchurl") or "").rstrip("/").rsplit("/", 1)[-1].lower()
                 if not login or login in seen_logins or login in added_logins:
                     continue
                 email, socials = enrich(login)
-                if email and email.lower() in seen_emails:
+                if not email:
+                    continue  # policy: never add a contact without a profile email
+                if email.lower() in seen_emails:
                     continue  # same person already a contact by email
                 added_logins.add(login)
                 # trailing url is stripped before writing; used for the link
