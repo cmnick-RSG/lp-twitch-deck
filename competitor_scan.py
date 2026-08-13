@@ -40,7 +40,7 @@ SCAN_WINDOW = int(os.environ.get("LP_SCAN_WINDOW", "1"))
 # empty = scan all GAMES. Used for targeted backfills of just the new competitors.
 ONLY_GAMES = {int(x) for x in re.split(r"[,\s]+", os.environ.get("LP_ONLY_GAMES", ""))
               if x.strip().isdigit()}
-STATUSES = ["Not contacted", "Contacted"]
+STATUSES = ["Not contacted", "Contacted", "Keys Given (PT)", "Keys Given (Playtest)"]
 try:
     from zoneinfo import ZoneInfo
     TZ = ZoneInfo("Europe/Kyiv")
@@ -79,6 +79,10 @@ SULLY_H = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit
 GQL_H = {"Client-ID": "kimne78kx3ncx6brgo4mv6wki5h1ko", "Content-Type": "application/json"}
 GQL_Q = ("query($l:String!){user(login:$l){description channel{socialMedias{name url}} "
          "panels{__typename ... on DefaultPanel{description linkURL}}}}")
+# non-contact "emails" scraped from panels we must never use: Google Calendar feed
+# ids (…@group.calendar.google.com), image files, hash-like local parts.
+JUNK_EMAIL = re.compile(r"@(group\.)?calendar\.google\.com$|\.(png|jpe?g|gif|webp)$"
+                        r"|^[0-9a-f]{20,}@", re.I)
 DELAY = float(os.environ.get("LP_DELAY", "1.0"))
 
 
@@ -136,6 +140,8 @@ def enrich(login):
                     socials[k] = lk
         emails = sorted(set(re.findall(r"[\w.\-+]+@[\w.\-]+\.[a-zA-Z]{2,}",
                                        (u.get("description") or "") + " " + ptext)))
+        # drop non-contact junk: Google Calendar feed ids, image files, hash-like local parts
+        emails = [e for e in emails if not JUNK_EMAIL.search(e)]
         return (emails[0] if emails else "",
                 "\n".join(f"{k}: {v}" for k, v in socials.items()))
     except Exception:  # noqa: BLE001
