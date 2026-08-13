@@ -53,6 +53,9 @@ GAMES = {
     218831: "Funnel Runners", 210742: "Pratfall", 214291: "Forest Escape: Last Train",
     221410: "Meowgic", 201544: "YAPYAP", 186876: "R.E.P.O.",
     221608: "Grain Rot", 211693: "Dig Dig Die",
+    206127: "RV There Yet?", 184245: "Schedule I",
+    197572: "Shift at Midnight", 58977: "Phasmophobia", 224047: "Bombanana!",
+    212609: "Project: Doors", 223542: "Meccha Chameleon",
 }
 HEADER = ["Capture date", "Competitor game", "Streamer", "Peak viewers",
           "Followers", "Email", "Socials", "Status"]
@@ -64,6 +67,9 @@ GAME_COLORS = {
     "Funnel Runners": "CFE2F3", "Pratfall": "D9D2E9", "Forest Escape: Last Train": "B6D7A8",
     "Meowgic": "FCE1F0", "YAPYAP": "E6F0C8", "R.E.P.O.": "F4CCCC",
     "Grain Rot": "F9CB9C", "Dig Dig Die": "B4A7D6",
+    "RV There Yet?": "A4C2F4", "Schedule I": "FFE599",
+    "Shift at Midnight": "D7A9E3", "Phasmophobia": "C9DAF8", "Bombanana!": "FCD5CE",
+    "Project: Doors": "B7E1CD", "Meccha Chameleon": "E1D5E7",
 }
 
 SULLY_H = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
