@@ -37,3 +37,4 @@ site/public/live.json
 
 # Downloaded UI/UX skill (local design reference only, not part of the app)
 ui-ux-pro-max-skill-main/
+local_runs/
