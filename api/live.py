@@ -36,8 +36,9 @@ def app_token():
 def fetch_live():
     headers = {"Client-ID": os.environ["TWITCH_CLIENT_ID"],
                "Authorization": f"Bearer {app_token()}"}
-    live, cursor = [], None
-    while True:
+    live, cursor, pages = [], None, 0
+    while pages < 20:                 # guard: reshuffling can keep handing cursors
+        pages += 1
         params = {"game_id": TWITCH_GAME_ID, "first": 100}
         if cursor:
             params["after"] = cursor
@@ -60,6 +61,17 @@ def fetch_live():
         cursor = j.get("pagination", {}).get("cursor")
         if not cursor:
             break
+    # Helix can hand back the same stream on two pages: the result set reshuffles
+    # between paged requests (channels going live, viewer counts reordering), so a
+    # channel already returned slides onto the next page too. Very visible on a
+    # launch-day category. Dedupe by user_id, keeping the highest count seen.
+    # Done BEFORE the follower loop so duplicates don't cost extra requests too.
+    by_user = {}
+    for s in live:
+        uid = s.get("user_id") or s.get("user_login")
+        if uid not in by_user or s["viewer_count"] > by_user[uid]["viewer_count"]:
+            by_user[uid] = s
+    live = list(by_user.values())
     # follower totals per live channel (works with an app token; few are live → cheap)
     for s in live:
         s["followers"] = None
