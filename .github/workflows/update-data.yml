@@ -53,11 +53,11 @@ jobs:
           fi
           # explicit utf-8: data.json carries CJK/Cyrillic channel names, and a
           # locale-dependent open() would blow up and silently disable the throttle
-          GEN=$(python -c "import json,io;print(json.load(io.open('site/public/data.json',encoding='utf-8')).get('generated_at',''))" 2>/dev/null || true)
+          GEN=$(python3 -c "import json,io;print(json.load(io.open('site/public/data.json',encoding='utf-8')).get('generated_at',''))" 2>/dev/null || true)
           if [ -z "$GEN" ]; then
             echo "no generated_at in data.json -> running"; echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
           fi
-          AGE=$(python -c "import datetime as d;print(int((d.datetime.now(d.timezone.utc)-d.datetime.fromisoformat('$GEN')).total_seconds()//3600))")
+          AGE=$(python3 -c "import datetime as d;print(int((d.datetime.now(d.timezone.utc)-d.datetime.fromisoformat('$GEN')).total_seconds()//3600))")
           echo "data.json generated_at=$GEN (age ${AGE}h, threshold ${MIN_AGE_H}h)"
           if [ "$AGE" -ge "$MIN_AGE_H" ]; then
             echo "stale -> running"; echo "run=true" >> "$GITHUB_OUTPUT"
