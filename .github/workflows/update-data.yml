@@ -11,7 +11,12 @@ on:
     # live-snapshot.yml (Twitch Helix, every 5-10 min) and /api/live feed the Live
     # tab. This job only refreshes SullyGnome aggregates, which lag by hours anyway.
     - cron: "0 */6 * * *"
-  workflow_dispatch: {}       # manual "Run workflow" button
+  workflow_dispatch:          # manual "Run workflow" button
+    inputs:
+      force:
+        description: "Run even if data.json is still fresh (bypass the 6h self-throttle)"
+        type: boolean
+        default: false
 
 env:
   # SullyGnome only accepts specific day windows (3/7/30/365) — others return empty!
@@ -26,7 +31,44 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Self-throttle. This workflow is fired by BOTH the schedule above and an
+  # external cron-job.org workflow_dispatch, so the two used to stack up and hit
+  # SullyGnome ~24x/day — which got this repo's Actions IP 403'd for 9 days
+  # (2026-08-09..08-18). The guard skips a run whose data.json is still fresh, so
+  # the real scrape rate stays ~6h NO MATTER how often something triggers us.
+  # Tick "force" on a manual run to bypass it.
+  guard:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        env:
+          FORCE: ${{ github.event.inputs.force }}
+        run: |
+          MIN_AGE_H=5      # allow a little schedule drift under the 6h target
+          if [ "$FORCE" = "true" ]; then
+            echo "force=true -> running"; echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # explicit utf-8: data.json carries CJK/Cyrillic channel names, and a
+          # locale-dependent open() would blow up and silently disable the throttle
+          GEN=$(python -c "import json,io;print(json.load(io.open('site/public/data.json',encoding='utf-8')).get('generated_at',''))" 2>/dev/null || true)
+          if [ -z "$GEN" ]; then
+            echo "no generated_at in data.json -> running"; echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          AGE=$(python -c "import datetime as d;print(int((d.datetime.now(d.timezone.utc)-d.datetime.fromisoformat('$GEN')).total_seconds()//3600))")
+          echo "data.json generated_at=$GEN (age ${AGE}h, threshold ${MIN_AGE_H}h)"
+          if [ "$AGE" -ge "$MIN_AGE_H" ]; then
+            echo "stale -> running"; echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "still fresh -> skipping this trigger (protects the SullyGnome IP)"
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
   refresh:
+    needs: guard
+    if: needs.guard.outputs.run == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
