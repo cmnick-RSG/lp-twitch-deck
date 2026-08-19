@@ -4,7 +4,13 @@ name: Update dashboard data
 # Vercel site shows fresh stats. Runtime is plain `requests` (no browser).
 on:
   schedule:
-    - cron: "0 */2 * * *"   # every 2 hours (UTC) — keeps the Newest feed + per-stream viewer stats fresh; Twitch pull is cheap, SullyGnome scan stays light (window=3, throttled)
+    # Every 6h (UTC). Was every 2h until SullyGnome started 403-ing this repo's
+    # Actions IP (outage 2026-08-09..08-18, analytics froze for 9 days). Scraping
+    # it 4x/day instead of 24x keeps us well under its radar.
+    # NOTE: the dashboard's real-time story does NOT depend on this workflow —
+    # live-snapshot.yml (Twitch Helix, every 5-10 min) and /api/live feed the Live
+    # tab. This job only refreshes SullyGnome aggregates, which lag by hours anyway.
+    - cron: "0 */6 * * *"
   workflow_dispatch: {}       # manual "Run workflow" button
 
 env:
@@ -113,7 +119,9 @@ jobs:
           LP_MIN_FOLLOWERS: "1000"
         run: |
           H=$(date -u +%H)
-          if [ "$H" = "06" ]; then
+          # accept 06 OR 07: GitHub schedules drift 20-50 min, and a run that
+          # slips past the hour must not silently skip the daily scan.
+          if [ "$H" = "06" ] || [ "$H" = "07" ]; then
             echo "06:00 UTC slot — running competitor coverage scan"
             pip install gspread google-auth
             python competitor_scan.py
