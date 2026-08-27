@@ -33,6 +33,9 @@ MIN_FOLL = int(os.environ.get("LP_MIN_FOLLOWERS", "1000"))  # drop fake/botted l
 # languages we no longer source into the CRM (SullyGnome `language` field, lowercased).
 # NOTE: "russian" only — Ukrainian is a separate language and is NOT excluded.
 EXCLUDE_LANGS = {"russian"}
+# languages we flag visually in the sheet (SullyGnome `language`, lowercased) ->
+# row gets a tinted background so they stand out at a glance. Ukrainian = blue.
+HIGHLIGHT_LANGS = {"ukrainian": "CFE2F3"}
 # SullyGnome day window: 1 = last day (normal daily run). Override LP_SCAN_WINDOW=7
 # for a one-off weekly backfill (e.g. when seeding newly-added competitor games).
 SCAN_WINDOW = int(os.environ.get("LP_SCAN_WINDOW", "1"))
@@ -56,6 +59,8 @@ GAMES = {
     206127: "RV There Yet?", 184245: "Schedule I",
     197572: "Shift at Midnight", 58977: "Phasmophobia", 224047: "Bombanana!",
     212609: "Project: Doors", 223542: "Meccha Chameleon",
+    227154: "Machine Party", 214411: "Super Battle Golf",
+    126390: "Backrooms: Escape Together", 228970: "How to Fish",
 }
 HEADER = ["Capture date", "Competitor game", "Streamer", "Peak viewers",
           "Followers", "Email", "Socials", "Status"]
@@ -70,6 +75,8 @@ GAME_COLORS = {
     "RV There Yet?": "A4C2F4", "Schedule I": "FFE599",
     "Shift at Midnight": "D7A9E3", "Phasmophobia": "C9DAF8", "Bombanana!": "FCD5CE",
     "Project: Doors": "B7E1CD", "Meccha Chameleon": "E1D5E7",
+    "Machine Party": "FFD966", "Super Battle Golf": "A2C4C9",
+    "Backrooms: Escape Together": "DD9EBD", "How to Fish": "A6E3E9",
 }
 
 SULLY_H = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -325,6 +332,32 @@ def beautify(sh, cc):
     sh.batch_update({"requests": reqs})
 
 
+def highlight_langs(sh, cc, start_row0, rows):
+    """Tint whole rows whose SullyGnome language is in HIGHLIGHT_LANGS.
+
+    A direct cell background beats the zebra banding beautify() lays down, so the
+    flag survives later runs. `rows` carry their language in the last column (it is
+    stripped before the values are written to the sheet).
+    """
+    reqs = []
+    for i, r in enumerate(rows):
+        colour = HIGHLIGHT_LANGS.get(r[9] if len(r) > 9 else "")
+        if not colour:
+            continue
+        reqs.append({"repeatCell": {
+            "range": {"sheetId": cc.id, "startRowIndex": start_row0 + i,
+                      "endRowIndex": start_row0 + i + 1,
+                      "startColumnIndex": 0, "endColumnIndex": len(HEADER)},
+            "cell": {"userEnteredFormat": {"backgroundColor": _hex(colour)}},
+            "fields": "userEnteredFormat.backgroundColor"}})
+    if not reqs:
+        return
+    for j in range(0, len(reqs), 400):
+        sh.batch_update({"requests": reqs[j:j + 400]})
+    print(f"  flagged {len(reqs)} rows by language "
+          f"({', '.join(sorted(HIGHLIGHT_LANGS))})")
+
+
 def main():
     gc = gspread.authorize(creds())
     sh = gc.open_by_key(SHEET_ID)
@@ -357,7 +390,8 @@ def main():
                 # trailing url is stripped before writing; used for the link
                 rows.append([today, name, c.get("displayname") or login,
                              c.get("maxviewers"), c.get("followers"), email, socials,
-                             "Not contacted", f"https://www.twitch.tv/{login}"])
+                             "Not contacted", f"https://www.twitch.tv/{login}",
+                             (c.get("language") or "").strip().lower()])
                 time.sleep(0.3)
             time.sleep(DELAY)
 
@@ -371,6 +405,7 @@ def main():
     beautify(sh, cc)
     if rows:
         link_streamer(sh, cc.id, start, [(r[2], r[8]) for r in rows])
+        highlight_langs(sh, cc, start, rows)
     print(f"\nAppended {len(rows)} NEW competitor streamers to '{TAB}'.")
     for r in rows[:10]:
         print(f"  {r[1]:24.24} {str(r[2])[:20]:20} peak={r[3]} foll={r[4]} email={'yes' if r[5] else '-'}")
