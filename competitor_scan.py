@@ -65,6 +65,10 @@ GAMES = {
     212609: "Project: Doors", 223542: "Meccha Chameleon",
     227154: "Machine Party", 214411: "Super Battle Golf",
     126390: "Backrooms: Escape Together", 228970: "How to Fish",
+    192898: "MIMESIS", 224185: "Cat Mail Co.", 205721: "Far Far West",
+    105461: "Palworld", 220677: "Librarian: Tidy Up the Arcane Library!",
+    218839: "Friendly Steps", 184398: "A Game About Digging A Hole",
+    222879: "A Game About Chopping Trees",
 }
 HEADER = ["Capture date", "Competitor game", "Streamer", "Peak viewers",
           "Followers", "Email", "Socials", "Status"]
@@ -81,6 +85,10 @@ GAME_COLORS = {
     "Project: Doors": "B7E1CD", "Meccha Chameleon": "E1D5E7",
     "Machine Party": "FFD966", "Super Battle Golf": "A2C4C9",
     "Backrooms: Escape Together": "DD9EBD", "How to Fish": "A6E3E9",
+    "MIMESIS": "D5A6BD", "Cat Mail Co.": "FFE0B2", "Far Far West": "E8C1A0",
+    "Palworld": "C5E1A5", "Librarian: Tidy Up the Arcane Library!": "B3E5FC",
+    "Friendly Steps": "F8BBD0", "A Game About Digging A Hole": "D7CCC8",
+    "A Game About Chopping Trees": "DCEDC8",
 }
 
 SULLY_H = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
