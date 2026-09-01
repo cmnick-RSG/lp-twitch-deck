@@ -109,12 +109,37 @@ GQL_Q = ("query($l:String!){user(login:$l){displayName description "
 # Cyrillic with no Ukrainian markers is treated as Russian. That errs toward
 # dropping a contact rather than mailing a Russian one, which is the safer miss.
 CYRILLIC = re.compile(r"[Ѐ-ӿ]")
-UA_ONLY = re.compile(r"[іїєґІЇЄҐ]")
+UA_ONLY = re.compile(r"[іїєґІЇЄҐ]")     # letters Russian and Bulgarian both lack
+MIN_CYRILLIC = 8                        # below this it is noise, not a language signal
+# Cyrillic languages that are NOT Russian and must never be dropped as such.
+CYRILLIC_OK = {"bg", "mk", "sr", "bel", "bul", "srp", "mkd"}
 
 
-def script_lang(text):
-    """-> 'ukrainian' | 'russian' | None (no Cyrillic at all)."""
-    if not CYRILLIC.search(text or ""):
+def script_lang(text, declared=""):
+    """Guess a channel's real language -> 'ukrainian' | 'russian' | None.
+
+    Declared language wins when it is meaningful: serega_pirat (480k followers)
+    labels himself EN and streams in Russian, so we fall back to reading the
+    alphabet of his profile text.
+
+    Two traps this avoids, both found in live data:
+      * a single Cyrillic char inside a kaomoji or a "中文/русский/English" list is
+        not a Russian channel -> require MIN_CYRILLIC characters;
+      * Bulgarian is Cyrillic with no Ukrainian letters, so a naive check calls it
+        Russian -> trust an explicitly declared Cyrillic-but-not-Russian language.
+
+    Residual risk: a Bulgarian/Macedonian channel that declares EN reads as Russian
+    and gets dropped. That is the intended direction to fail — missing a contact
+    beats mailing a Russian one.
+    """
+    d = (declared or "").strip().lower()
+    if d in ("uk", "ukr", "ukrainian"):
+        return "ukrainian"
+    if d in ("ru", "rus", "russian"):
+        return "russian"
+    if d in CYRILLIC_OK:
+        return None
+    if len(CYRILLIC.findall(text or "")) < MIN_CYRILLIC:
         return None
     return "ukrainian" if UA_ONLY.search(text) else "russian"
 
@@ -433,7 +458,7 @@ def main():
                 email, socials, blob = enrich(login)
                 if not email:
                     continue  # policy: never add a contact without a profile email
-                sniffed = script_lang(blob)
+                sniffed = script_lang(blob, c.get("language"))
                 if sniffed in EXCLUDE_LANGS:
                     skipped_by_script += 1
                     continue  # declared language lied — the profile text is Russian
