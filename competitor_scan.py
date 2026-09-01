@@ -4,8 +4,8 @@ Competitor coverage scanner — DAILY.
 For each competitor game (SullyGnome), find channels that streamed it in the last
 day with peak concurrent viewers >= THRESHOLD and followers >= MIN_FOLL, skipping
 Russian-language channels (EXCLUDE_LANGS), enrich each with contact email + social
-links (Twitch GraphQL panels/socials), DEDUP against the whole MasterCRM (every tab
-— skip anyone already a contact anywhere), and append the new ones to the
+links (Twitch GraphQL panels/socials), DEDUP against the whole MasterCRM AND the outreach book
+(every tab — skip anyone already a contact anywhere), and append the new ones to the
 "Competitor Coverage" tab. Channels WITHOUT a profile email are never added.
 
 Fully autonomous: service-account auth (env GCP_SA_KEY in CI, or local key file).
@@ -26,7 +26,11 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 # ---- config ----------------------------------------------------------------
-SHEET_ID = "11x1FDXRGDZIKuyakmEjt2C5LrXC1-42K9eDdXkyTKuQ"
+SHEET_ID = "11x1FDXRGDZIKuyakmEjt2C5LrXC1-42K9eDdXkyTKuQ"      # MasterCRM
+# Outreach book. Dedup MUST cover it too: contacts live there that never reach
+# MasterCRM (DS invitees, journalists, UA lists...). Without it the scanner keeps
+# re-adding them to Competitor Coverage as "new" every run.
+EA_SHEET_ID = "1Vc3neddP-H0ANxKk96cDNm8HoIPz03fA6hilX3CXuxY"
 TAB = "Competitor Coverage"
 THRESHOLD = int(os.environ.get("LP_COMP_MIN", "100"))
 MIN_FOLL = int(os.environ.get("LP_MIN_FOLLOWERS", "1000"))  # drop fake/botted low-follower channels
@@ -155,13 +159,14 @@ def enrich(login):
         return "", ""
 
 
-def _hyperlink_logins(sh, tab):
-    """Twitch logins from cells' derived hyperlink field (catches inserted
-    rich-text links, including the ones we write into our own tab)."""
+def _hyperlink_logins(sh, tabs=None):
+    """Twitch logins from cells' derived hyperlink field (catches rich-text links
+    like the Streamer/Name cells we insert). One metadata call for the whole book."""
     out = set()
     try:
+        ranges = tabs if tabs is not None else [w.title for w in sh.worksheets()]
         md = sh.fetch_sheet_metadata(params={
-            "ranges": [tab], "fields": "sheets/data/rowData/values/hyperlink"})
+            "ranges": ranges, "fields": "sheets/data/rowData/values/hyperlink"})
         for s in md.get("sheets", []):
             for d in s.get("data", []):
                 for row in d.get("rowData", []):
@@ -175,23 +180,25 @@ def _hyperlink_logins(sh, tab):
     return out
 
 
-def crm_seen(sh):
-    """Every Twitch login + email already present in ANY tab of the CRM.
+def crm_seen(*books):
+    """Every Twitch login + email already present in ANY tab of the given books.
 
-    Read cells as FORMULA so twitch.tv URLs inside HYPERLINK() formulas are
-    exposed, and additionally harvest our own tab's derived hyperlink field so
-    inserted rich-text links (what we now write) dedup day to day too.
+    Read cells as FORMULA so twitch.tv URLs inside HYPERLINK() formulas are exposed,
+    and harvest each book's derived hyperlink field as well so inserted rich-text
+    links dedup too. Pass both MasterCRM and the outreach book — a contact that
+    exists in either one must not be re-added.
     """
     logins, emails = set(), set()
-    for w in sh.worksheets():
-        try:
-            vals = w.get_values(value_render_option="FORMULA")
-        except Exception:  # noqa: BLE001
-            vals = w.get_all_values()
-        text = "\n".join("\t".join(str(c) for c in r) for r in vals).lower()
-        logins |= set(re.findall(r"twitch\.tv/([a-z0-9_]{2,25})", text))
-        emails |= set(re.findall(r"[\w.\-+]+@[\w.\-]+\.[a-z]{2,}", text))
-    logins |= _hyperlink_logins(sh, TAB)
+    for sh in books:
+        for w in sh.worksheets():
+            try:
+                vals = w.get_values(value_render_option="FORMULA")
+            except Exception:  # noqa: BLE001
+                vals = w.get_all_values()
+            text = "\n".join("\t".join(str(c) for c in r) for r in vals).lower()
+            logins |= set(re.findall(r"twitch\.tv/([a-z0-9_]{2,25})", text))
+            emails |= set(re.findall(r"[\w.\-+]+@[\w.\-]+\.[a-z]{2,}", text))
+        logins |= _hyperlink_logins(sh)
     return logins, emails
 
 
@@ -361,8 +368,15 @@ def highlight_langs(sh, cc, start_row0, rows):
 def main():
     gc = gspread.authorize(creds())
     sh = gc.open_by_key(SHEET_ID)
-    seen_logins, seen_emails = crm_seen(sh)
-    print(f"CRM: {len(seen_logins)} twitch logins, {len(seen_emails)} emails already on file")
+    try:
+        ea = gc.open_by_key(EA_SHEET_ID)
+    except Exception as e:  # noqa: BLE001 — never let a dedup source break the run
+        print(f"WARN: outreach book unreachable ({e}); deduping against MasterCRM only")
+        ea = None
+    seen_logins, seen_emails = crm_seen(*(x for x in (sh, ea) if x))
+    src = "MasterCRM + outreach book" if ea else "MasterCRM only"
+    print(f"dedup index: {len(seen_logins)} twitch logins, "
+          f"{len(seen_emails)} emails ({src})")
 
     today = datetime.now(TZ).strftime("%Y-%m-%d")
     rows, added_logins = [], set()
