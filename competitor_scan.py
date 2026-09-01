@@ -419,7 +419,10 @@ def main():
 
     rows.sort(key=lambda r: -(r[3] or 0))
     cc = sh.worksheet(TAB)
-    if not cc.get_all_values() or cc.row_values(1) != HEADER:
+    # Only seed the header on a genuinely empty tab. Nikita renames columns and
+    # appends his own (Status EA, Content Status, Status EA EVENT, Date...), and a
+    # blind rewrite of A1:H1 silently reverted them every run.
+    if not cc.get_all_values():
         cc.update(values=[HEADER], range_name="A1")
     start = len(cc.get_all_values())   # 0-based index of the first new row
     if rows:
