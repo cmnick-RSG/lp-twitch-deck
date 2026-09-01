@@ -376,6 +376,7 @@ def main():
         "generated_at": meta.get("run_at"),
         "summary": summary,
         "windows": read_json("windows.json", {}),
+        "window_stats": read_json("window_stats.json", {}),
         "languages": read_json("languages_latest.json", {}),
         "channels": channels,
         "timeseries": {

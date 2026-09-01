@@ -960,7 +960,13 @@ function drawTrends(){
   // uses authoritative SullyGnome totals; recent periods sum the tracked feed (fills in
   // as SullyGnome processes fresh streams).
   const nStreams=allTime?(D.channels.reduce((a,c)=>a+(c.total_streams||0),0)||inR.length):inR.length;
+  // Watch-hours come from SullyGnome per-window totals (data.window_stats), not from
+  // the feed: per-stream `viewminutes` stopped arriving when SullyGnome put its
+  // per-channel endpoints behind a Cloudflare challenge, so summing the feed read 0.
+  const WS=D.window_stats||{};
+  const wsKey={"24h":"1","3d":"3","7d":"7","30d":"30"}[r];
   const whrs=allTime?Math.round(D.summary.total_hours_watched||0)
+    :(wsKey&&WS[wsKey]&&WS[wsKey].watch_hours!=null)?Math.round(WS[wsKey].watch_hours)
     :Math.round(inR.reduce((a,x)=>a+(x.viewminutes||0),0)/60);
   // combined peak = Σ of each stream's peak (rough reach — repeat viewers double-count,
   // NOT unique people); VOD views = Σ replay views. Both summed over the tracked feed.
