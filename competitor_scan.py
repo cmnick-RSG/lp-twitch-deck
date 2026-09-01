@@ -96,10 +96,29 @@ SULLY_H = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit
            "Referer": "https://sullygnome.com/", "X-Requested-With": "XMLHttpRequest",
            "Accept": "application/json, text/javascript, */*; q=0.01"}
 GQL_H = {"Client-ID": "kimne78kx3ncx6brgo4mv6wki5h1ko", "Content-Type": "application/json"}
-GQL_Q = ("query($l:String!){user(login:$l){description channel{socialMedias{name url}} "
+GQL_Q = ("query($l:String!){user(login:$l){displayName description "
+         "broadcastSettings{language title} channel{socialMedias{name url}} "
          "panels{__typename ... on DefaultPanel{description linkURL}}}}")
 # non-contact "emails" scraped from panels we must never use: Google Calendar feed
 # ids (…@group.calendar.google.com), image files, hash-like local parts.
+# Declared language is not enough: some Russian channels set their Twitch language
+# to EN (serega_pirat, 480k followers, streams titled in Russian, slipped straight
+# through EXCLUDE_LANGS). So we also read the script of the profile text.
+# Ukrainian and Russian are told apart by letters the other alphabet lacks:
+#   і ї є ґ  -> Ukrainian only      ы ъ э -> Russian only
+# Cyrillic with no Ukrainian markers is treated as Russian. That errs toward
+# dropping a contact rather than mailing a Russian one, which is the safer miss.
+CYRILLIC = re.compile(r"[Ѐ-ӿ]")
+UA_ONLY = re.compile(r"[іїєґІЇЄҐ]")
+
+
+def script_lang(text):
+    """-> 'ukrainian' | 'russian' | None (no Cyrillic at all)."""
+    if not CYRILLIC.search(text or ""):
+        return None
+    return "ukrainian" if UA_ONLY.search(text) else "russian"
+
+
 JUNK_EMAIL = re.compile(r"@(group\.)?calendar\.google\.com$|\.(png|jpe?g|gif|webp)$"
                         r"|^[0-9a-f]{20,}@", re.I)
 DELAY = float(os.environ.get("LP_DELAY", "1.0"))
@@ -137,7 +156,11 @@ def channels_last_day(gid, name):
 
 
 def enrich(login):
-    """Return (email, socials_string) from Twitch GraphQL socials + panels."""
+    """Return (email, socials_string, profile_text) from Twitch GraphQL.
+
+    profile_text is displayName + description + current stream title, used to sniff
+    the channel's actual script when its declared language lies.
+    """
     try:
         j = requests.post("https://gql.twitch.tv/gql", headers=GQL_H,
                           data=json.dumps({"query": GQL_Q, "variables": {"l": login}}),
@@ -161,10 +184,13 @@ def enrich(login):
                                        (u.get("description") or "") + " " + ptext)))
         # drop non-contact junk: Google Calendar feed ids, image files, hash-like local parts
         emails = [e for e in emails if not JUNK_EMAIL.search(e)]
+        bs = u.get("broadcastSettings") or {}
+        blob = " ".join([u.get("displayName") or "", u.get("description") or "",
+                         bs.get("title") or ""])
         return (emails[0] if emails else "",
-                "\n".join(f"{k}: {v}" for k, v in socials.items()))
+                "\n".join(f"{k}: {v}" for k, v in socials.items()), blob)
     except Exception:  # noqa: BLE001
-        return "", ""
+        return "", "", ""
 
 
 def _hyperlink_logins(sh, tabs=None):
@@ -388,6 +414,7 @@ def main():
 
     today = datetime.now(TZ).strftime("%Y-%m-%d")
     rows, added_logins = [], set()
+    skipped_by_script = 0
     with requests.Session() as s:
         s.headers.update(SULLY_H)
         for gid, name in GAMES.items():
@@ -403,9 +430,13 @@ def main():
                 login = (c.get("twitchurl") or "").rstrip("/").rsplit("/", 1)[-1].lower()
                 if not login or login in seen_logins or login in added_logins:
                     continue
-                email, socials = enrich(login)
+                email, socials, blob = enrich(login)
                 if not email:
                     continue  # policy: never add a contact without a profile email
+                sniffed = script_lang(blob)
+                if sniffed in EXCLUDE_LANGS:
+                    skipped_by_script += 1
+                    continue  # declared language lied — the profile text is Russian
                 if email.lower() in seen_emails:
                     continue  # same person already a contact by email
                 added_logins.add(login)
@@ -413,7 +444,7 @@ def main():
                 rows.append([today, name, c.get("displayname") or login,
                              c.get("maxviewers"), c.get("followers"), email, socials,
                              "Not contacted", f"https://www.twitch.tv/{login}",
-                             (c.get("language") or "").strip().lower()])
+                             sniffed or (c.get("language") or "").strip().lower()])
                 time.sleep(0.3)
             time.sleep(DELAY)
 
