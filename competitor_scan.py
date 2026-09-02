@@ -160,23 +160,44 @@ def creds():
 
 
 def channels_last_day(gid, name):
-    """Channels that streamed the game in the last SCAN_WINDOW day(s), with peak (maxviewers)."""
+    """Channels that streamed the game in the last SCAN_WINDOW day(s), with peak (maxviewers).
+
+    Retries each page instead of abandoning the game on the first hiccup: a single
+    read timeout used to `break` the loop, silently truncating a game's channel list
+    and printing one line nobody reads. How to Fish (11k channels) hit that every
+    run, so two "catch-up" passes in a row collected the same first 727 rows and
+    added nothing. Now a page is retried with backoff, and if it still fails the
+    partial result is flagged loudly.
+    """
     ne = quote(name, safe="")
-    out, start = [], 0
+    out, start, tot = [], 0, None
     while True:
         u = (f"https://sullygnome.com/api/tables/gametables/getgamechannels/{SCAN_WINDOW}/{gid}/{ne}"
              f"/0/1/3/desc/{start}/100")
-        try:
-            j = requests.get(u, headers=SULLY_H, timeout=25).json()
-        except Exception as e:  # noqa: BLE001
-            print(f"    sully error {gid}: {e}"); break
+        j = None
+        for attempt in range(1, 5):
+            try:
+                j = requests.get(u, headers=SULLY_H, timeout=45).json()
+                break
+            except Exception as e:  # noqa: BLE001
+                wait = DELAY * attempt * 2
+                print(f"    {name}: page @{start} attempt {attempt}/4 failed ({e}); "
+                      f"retrying in {wait:.0f}s")
+                time.sleep(wait)
+        if j is None:
+            print(f"    !! {name}: giving up at offset {start} — list is INCOMPLETE "
+                  f"({len(out)} of {tot if tot is not None else '?'} fetched)")
+            break
         batch = j.get("data", [])
         out.extend(batch)
-        tot = j.get("recordsTotal", 0)
+        if tot is None:
+            tot = j.get("recordsTotal", 0)
         start += 100
         if not batch or start >= tot:
             break
         time.sleep(DELAY)
+    if tot and len(out) < tot:
+        print(f"    WARNING {name}: fetched {len(out)}/{tot} channels")
     return out
 
 
