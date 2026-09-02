@@ -69,6 +69,14 @@ GAMES = {
     105461: "Palworld", 220677: "Librarian: Tidy Up the Arcane Library!",
     218839: "Friendly Steps", 184398: "A Game About Digging A Hole",
     222879: "A Game About Chopping Trees",
+    # Four is a Party 2025 (Daedalic co-op event) — added 2026-09-02
+    21076: "Golf With Your Friends",
+    223143: "The Mound: Omen of Cthulhu",
+    185351: "Guilty as Sock!",
+    181873: "The Headliners",
+    150543: "Make Way",
+    132676: "Solarpunk",
+    125558: "King of the Castle",
 }
 HEADER = ["Capture date", "Competitor game", "Streamer", "Peak viewers",
           "Followers", "Email", "Socials", "Status"]
@@ -89,6 +97,13 @@ GAME_COLORS = {
     "Palworld": "C5E1A5", "Librarian: Tidy Up the Arcane Library!": "B3E5FC",
     "Friendly Steps": "F8BBD0", "A Game About Digging A Hole": "D7CCC8",
     "A Game About Chopping Trees": "DCEDC8",
+    "Golf With Your Friends": "FFCDD2",
+    "The Mound: Omen of Cthulhu": "C5CAE9",
+    "Guilty as Sock!": "FFF9C4",
+    "The Headliners": "B2DFDB",
+    "Make Way": "F0C0A8",
+    "Solarpunk": "AED581",
+    "King of the Castle": "E1BEE7",
 }
 
 SULLY_H = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
