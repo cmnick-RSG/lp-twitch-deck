@@ -32,6 +32,7 @@ SHEET_ID = "11x1FDXRGDZIKuyakmEjt2C5LrXC1-42K9eDdXkyTKuQ"      # MasterCRM
 # re-adding them to Competitor Coverage as "new" every run.
 EA_SHEET_ID = "1Vc3neddP-H0ANxKk96cDNm8HoIPz03fA6hilX3CXuxY"
 TAB = "Competitor Coverage"
+CHECKPOINT = os.environ.get("LP_CHECKPOINT", "competitor_scan_rows.json")
 THRESHOLD = int(os.environ.get("LP_COMP_MIN", "100"))
 MIN_FOLL = int(os.environ.get("LP_MIN_FOLLOWERS", "1000"))  # drop fake/botted low-follower channels
 # languages we no longer source into the CRM (SullyGnome `language` field, lowercased).
@@ -275,6 +276,25 @@ def _hyperlink_logins(sh, tabs=None):
     return out
 
 
+def gs(fn, tries=6, what=""):
+    """Google Sheets calls fail with transient 5xx/429s. A single 503 used to kill
+    main() at the write step AFTER a multi-hour scrape (2026-09-03: 40 games, ~390k
+    channels paginated, then `sh.worksheet(TAB)` 503'd and every collected row was
+    lost). Retry with growing backoff instead."""
+    for a in range(1, tries + 1):
+        try:
+            return fn()
+        except Exception as e:                                    # noqa: BLE001
+            code = getattr(getattr(e, "response", None), "status_code", None)
+            transient = code in (429, 500, 502, 503, 504) or "503" in str(e) or "500" in str(e)
+            if a == tries or not transient:
+                raise
+            wait = min(60, 4 * a * a)
+            print(f"    sheets{' ' + what if what else ''}: attempt {a}/{tries} "
+                  f"failed ({code or str(e)[:40]}); retrying in {wait}s", flush=True)
+            time.sleep(wait)
+
+
 def crm_seen(*books):
     """Every Twitch login + email already present in ANY tab of the given books.
 
@@ -462,9 +482,9 @@ def highlight_langs(sh, cc, start_row0, rows):
 
 def main():
     gc = gspread.authorize(creds())
-    sh = gc.open_by_key(SHEET_ID)
+    sh = gs(lambda: gc.open_by_key(SHEET_ID), what="open MasterCRM")
     try:
-        ea = gc.open_by_key(EA_SHEET_ID)
+        ea = gs(lambda: gc.open_by_key(EA_SHEET_ID), what="open outreach")
     except Exception as e:  # noqa: BLE001 — never let a dedup source break the run
         print(f"WARN: outreach book unreachable ({e}); deduping against MasterCRM only")
         ea = None
@@ -510,23 +530,44 @@ def main():
             time.sleep(DELAY)
 
     rows.sort(key=lambda r: -(r[3] or 0))
-    cc = sh.worksheet(TAB)
+    # Persist before touching Sheets: the scrape above costs hours, the write costs
+    # seconds, and it is the write that fails. LP_FROM_CHECKPOINT=1 replays this file
+    # straight to the sheet with no re-scraping.
+    try:
+        with open(CHECKPOINT, "w", encoding="utf-8") as fh:
+            json.dump(rows, fh, ensure_ascii=False)
+        print(f"checkpoint: {len(rows)} rows -> {CHECKPOINT}", flush=True)
+    except Exception as e:                                        # noqa: BLE001
+        print(f"!! could not write checkpoint: {e}", flush=True)
+    write_rows(sh, rows)
+
+
+def write_rows(sh, rows):
+    cc = gs(lambda: sh.worksheet(TAB), what="open tab")
     # Only seed the header on a genuinely empty tab. Nikita renames columns and
     # appends his own (Status EA, Content Status, Status EA EVENT, Date...), and a
     # blind rewrite of A1:H1 silently reverted them every run.
-    if not cc.get_all_values():
-        cc.update(values=[HEADER], range_name="A1")
-    start = len(cc.get_all_values())   # 0-based index of the first new row
+    if not gs(lambda: cc.get_all_values(), what="read tab"):
+        gs(lambda: cc.update(values=[HEADER], range_name="A1"), what="header")
+    start = len(gs(lambda: cc.get_all_values(), what="read tab"))
     if rows:
-        cc.append_rows([r[:8] for r in rows], value_input_option="USER_ENTERED")
-    beautify(sh, cc)
+        gs(lambda: cc.append_rows([r[:8] for r in rows],
+                                  value_input_option="USER_ENTERED"), what="append")
+    gs(lambda: beautify(sh, cc), what="beautify")
     if rows:
-        link_streamer(sh, cc.id, start, [(r[2], r[8]) for r in rows])
-        highlight_langs(sh, cc, start, rows)
+        gs(lambda: link_streamer(sh, cc.id, start, [(r[2], r[8]) for r in rows]), what="links")
+        gs(lambda: highlight_langs(sh, cc, start, rows), what="highlight")
     print(f"\nAppended {len(rows)} NEW competitor streamers to '{TAB}'.")
     for r in rows[:10]:
         print(f"  {r[1]:24.24} {str(r[2])[:20]:20} peak={r[3]} foll={r[4]} email={'yes' if r[5] else '-'}")
 
 
 if __name__ == "__main__":
-    main()
+    if os.environ.get("LP_FROM_CHECKPOINT") == "1":
+        with open(CHECKPOINT, encoding="utf-8") as fh:
+            saved = json.load(fh)
+        print(f"replaying {len(saved)} checkpointed rows into '{TAB}' (no scraping)")
+        write_rows(gs(lambda: gspread.authorize(creds()).open_by_key(SHEET_ID)), saved)
+        print(f"Appended {len(saved)} NEW competitor streamers to '{TAB}'.")
+    else:
+        main()
