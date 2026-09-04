@@ -46,8 +46,8 @@ HIGHLIGHT_LANGS = {"ukrainian": "CFE2F3"}
 SCAN_WINDOW = int(os.environ.get("LP_SCAN_WINDOW", "1"))
 # optional: restrict a run to specific SullyGnome game ids (comma/space separated).
 # empty = scan all GAMES. Used for targeted backfills of just the new competitors.
-ONLY_GAMES = {int(x) for x in re.split(r"[,\s]+", os.environ.get("LP_ONLY_GAMES", ""))
-              if x.strip().isdigit()}
+_ONLY_RAW = [x for x in re.split(r"[,\s]+", os.environ.get("LP_ONLY_GAMES", "")) if x]
+ONLY_GAMES = [int(x) for x in _ONLY_RAW]   # ordered: a cut-short sweep does these first
 STATUSES = ["Not contacted", "Contacted", "Keys Given (PT)", "Keys Given (Playtest)"]
 try:
     from zoneinfo import ZoneInfo
@@ -78,6 +78,12 @@ GAMES = {
     150543: "Make Way",
     132676: "Solarpunk",
     125558: "King of the Castle",
+    # added 2026-09-04
+    197799: "Among Us",          # Twitch 919012536 - duplicate category, catches mis-clicks
+    47418: "Among Us (main)",    # Twitch 510218 - the real 2018 game
+    170262: "Chained Together",
+    220086: "Bills Must Be Paid",
+    210185: "Big Walk",
 }
 HEADER = ["Capture date", "Competitor game", "Streamer", "Peak viewers",
           "Followers", "Email", "Socials", "Status"]
@@ -105,6 +111,11 @@ GAME_COLORS = {
     "Make Way": "F0C0A8",
     "Solarpunk": "AED581",
     "King of the Castle": "E1BEE7",
+    "Among Us": "FFAB91",
+    "Among Us (main)": "FF8A65",
+    "Chained Together": "9FA8DA",
+    "Bills Must Be Paid": "80CBC4",
+    "Big Walk": "BCAAA4",
 }
 
 SULLY_H = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -255,6 +266,29 @@ def enrich(login):
         return "", "", ""
 
 
+# A creator already in the CRM under a NON-Twitch link was invisible to dedup:
+# VEGETTA777 sat in "Palaye Creators" as a YouTube link with a different email, so
+# neither the twitch.tv login match nor the email match fired and the scan re-added
+# him as a fresh lead (2026-09-04) — a partner-owned contact we must never mail.
+# Harvest the handle from any platform URL and compare that to the twitch login.
+HANDLE_RE = re.compile(
+    r"(?:twitch\.tv|youtube\.com|kick\.com|tiktok\.com|twitter\.com|x\.com|instagram\.com)"
+    r"/(?:@|user/|c/|channel/)?([A-Za-z0-9_.\-]{3,30})", re.I)
+HANDLE_STOP = {"watch", "channel", "playlist", "results", "embed", "shorts", "feed",
+               "about", "videos", "live", "user", "home", "explore", "hashtag",
+               "intent", "share", "reel", "stories", "status", "invite"}
+
+
+def handles(text):
+    """Normalised creator handles found in any platform URL inside `text`."""
+    out = set()
+    for m in HANDLE_RE.findall(text or ""):
+        k = re.sub(r"[^a-z0-9]", "", m.lower())
+        if k and k not in HANDLE_STOP:
+            out.add(k)
+    return out
+
+
 def _hyperlink_logins(sh, tabs=None):
     """Twitch logins from cells' derived hyperlink field (catches rich-text links
     like the Streamer/Name cells we insert). One metadata call for the whole book."""
@@ -267,10 +301,7 @@ def _hyperlink_logins(sh, tabs=None):
             for d in s.get("data", []):
                 for row in d.get("rowData", []):
                     for v in row.get("values", []):
-                        mm = re.search(r"twitch\.tv/([a-z0-9_]{2,25})",
-                                       (v.get("hyperlink") or "").lower())
-                        if mm:
-                            out.add(mm.group(1))
+                        out |= handles(v.get("hyperlink") or "")
     except Exception:  # noqa: BLE001
         pass
     return out
@@ -296,7 +327,7 @@ def gs(fn, tries=6, what=""):
 
 
 def crm_seen(*books):
-    """Every Twitch login + email already present in ANY tab of the given books.
+    """Every creator handle + email already present in ANY tab of the given books.
 
     Read cells as FORMULA so twitch.tv URLs inside HYPERLINK() formulas are exposed,
     and harvest each book's derived hyperlink field as well so inserted rich-text
@@ -311,7 +342,7 @@ def crm_seen(*books):
             except Exception:  # noqa: BLE001
                 vals = w.get_all_values()
             text = "\n".join("\t".join(str(c) for c in r) for r in vals).lower()
-            logins |= set(re.findall(r"twitch\.tv/([a-z0-9_]{2,25})", text))
+            logins |= handles(text)
             emails |= set(re.findall(r"[\w.\-+]+@[\w.\-]+\.[a-z]{2,}", text))
         logins |= _hyperlink_logins(sh)
     return logins, emails
@@ -498,8 +529,10 @@ def main():
     skipped_by_script = 0
     with requests.Session() as s:
         s.headers.update(SULLY_H)
-        for gid, name in GAMES.items():
-            if ONLY_GAMES and gid not in ONLY_GAMES:
+        order = ([(g, GAMES[g]) for g in ONLY_GAMES if g in GAMES]
+                 if ONLY_GAMES else list(GAMES.items()))
+        for gid, name in order:
+            if False:
                 continue
             chans = [c for c in channels_last_day(gid, name)
                      if (c.get("maxviewers") or 0) >= THRESHOLD
@@ -528,6 +561,12 @@ def main():
                              sniffed or (c.get("language") or "").strip().lower()])
                 time.sleep(0.3)
             time.sleep(DELAY)
+            try:
+                with open(CHECKPOINT, "w", encoding="utf-8") as fh:
+                    json.dump(rows, fh, ensure_ascii=False)
+                print(f"    [checkpoint {len(rows)} rows after {name}]", flush=True)
+            except Exception as e:                                # noqa: BLE001
+                print(f"    !! checkpoint failed: {e}", flush=True)
 
     rows.sort(key=lambda r: -(r[3] or 0))
     # Persist before touching Sheets: the scrape above costs hours, the write costs
