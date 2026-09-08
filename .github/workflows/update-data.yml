@@ -144,16 +144,32 @@ jobs:
             echo "No VERCEL_DEPLOY_HOOK secret set — relying on Vercel auto-deploy."
           fi
 
-      # ---- Unrelated side-job: competitor coverage scan --------------------
-      # Runs DEAD LAST so the entire dashboard path (collect → commit → deploy)
-      # is already finished and untouched before this starts. Fully isolated:
-      # it reads SullyGnome/Twitch and writes ONLY to a Google Sheet — it never
-      # touches repo files, data.json, or git. if: always() = runs even if a
-      # dashboard step failed; continue-on-error = its failure can't red this
-      # run. Only fires on the 06:00 UTC hit (09:00 Kyiv); other 2h runs skip
-      # instantly. Re-runs are harmless (deduped).
-      - name: Competitor coverage scan (isolated, 06:00 UTC slot only)
-        if: always()
+  # Competitor coverage scan — its OWN job, deliberately WITHOUT `needs: guard`.
+  #
+  # This used to be the last STEP of `refresh`, which quietly made it collateral
+  # damage of the SullyGnome self-throttle. The guard skips `refresh` whenever
+  # data.json is younger than 5h; cron-job.org fires this workflow every 2h; so
+  # by 06:00 UTC — the ONLY hour the scan is allowed to run — the 04:00 trigger
+  # had usually just refreshed data.json, the guard said "still fresh", and the
+  # whole job (scan included) was skipped. `if: always()` does NOT save a step
+  # inside a job that never starts, so the hour gate has to live at job level.
+  # Cost of the bug: the daily backup path never fired once, leaving the drifty
+  # standalone competitor-scan.yml cron as the only thing actually running the
+  # scan (noticed 2026-09-08).
+  #
+  # Fully isolated: reads SullyGnome + Twitch, writes ONLY to a Google Sheet.
+  # It never touches repo files, data.json, or git, so it cannot affect the
+  # dashboard path. Re-runs are harmless (everything is deduped).
+  competitor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Competitor coverage scan (06:00-07:59 UTC slot only)
         continue-on-error: true
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
@@ -161,12 +177,17 @@ jobs:
           LP_MIN_FOLLOWERS: "1000"
         run: |
           H=$(date -u +%H)
-          # accept 06 OR 07: GitHub schedules drift 20-50 min, and a run that
-          # slips past the hour must not silently skip the daily scan.
-          if [ "$H" = "06" ] || [ "$H" = "07" ]; then
-            echo "06:00 UTC slot — running competitor coverage scan"
-            pip install gspread google-auth
-            python competitor_scan.py
-          else
-            echo "hour=$H UTC (not 06) — skipping competitor scan this run"
-          fi
+          # 06/07/08 accepted: GitHub schedules drift badly on this repo (the
+          # standalone competitor-scan.yml cron asks for 06:00 UTC and has been
+          # landing 09:50-11:22 all week), and a slipped trigger must not skip
+          # the daily scan.
+          case "$H" in
+            06|07|08)
+              echo "hour=$H UTC — running competitor coverage scan"
+              pip install requests gspread google-auth
+              python competitor_scan.py
+              ;;
+            *)
+              echo "hour=$H UTC — outside the daily slot, skipping"
+              ;;
+          esac
