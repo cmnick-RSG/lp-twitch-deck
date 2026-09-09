@@ -583,6 +583,28 @@ def main():
 
 def write_rows(sh, rows):
     cc = gs(lambda: sh.worksheet(TAB), what="open tab")
+    # Re-check against the LIVE tab immediately before appending. The dedup index is
+    # built at the start of a run and a run can last hours, so anything written to
+    # the tab meanwhile is invisible to it. On 2026-09-04 a manual 30-day sweep
+    # overlapped the 06:00 CI run: both indexed the tab before either wrote, and five
+    # creators (kariithow, AlexiaRaye, Amph, bowuh, NurseRaquel) landed twice. The
+    # duplicates never caused a double mailing (the campaign builder dedups by email
+    # again) but they left the CRM reading "Not contacted" for people already mailed.
+    if rows:
+        live = gs(lambda: cc.get_values(value_render_option="FORMULA"), what="recheck")
+        blob = chr(10).join(chr(9).join(str(c) for c in r) for r in live)
+        have_h = handles(blob)
+        have_e = {m.lower() for m in re.findall(r"[\w.\-+]+@[\w.\-]+\.[a-z]{2,}", blob, re.I)}
+        keep = []
+        for r in rows:
+            login = re.sub(r"[^a-z0-9]", "", str(r[8]).rsplit("/", 1)[-1].lower())
+            if login in have_h or str(r[5]).strip().lower() in have_e:
+                continue
+            keep.append(r)
+        if len(keep) != len(rows):
+            print("pre-write recheck: dropped %d rows that appeared in the tab while "
+                  "this run was in flight" % (len(rows) - len(keep)), flush=True)
+        rows = keep
     # Only seed the header on a genuinely empty tab. Nikita renames columns and
     # appends his own (Status EA, Content Status, Status EA EVENT, Date...), and a
     # blind rewrite of A1:H1 silently reverted them every run.
