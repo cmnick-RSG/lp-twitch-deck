@@ -326,6 +326,123 @@ def gs(fn, tries=6, what=""):
             time.sleep(wait)
 
 
+# ---- deep email mining ------------------------------------------------------
+# Only 27% of channels new to us carry an email on Twitch; 70% carry none but do
+# link a linktree / X / personal site (measured 2026-09-10 over 260 channels).
+# Mining those links recovered 283 contacts in one 7-day sweep - including shroud
+# (11.3M followers), Rakin (1.7M) and Jay3 (897k), all of whom we had been silently
+# dropping for months. X alone supplied 200 of the 283: it serves og:description,
+# bio and all, to a plain GET, and the Twitterbot UA gets a 26KB page instead of
+# 198KB. Set LP_DEEP_EMAIL=0 to switch this off (e.g. if CI's IP starts getting 403s).
+DEEP_EMAIL = os.environ.get("LP_DEEP_EMAIL", "1") == "1"
+WEB_UA = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                         "(KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"),
+          "Accept": "text/html,application/xhtml+xml", "Accept-Language": "en-US,en;q=0.9"}
+X_UA = {"User-Agent": "Twitterbot/1.0", "Accept": "text/html"}
+EMAIL_RE = re.compile(r"[\w.\-+]+@[\w.\-]+\.[a-z]{2,}", re.I)
+URL_RE = re.compile(r"https?://[^\s|,)\"']+", re.I)
+X_HOST = re.compile(r"^https?://(www\.)?(x|twitter)\.com/", re.I)
+# these never hand an email to a plain fetch - don't waste the request
+DEAD_HOST = re.compile(r"(instagram\.com|tiktok\.com|discord\.(gg|com)|t\.me|telegram|"
+                       r"facebook\.com|reddit\.com|twitch\.tv|youtube\.com|youtu\.be|spotify|"
+                       r"steamcommunity|throne\.com|amazon\.|tipeee|streamlabs|streamelements|"
+                       r"ko-fi|patreon|paypal|donationalerts|beacons\.ai|allmylinks)", re.I)
+BIO_HOST = re.compile(r"(linktr\.ee|solo\.to|carrd\.co|bio\.link|lit\.link|linkr\.bio|"
+                      r"campsite\.bio|lnk\.bio|link\.me|bsky\.app)", re.I)
+# an address counts only if it is plausibly THE CREATOR'S. Without this the first
+# pass happily returned your@email.com, example@wallhack.com, the aggregator's own
+# business@backloggd.com and a courier's 711ec@sp88.com - 5 junk out of 11.
+CONSUMER_MAIL = re.compile(r"@(gmail|googlemail|outlook|hotmail|live|msn|yahoo|ymail|proton"
+                           r"|protonmail|pm\.me|icloud|me\.com|aol|gmx|web\.de|mail\.ru|yandex"
+                           r"|zoho|fastmail|tutanota|seznam|naver|daum|qq\.com|163\.com|126\.com"
+                           r"|bk\.ru|inbox\.|list\.ru|freenet|t-online)\.", re.I)
+PLACEHOLDER_MAIL = re.compile(r"^(example|your|youremail|email|e?mail|name|username|user|test"
+                              r"|sample|demo|firstname|lastname|foo|bar|xxx|none|address)@"
+                              r"|@(example|domain|yourdomain|email|test|sentry|wixpress|godaddy"
+                              r"|squarespace|shopify|crowdcontrol|streamlabs|streamelements"
+                              r"|backloggd|throne)\.", re.I)
+
+
+def _name_tokens(*names):
+    out = set()
+    for n in names:
+        low = str(n or "").lower()
+        k = re.sub(r"[^a-z0-9]", "", low)
+        if len(k) >= 4:
+            out.add(k)
+            stem = k.rstrip("0123456789")        # "peereira7" -> "peereira"
+            if len(stem) >= 4:
+                out.add(stem)
+        for piece in re.split(r"[^a-z0-9]+", low):
+            if len(piece) >= 4:
+                out.add(piece)
+    return out
+
+
+def _mail_score(email, toks):
+    """3 = personal mailbox that also matches the channel name, 2 = one of the two."""
+    if PLACEHOLDER_MAIL.search(email) or JUNK_EMAIL.search(email):
+        return 0
+    flat = re.sub(r"[^a-z0-9]", "", email.lower())
+    local = re.sub(r"[^a-z0-9]", "", email.split("@", 1)[0].lower())
+    # match both ways: the channel name inside the address (aciixx@streamermerch.de)
+    # and the address inside the channel name (peereira@... for channel peereira7)
+    named = (any(t in flat for t in toks)
+             or (len(local) >= 4 and any(local in t for t in toks)))
+    consumer = bool(CONSUMER_MAIL.search(email))
+    return 3 if (consumer and named) else (2 if (consumer or named) else 0)
+
+
+def _best_mail(text, toks):
+    cands = {e.strip().strip(".,;:").lower() for e in EMAIL_RE.findall(text or "")}
+    cands = {e for e in cands if len(e) <= 80
+             and not re.search(r"\.(png|jpe?g|gif|svg|webp|css|js)$", e)}
+    ranked = sorted(((_mail_score(e, toks), e) for e in cands), key=lambda x: -x[0])
+    return ranked[0][1] if ranked and ranked[0][0] >= 2 else None
+
+
+def _get(url, timeout=15):
+    try:
+        r = requests.get(url, headers=(X_UA if X_HOST.search(url) else WEB_UA),
+                         timeout=timeout, allow_redirects=True)
+        return r.text if r.status_code == 200 else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def deep_email(socials, login, display):
+    """Dig an email out of the channel's own links when Twitch shows none."""
+    if not DEEP_EMAIL or not socials:
+        return None
+    toks = _name_tokens(login, display)
+    m = re.search(r"mailto:([\w.\-+]+@[\w.\-]+\.[a-z]{2,})", socials, re.I)
+    if m and _mail_score(m.group(1).lower(), toks) >= 2:
+        return m.group(1).lower()
+    hit = _best_mail(socials, toks)
+    if hit:
+        return hit
+    urls = [u.rstrip(".,)") for u in URL_RE.findall(socials) if not DEAD_HOST.search(u)]
+    urls.sort(key=lambda x: 0 if BIO_HOST.search(x) else (1 if X_HOST.search(x) else 2))
+    for u in urls[:4]:
+        page = _get(u)
+        time.sleep(0.4)
+        if not page:
+            continue
+        hit = _best_mail(page, toks)
+        if hit:
+            return hit
+        if not BIO_HOST.search(u) and not X_HOST.search(u):
+            base = re.match(r"(https?://[^/]+)", u)
+            if base:
+                for path in ("/contact", "/about", "/impressum", "/kontakt", "/contacto"):
+                    page = _get(base.group(1) + path, timeout=10)
+                    time.sleep(0.3)
+                    if page:
+                        hit = _best_mail(page, toks)
+                        if hit:
+                            return hit
+    return None
+
 def crm_seen(*books):
     """Every creator handle + email already present in ANY tab of the given books.
 
@@ -527,6 +644,7 @@ def main():
     today = datetime.now(TZ).strftime("%Y-%m-%d")
     rows, added_logins = [], set()
     skipped_by_script = 0
+    deep_hits = 0
     with requests.Session() as s:
         s.headers.update(SULLY_H)
         order = ([(g, GAMES[g]) for g in ONLY_GAMES if g in GAMES]
@@ -545,6 +663,10 @@ def main():
                 if not login or login in seen_logins or login in added_logins:
                     continue
                 email, socials, blob = enrich(login)
+                if not email:
+                    email = deep_email(socials, login, c.get("displayname"))
+                    if email:
+                        deep_hits += 1
                 if not email:
                     continue  # policy: never add a contact without a profile email
                 sniffed = script_lang(blob, c.get("language"))
