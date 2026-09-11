@@ -253,7 +253,7 @@ def enrich(login):
                       "twitter", "x.com", "youtube", "youtu.be", "tiktok"):
                 if k in low and k not in socials:
                     socials[k] = lk
-        emails = sorted(set(re.findall(r"[\w.\-+]+@[\w.\-]+\.[a-zA-Z]{2,}",
+        emails = sorted(set(emails_in(
                                        (u.get("description") or "") + " " + ptext)))
         # drop non-contact junk: Google Calendar feed ids, image files, hash-like local parts
         emails = [e for e in emails if not JUNK_EMAIL.search(e)]
@@ -326,6 +326,62 @@ def gs(fn, tries=6, what=""):
             time.sleep(wait)
 
 
+# ---- email extraction -------------------------------------------------------
+# Two bugs bit us here, both from a too-permissive pattern (found 2026-09-11 when
+# a send bounced off OCrayyyGaming@gmail.comrawr):
+#   1. `\w` is Unicode-aware in Python, so a bio reading "聯絡信箱twitch.ray4013@gmail.com"
+#      yielded the CJK prefix as part of the local part.
+#   2. the TLD was `[a-z]{2,}` with no upper bound, so "gmail.com" followed by glued
+#      text ("...@gmail.comrawr", "@gmail.comkick", "@outlook.compfp") matched whole.
+# Hence: ASCII-only classes, and the TLD validated against the IANA list. When the
+# TLD is unknown but starts with a real one and the leftover is >= 2 chars, it is
+# glued text and gets trimmed; a 1-char leftover is left alone because that is far
+# more likely a human typo (gmail.con) than our parsing.
+EMAIL_RE = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,24}")
+
+
+def _load_tlds():
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "tlds.txt"),
+                  encoding="utf-8") as fh:
+            return frozenset(l.strip().lower() for l in fh if l.strip())
+    except Exception:  # noqa: BLE001
+        return frozenset()
+
+
+TLDS = _load_tlds()
+
+
+def clean_email(raw):
+    """Pull one well-formed address out of `raw`, or None."""
+    m = EMAIL_RE.search(str(raw or ""))
+    if not m:
+        return None
+    e = m.group(0).strip(".,;:-").lower()
+    local, _, domain = e.partition("@")
+    if not local or "." not in domain:
+        return None
+    head, _, tld = domain.rpartition(".")
+    if TLDS and tld not in TLDS:
+        cands = [tld[:n] for n in range(2, len(tld)) if tld[:n] in TLDS]
+        if not cands:
+            return None
+        best = max(cands, key=len)
+        if len(tld) - len(best) < 2:
+            return None                      # 1 leftover char - a typo, not our glue
+        e = local + "@" + head + "." + best
+    return None if JUNK_EMAIL.search(e) else e
+
+
+def emails_in(text):
+    """Every distinct well-formed address in `text`."""
+    out = []
+    for m in EMAIL_RE.finditer(str(text or "")):
+        e = clean_email(m.group(0))
+        if e and e not in out:
+            out.append(e)
+    return out
+
 # ---- deep email mining ------------------------------------------------------
 # Only 27% of channels new to us carry an email on Twitch; 70% carry none but do
 # link a linktree / X / personal site (measured 2026-09-10 over 260 channels).
@@ -339,7 +395,6 @@ WEB_UA = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/
                          "(KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"),
           "Accept": "text/html,application/xhtml+xml", "Accept-Language": "en-US,en;q=0.9"}
 X_UA = {"User-Agent": "Twitterbot/1.0", "Accept": "text/html"}
-EMAIL_RE = re.compile(r"[\w.\-+]+@[\w.\-]+\.[a-z]{2,}", re.I)
 URL_RE = re.compile(r"https?://[^\s|,)\"']+", re.I)
 X_HOST = re.compile(r"^https?://(www\.)?(x|twitter)\.com/", re.I)
 # these never hand an email to a plain fetch - don't waste the request
@@ -394,7 +449,7 @@ def _mail_score(email, toks):
 
 
 def _best_mail(text, toks):
-    cands = {e.strip().strip(".,;:").lower() for e in EMAIL_RE.findall(text or "")}
+    cands = set(emails_in(text))
     cands = {e for e in cands if len(e) <= 80
              and not re.search(r"\.(png|jpe?g|gif|svg|webp|css|js)$", e)}
     ranked = sorted(((_mail_score(e, toks), e) for e in cands), key=lambda x: -x[0])
@@ -415,9 +470,11 @@ def deep_email(socials, login, display):
     if not DEEP_EMAIL or not socials:
         return None
     toks = _name_tokens(login, display)
-    m = re.search(r"mailto:([\w.\-+]+@[\w.\-]+\.[a-z]{2,})", socials, re.I)
-    if m and _mail_score(m.group(1).lower(), toks) >= 2:
-        return m.group(1).lower()
+    m = re.search(r"mailto:(\S+)", socials, re.I)
+    if m:
+        hit = clean_email(m.group(1))
+        if hit and _mail_score(hit, toks) >= 2:
+            return hit
     hit = _best_mail(socials, toks)
     if hit:
         return hit
@@ -460,7 +517,7 @@ def crm_seen(*books):
                 vals = w.get_all_values()
             text = "\n".join("\t".join(str(c) for c in r) for r in vals).lower()
             logins |= handles(text)
-            emails |= set(re.findall(r"[\w.\-+]+@[\w.\-]+\.[a-z]{2,}", text))
+            emails |= set(emails_in(text))
         logins |= _hyperlink_logins(sh)
     return logins, emails
 
@@ -716,7 +773,7 @@ def write_rows(sh, rows):
         live = gs(lambda: cc.get_values(value_render_option="FORMULA"), what="recheck")
         blob = chr(10).join(chr(9).join(str(c) for c in r) for r in live)
         have_h = handles(blob)
-        have_e = {m.lower() for m in re.findall(r"[\w.\-+]+@[\w.\-]+\.[a-z]{2,}", blob, re.I)}
+        have_e = set(emails_in(blob))
         keep = []
         for r in rows:
             login = re.sub(r"[^a-z0-9]", "", str(r[8]).rsplit("/", 1)[-1].lower())
