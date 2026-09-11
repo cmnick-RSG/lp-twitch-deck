@@ -89,6 +89,10 @@ GAMES = {
     81530: "It Takes Two",
     185236: "Split Fiction",
     227589: "Shady Job",
+    # added 2026-09-11 (batch 2)
+    1695: "Gang Beasts",
+    173729: "Supermarket Together",
+    58724: "Party Animals",
 }
 HEADER = ["Capture date", "Competitor game", "Streamer", "Peak viewers",
           "Followers", "Email", "Socials", "Status"]
@@ -125,6 +129,9 @@ GAME_COLORS = {
     "It Takes Two": "EF9A9A",
     "Split Fiction": "90CAF9",
     "Shady Job": "B39DDB",
+    "Gang Beasts": "EC407A",
+    "Supermarket Together": "5C6BC0",
+    "Party Animals": "66BB6A",
 }
 
 SULLY_H = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
