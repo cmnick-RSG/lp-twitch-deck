@@ -766,10 +766,10 @@ def main():
         print(f"checkpoint: {len(rows)} rows -> {CHECKPOINT}", flush=True)
     except Exception as e:                                        # noqa: BLE001
         print(f"!! could not write checkpoint: {e}", flush=True)
-    write_rows(sh, rows)
+    write_rows(sh, rows, deep_hits)
 
 
-def write_rows(sh, rows):
+def write_rows(sh, rows, deep_hits=0):
     cc = gs(lambda: sh.worksheet(TAB), what="open tab")
     # Re-check against the LIVE tab immediately before appending. The dedup index is
     # built at the start of a run and a run can last hours, so anything written to
@@ -806,7 +806,9 @@ def write_rows(sh, rows):
     if rows:
         gs(lambda: link_streamer(sh, cc.id, start, [(r[2], r[8]) for r in rows]), what="links")
         gs(lambda: highlight_langs(sh, cc, start, rows), what="highlight")
-    print(f"\nAppended {len(rows)} NEW competitor streamers to '{TAB}'.")
+    print(f"\nAppended {len(rows)} NEW competitor streamers to '{TAB}'."
+          + (f" ({deep_hits} of them via socials/X mining — no Twitch-profile email)"
+             if deep_hits else ""))
     for r in rows[:10]:
         print(f"  {r[1]:24.24} {str(r[2])[:20]:20} peak={r[3]} foll={r[4]} email={'yes' if r[5] else '-'}")
 
