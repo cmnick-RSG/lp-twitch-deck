@@ -84,6 +84,11 @@ GAMES = {
     170262: "Chained Together",
     220086: "Bills Must Be Paid",
     210185: "Big Walk",
+    # added 2026-09-11
+    214435: "WheelMates",
+    81530: "It Takes Two",
+    185236: "Split Fiction",
+    227589: "Shady Job",
 }
 HEADER = ["Capture date", "Competitor game", "Streamer", "Peak viewers",
           "Followers", "Email", "Socials", "Status"]
@@ -116,6 +121,10 @@ GAME_COLORS = {
     "Chained Together": "9FA8DA",
     "Bills Must Be Paid": "80CBC4",
     "Big Walk": "BCAAA4",
+    "WheelMates": "FFE082",
+    "It Takes Two": "EF9A9A",
+    "Split Fiction": "90CAF9",
+    "Shady Job": "B39DDB",
 }
 
 SULLY_H = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
