@@ -492,10 +492,13 @@ def _mail_candidates(text, toks):
     return out
 
 
-def _get(url, timeout=15):
+FETCH_TIMEOUT = float(os.environ.get("LP_FETCH_TIMEOUT", "12"))
+
+
+def _get(url, timeout=None):
     try:
         r = requests.get(url, headers=(X_UA if X_HOST.search(url) else WEB_UA),
-                         timeout=timeout, allow_redirects=True)
+                         timeout=timeout or FETCH_TIMEOUT, allow_redirects=True)
         return r.text if r.status_code == 200 else None
     except Exception:  # noqa: BLE001
         return None
@@ -545,9 +548,9 @@ def deep_email(socials, login, display):
             if best[0] < 3 and not BIO_HOST.search(u) and not X_HOST.search(u):
                 base = re.match(r"(https?://[^/]+)", u)
                 if base:
-                    for path in ("/contact", "/about", "/impressum", "/kontakt", "/contacto"):
-                        page = _get(base.group(1) + path, timeout=10)
-                        time.sleep(0.3)
+                    for path in ("/contact", "/about"):
+                        page = _get(base.group(1) + path)
+                        time.sleep(0.2)
                         if page and consider(page):
                             break
             if best[0] >= 3:
