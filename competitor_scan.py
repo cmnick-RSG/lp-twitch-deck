@@ -217,9 +217,16 @@ def channels_last_day(gid, name):
     """
     ne = quote(name, safe="")
     out, start, tot = [], 0, None
+    stopped_early = False
     while True:
+        # Sort column 5 = maxviewers (peak), descending — verified monotonic. We only
+        # keep channels with peak >= THRESHOLD, so once a page ends below it every
+        # remaining channel is too and we stop. Over a 365-day window this is the
+        # difference between paginating a game's full ~200k roster and just the few
+        # thousand that can qualify (2026-09-14: a full 365d/53-game sweep is ~1.95M
+        # channels / 19k pages / ~5h + IP-ban risk without this; a tiny fraction with).
         u = (f"https://sullygnome.com/api/tables/gametables/getgamechannels/{SCAN_WINDOW}/{gid}/{ne}"
-             f"/0/1/3/desc/{start}/100")
+             f"/0/1/5/desc/{start}/100")
         j = None
         for attempt in range(1, 5):
             try:
@@ -239,10 +246,16 @@ def channels_last_day(gid, name):
         if tot is None:
             tot = j.get("recordsTotal", 0)
         start += 100
+        # peak-desc: the last row of this page is the smallest peak on it. Once that
+        # is below the threshold, the cutoff has been crossed — stop.
+        if batch and (batch[-1].get("maxviewers") or 0) < THRESHOLD:
+            stopped_early = True
+            break
         if not batch or start >= tot:
             break
         time.sleep(DELAY)
-    if tot and len(out) < tot:
+    # Only warn about a short read when we did NOT deliberately stop at the cutoff.
+    if not stopped_early and tot and len(out) < tot:
         print(f"    WARNING {name}: fetched {len(out)}/{tot} channels")
     return out
 
