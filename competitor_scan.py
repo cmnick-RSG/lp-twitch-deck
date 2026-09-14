@@ -467,12 +467,16 @@ def _mail_score(email, toks):
     return 3 if (consumer and named) else (2 if (consumer or named) else 0)
 
 
-def _best_mail(text, toks):
-    cands = set(emails_in(text))
-    cands = {e for e in cands if len(e) <= 80
-             and not re.search(r"\.(png|jpe?g|gif|svg|webp|css|js)$", e)}
-    ranked = sorted(((_mail_score(e, toks), e) for e in cands), key=lambda x: -x[0])
-    return ranked[0][1] if ranked and ranked[0][0] >= 2 else None
+def _mail_candidates(text, toks):
+    """Scored (score, email) pairs (score >= 2 only) found in `text`."""
+    out = []
+    for e in set(emails_in(text)):
+        if len(e) > 80 or re.search(r"\.(png|jpe?g|gif|svg|webp|css|js)$", e):
+            continue
+        s = _mail_score(e, toks)
+        if s >= 2:
+            out.append((s, e))
+    return out
 
 
 def _get(url, timeout=15):
@@ -485,39 +489,57 @@ def _get(url, timeout=15):
 
 
 def deep_email(socials, login, display):
-    """Dig an email out of the channel's own links when Twitch shows none."""
+    """Dig an email out of the channel's own links when Twitch shows none.
+
+    Collects candidates across ALL sources and keeps the highest-scoring one, rather
+    than returning the first link that yields anything. A name-matched consumer
+    mailbox (score 3) always beats a bare consumer mailbox (score 2), even if the
+    bare one appears on an earlier link. Without this, maple_1206 (阿楓轟炸,
+    "maple bombing") was mailed at yatzi2733@gmail.com — a consumer address scraped
+    off a shared bio-link page, scored 2 — while its real address maplebomb1206@gmail.com
+    (score 3, matches the name) sat on lit.link and lost the race (2026-09-11).
+    Only a perfect score-3 short-circuits; a score-2 is returned solely as a
+    last resort after every source is checked.
+    """
     if not DEEP_EMAIL or not socials:
         return None
     toks = _name_tokens(login, display)
+    best = [0, None]  # [score, email]
+
+    def consider(text):
+        for s, e in _mail_candidates(text, toks):
+            if s > best[0]:
+                best[0], best[1] = s, e
+        return best[0] >= 3
+
     m = re.search(r"mailto:(\S+)", socials, re.I)
     if m:
         hit = clean_email(m.group(1))
-        if hit and _mail_score(hit, toks) >= 2:
-            return hit
-    hit = _best_mail(socials, toks)
-    if hit:
-        return hit
-    urls = [u.rstrip(".,)") for u in URL_RE.findall(socials) if not DEAD_HOST.search(u)]
-    urls.sort(key=lambda x: 0 if BIO_HOST.search(x) else (1 if X_HOST.search(x) else 2))
-    for u in urls[:4]:
-        page = _get(u)
-        time.sleep(0.4)
-        if not page:
-            continue
-        hit = _best_mail(page, toks)
         if hit:
-            return hit
-        if not BIO_HOST.search(u) and not X_HOST.search(u):
-            base = re.match(r"(https?://[^/]+)", u)
-            if base:
-                for path in ("/contact", "/about", "/impressum", "/kontakt", "/contacto"):
-                    page = _get(base.group(1) + path, timeout=10)
-                    time.sleep(0.3)
-                    if page:
-                        hit = _best_mail(page, toks)
-                        if hit:
-                            return hit
-    return None
+            s = _mail_score(hit, toks)
+            if s > best[0]:
+                best[0], best[1] = s, hit
+    if best[0] < 3:
+        consider(socials)
+    if best[0] < 3:
+        urls = [u.rstrip(".,)") for u in URL_RE.findall(socials) if not DEAD_HOST.search(u)]
+        urls.sort(key=lambda x: 0 if BIO_HOST.search(x) else (1 if X_HOST.search(x) else 2))
+        for u in urls[:4]:
+            page = _get(u)
+            time.sleep(0.4)
+            if page and consider(page):
+                break
+            if best[0] < 3 and not BIO_HOST.search(u) and not X_HOST.search(u):
+                base = re.match(r"(https?://[^/]+)", u)
+                if base:
+                    for path in ("/contact", "/about", "/impressum", "/kontakt", "/contacto"):
+                        page = _get(base.group(1) + path, timeout=10)
+                        time.sleep(0.3)
+                        if page and consider(page):
+                            break
+            if best[0] >= 3:
+                break
+    return best[1] if best[0] >= 2 else None
 
 def crm_seen(*books):
     """Every creator handle + email already present in ANY tab of the given books.
