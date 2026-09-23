@@ -192,6 +192,24 @@ def script_lang(text, declared=""):
 
 JUNK_EMAIL = re.compile(r"@(group\.)?calendar\.google\.com$|\.(png|jpe?g|gif|webp)$"
                         r"|^[0-9a-f]{20,}@", re.I)
+
+# Agency domains that only ever bounce an autoresponder back at us: mail to them
+# is answered by the agency, not the streamer, so the contact is worthless. A
+# channel whose ONLY address sits here is treated as having no email at all and
+# is skipped (reach it by hand via socials instead).
+# Add more with LP_BLOCKED_DOMAINS="a.com,b.net" (env extends this list).
+BLOCKED_DOMAINS = {"movdi.mx"}
+BLOCKED_DOMAINS |= {d.strip().lower().lstrip("@")
+                    for d in os.environ.get("LP_BLOCKED_DOMAINS", "").split(",")
+                    if d.strip()}
+
+
+def blocked_domain(email):
+    """True when the address sits on a blocked agency domain (or a subdomain)."""
+    dom = str(email or "").rpartition("@")[2].lower()
+    return any(dom == b or dom.endswith("." + b) for b in BLOCKED_DOMAINS)
+
+
 DELAY = float(os.environ.get("LP_DELAY", "1.0"))
 
 
@@ -402,7 +420,9 @@ def clean_email(raw):
         if len(tld) - len(best) < 2:
             return None                      # 1 leftover char - a typo, not our glue
         e = local + "@" + head + "." + best
-    return None if JUNK_EMAIL.search(e) else e
+    if JUNK_EMAIL.search(e) or blocked_domain(e):
+        return None
+    return e
 
 
 def emails_in(text):
