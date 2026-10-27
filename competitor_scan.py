@@ -102,6 +102,23 @@ GAMES = {
     227832: "Probably Stolen",   # Twitch 366412048 - demo streams land here
     1996: "Cookie Clicker",      # Twitch 324573 - the 650600069 duplicate is empty
     232445: "Fart Together",     # Twitch 321313344 - demo streams land here
+    # added 2026-10-27 - picked from MasterCRM "Bundles": co-op horror / party chaos
+    # games with >= 8 qualifying channels in 30 days that were not yet in our books
+    222765: "Invokyr",
+    59667: "The Outlast Trials",
+    207990: "Fears to Fathom - Scratch Creek",
+    46245: "Pummel Party",
+    225624: "Dawson Oaks Trailer Park",
+    136801: "Demonologist",
+    43758: "Overcooked! 2",
+    55155: "Sons of the Forest",
+    229476: "the cabin game",
+    194988: "GONE Fishing",      # Twitch 253234167; 1377029155 is a 1979 BASIC game
+    67039: "DEVOUR",             # the 100621 duplicate is empty
+    170927: "Species: Unknown",
+    230450: "Dumb Ways to Build",
+    161273: "The Other Side",    # Twitch 618479630, the 2025 ghost-hunting co-op
+    180198: "Cursed Companions",
 }
 HEADER = ["Capture date", "Competitor game", "Streamer", "Peak viewers",
           "Followers", "Email", "Socials", "Status"]
@@ -147,6 +164,21 @@ GAME_COLORS = {
     "Probably Stolen": "CE93D8",
     "Cookie Clicker": "BCAAA4",
     "Fart Together": "C5E1A5",
+    "Invokyr": "7E57C2",
+    "The Outlast Trials": "8D6E63",
+    "Fears to Fathom - Scratch Creek": "A1887F",
+    "Pummel Party": "FFB74D",
+    "Dawson Oaks Trailer Park": "DCE775",
+    "Demonologist": "E57373",
+    "Overcooked! 2": "4FC3F7",
+    "Sons of the Forest": "81C784",
+    "the cabin game": "FFD54F",
+    "GONE Fishing": "4DB6AC",
+    "DEVOUR": "F06292",
+    "Species: Unknown": "9575CD",
+    "Dumb Ways to Build": "FF8A65",
+    "The Other Side": "90A4AE",
+    "Cursed Companions": "BA68C8",
 }
 
 SULLY_H = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
