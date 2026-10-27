@@ -591,7 +591,10 @@ def deep_email(socials, login, display):
 
     def consider(text):
         for s, e in _mail_candidates(text, toks):
-            if s > best[0]:
+            # equal score: a business-style inbox beats a personal one
+            # (letsgameitoutbusiness@ over letsgameitout@ in the same description)
+            if s > best[0] or (s == best[0] and BIZ_MAIL.search(e)
+                                and not BIZ_MAIL.search(best[1] or "")):
                 best[0], best[1] = s, e
         return best[0] >= 3
 
@@ -622,7 +625,47 @@ def deep_email(socials, login, display):
                             break
             if best[0] >= 3:
                 break
+    if best[0] < 3:
+        # YouTube channel description (public text; the hidden "business email" behind
+        # YouTube's CAPTCHA is never touched). Added 2026-10-27: on 366 qualifying
+        # channels the steps above had missed, this found 14 more addresses.
+        for u in YT_URL.findall(socials)[:2]:
+            if consider(_yt_description(u)):
+                break
+            time.sleep(0.6)
     return best[1] if best[0] >= 2 else None
+
+
+BIZ_MAIL = re.compile(r"business|biz|collab|contact|partner|sponsor|negocio|contato|work|booking|mgmt|management|pr@", re.I)
+YT_URL = re.compile(r"https?://(?:www\.|m\.)?youtube\.com/[^\s,;|]+", re.I)
+_YT_DESC = re.compile(r'"description":"((?:[^"\\]|\\.)*)"')
+
+
+def _yt_description(url):
+    """Public description of a YouTube channel ('' if unreadable).
+
+    The page loads with a plain GET (consent cookie avoids the EU interstitial). The
+    first "channelMetadataRenderer" in the HTML is only a list of type names, so look
+    for the object form, then the schema.org Person block, then og:description.
+    """
+    u = re.sub(r"/(videos|featured|shorts|streams|about|live)/?$", "", url.split("?")[0].rstrip("/"))
+    try:
+        r = requests.get(u, headers=WEB_UA, cookies={"CONSENT": "YES+cb", "SOCS": "CAI"},
+                         timeout=FETCH_TIMEOUT)
+        t = r.text if r.status_code == 200 else ""
+    except Exception:  # noqa: BLE001
+        return ""
+    i = t.find('"channelMetadataRenderer":{')
+    m = _YT_DESC.search(t, i) if i >= 0 else None
+    if not m or (i >= 0 and m.start() - i > 20000):
+        m = _YT_DESC.search(t)
+    if m:
+        try:
+            return json.loads('"' + m.group(1) + '"')
+        except Exception:  # noqa: BLE001
+            return m.group(1)
+    m = re.search(r'<meta property="og:description" content="([^"]*)"', t)
+    return m.group(1) if m else ""
 
 def crm_seen(*books):
     """Every creator handle + email already present in ANY tab of the given books.
