@@ -119,6 +119,8 @@ GAMES = {
     230450: "Dumb Ways to Build",
     161273: "The Other Side",    # Twitch 618479630, the 2025 ghost-hunting co-op
     180198: "Cursed Companions",
+    # added 2026-10-27 (Steam 4312190) - Twitch 1207887450; 16603 "Crack" is a 1988 game
+    232777: "CRACK",
 }
 HEADER = ["Capture date", "Competitor game", "Streamer", "Peak viewers",
           "Followers", "Email", "Socials", "Status"]
@@ -179,6 +181,7 @@ GAME_COLORS = {
     "Dumb Ways to Build": "FF8A65",
     "The Other Side": "90A4AE",
     "Cursed Companions": "BA68C8",
+    "CRACK": "FFE082",
 }
 
 SULLY_H = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
