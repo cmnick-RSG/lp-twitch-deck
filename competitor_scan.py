@@ -97,6 +97,11 @@ GAMES = {
     209003: "Project P.I.T.T.",
     # added 2026-09-23 - Twitch category 1063058051
     222559: "Sitting Ducks",
+    # added 2026-10-27 (Steam apps 5335510, 4349200, 1454400, 5208630)
+    234221: "Moon Sweepers",     # Twitch 195574289
+    227832: "Probably Stolen",   # Twitch 366412048 - demo streams land here
+    1996: "Cookie Clicker",      # Twitch 324573 - the 650600069 duplicate is empty
+    232445: "Fart Together",     # Twitch 321313344 - demo streams land here
 }
 HEADER = ["Capture date", "Competitor game", "Streamer", "Peak viewers",
           "Followers", "Email", "Socials", "Status"]
@@ -138,6 +143,10 @@ GAME_COLORS = {
     "Party Animals": "66BB6A",
     "Project P.I.T.T.": "42A5F5",
     "Sitting Ducks": "80DEEA",
+    "Moon Sweepers": "B0BEC5",
+    "Probably Stolen": "CE93D8",
+    "Cookie Clicker": "BCAAA4",
+    "Fart Together": "C5E1A5",
 }
 
 SULLY_H = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
