@@ -121,6 +121,10 @@ GAMES = {
     180198: "Cursed Companions",
     # added 2026-10-27 (Steam 4312190) - Twitch 1207887450; 16603 "Crack" is a 1988 game
     232777: "CRACK",
+    # added 2026-11-10 - Playrooms (Steam 5037510, Twitch 1046135592),
+    # Worst Class Ever (Steam 5175310, Twitch 1079429381; no streams yet on release day)
+    232932: "Playrooms",
+    236012: "Worst Class Ever",
 }
 HEADER = ["Capture date", "Competitor game", "Streamer", "Peak viewers",
           "Followers", "Email", "Socials", "Status"]
@@ -182,6 +186,8 @@ GAME_COLORS = {
     "The Other Side": "90A4AE",
     "Cursed Companions": "BA68C8",
     "CRACK": "FFE082",
+    "Playrooms": "F48FB1",
+    "Worst Class Ever": "AED581",
 }
 
 SULLY_H = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
